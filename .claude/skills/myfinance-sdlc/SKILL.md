@@ -28,7 +28,14 @@ Apply these rules in order; the first match wins:
 - **One obvious localized fix / copy change / tweak?** → **T3**.
 - **When unsure, round up a tier.** Cheap insurance.
 
-State the chosen tier and the rule that selected it before proceeding.
+## Step 1b — Confirm the tier with the user (REQUIRED)
+
+State the chosen tier, the rule that selected it, and what the matching process
+will involve — then **ask the user to confirm or override before proceeding.**
+Use the AskUserQuestion tool (or a direct question) offering the chosen tier plus
+the adjacent tiers. Do not start brainstorming, planning, or coding until the user
+confirms. This gate prevents silent under-tiering (e.g. running T2 on work that
+actually touches `core`).
 
 ## Step 2 — Run the matching process
 

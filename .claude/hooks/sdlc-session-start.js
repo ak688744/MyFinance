@@ -8,7 +8,8 @@ const message = [
   'Before any brainstorming, planning, or coding: invoke the `myfinance-sdlc` skill to',
   'classify this task into a tier (T1 full discipline / T2 light / T3 direct), then run',
   'the matching process. Touching core financial logic (XIRR, categorization, parsers,',
-  'portfolio math) is always T1. When unsure, round up a tier.',
+  'portfolio math) is always T1. When unsure, round up a tier. After classifying,',
+  'confirm the tier with the user before proceeding.',
 ].join(' ');
 
 process.stdout.write(

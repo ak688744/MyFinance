@@ -122,6 +122,10 @@ Classification rules:
 - One obvious localized fix → **T3**.
 - **When unsure, round up a tier.** Cheap insurance.
 
+**Confirmation gate:** after classifying, the agent states the chosen tier + the rule
+that selected it, then **asks the user to confirm or override before proceeding.** No
+brainstorming/planning/coding starts until confirmed. Prevents silent under-tiering.
+
 ### Tiers
 | Tier | What | Process |
 |---|---|---|
