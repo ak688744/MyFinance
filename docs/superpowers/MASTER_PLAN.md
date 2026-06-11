@@ -94,7 +94,7 @@ Build bottom-up; nothing above can be concretely designed until the layer below 
 
 | Layer | Name | Scope | Status | Spec |
 |---|---|---|---|---|
-| **L0** | Foundation | Node/TS server skeleton, Drizzle schema + DB, port `features/`→`core`, basic REST API | ⬜ Not started | — |
+| **L0** | Foundation | Node/TS server skeleton, Drizzle schema + DB, port `features/`→`core`, basic REST API | 🟡 In progress (paused) | [spec](specs/2026-06-12-l0-foundation-design.md) · [plan](plans/2026-06-12-l0-foundation.md) |
 | **L1** | Ingestion + Data API | Server-side statement/investment import, dedupe, categorize; the read API for UI + agents | ⬜ Not started | — |
 | **L2** | Web UI | Web frontend: Expenses, Investments, Loans visualization; reads L1 API | ⬜ Not started | — |
 | **L3** | MCP Server | Wraps data layer as MCP tools — the agent tool contract | ⬜ Not started | — |
@@ -173,4 +173,6 @@ brainstorming/planning/coding starts until confirmed. Prevents silent under-tier
 
 - [x] Build the orchestration wiring (SessionStart hook + `myfinance-sdlc` skill + CLAUDE.md pointer). **Done** (commit 644a23e). Files: `.claude/hooks/sdlc-session-start.js`, `.claude/skills/myfinance-sdlc/SKILL.md`, CLAUDE.md pointer block.
   - ⚠️ The hook is registered in `.claude/settings.local.json`, which is **gitignored**. On a fresh clone / new machine, re-add the SessionStart hook entry pointing at `.claude/hooks/sdlc-session-start.js`. The hook script and skill themselves are committed.
-- [ ] **Next:** brainstorm **L0 — Foundation** as the first real layer spec (new session). The SessionStart hook will prompt tier classification automatically.
+- [x] Brainstorm **L0 — Foundation** spec → `specs/2026-06-12-l0-foundation-design.md`. Plan → `plans/2026-06-12-l0-foundation.md`.
+- [ ] **L0 build IN PROGRESS — PAUSED 2026-06-12** on branch `layer/0-foundation` (T1, subagent-driven). HEAD `dbc29e6`. Done: Phases 0–1 (workspace, schema+CHECKs, client, migrations) + Phase 2 start (repo interfaces, investmentTxRepo). **27/27 tests green.** **Resume at Task 2.3** (schemeRepo + holdingsRepo) → see plan + project-memory decision `27c42151` for full resume state and subagent gotchas (Node 20, sync repos, Drizzle ORDER BY). Groww golden-master oracle captured in memory `8c4e7836`.
+  - Decisions logged: money stays REAL/float (paise rejected); repository-over-Drizzle seam; import ported into L0 (L1 = ingestion API over it).
