@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  check,
   index,
   integer,
   real,
@@ -70,6 +71,10 @@ export const transactions = sqliteTable(
     idxTransactionsCategory: index('idx_transactions_category').on(
       table.categoryId,
     ),
+    directionCheck: check(
+      'transactions_direction_check',
+      sql`${table.direction} IN ('debit', 'credit')`,
+    ),
   }),
 );
 
@@ -95,6 +100,10 @@ export const categoryRules = sqliteTable(
   },
   (table) => ({
     uniqueRuleTypePattern: unique().on(table.ruleType, table.patternValue),
+    ruleTypeCheck: check(
+      'category_rules_rule_type_check',
+      sql`${table.ruleType} IN ('merchant', 'upi_note_keyword')`,
+    ),
   }),
 );
 
@@ -126,6 +135,10 @@ export const investmentSchemes = sqliteTable(
     idxInvestmentSchemesAmc: index('idx_investment_schemes_amc').on(
       table.amcName,
     ),
+    categoryCheck: check(
+      'investment_schemes_category_check',
+      sql`${table.category} IN ('equity', 'debt', 'hybrid', 'other')`,
+    ),
   }),
 );
 
@@ -151,6 +164,12 @@ export const investmentImportHistory = sqliteTable(
     holderName: text('holder_name'),
     holderPan: text('holder_pan'),
   },
+  (table) => ({
+    importTypeCheck: check(
+      'investment_import_history_import_type_check',
+      sql`${table.importType} IN ('holdings', 'transactions')`,
+    ),
+  }),
 );
 
 export const investmentHoldings = sqliteTable(
@@ -224,5 +243,9 @@ export const investmentTransactions = sqliteTable(
     idxInvestmentTransactionsDate: index(
       'idx_investment_transactions_date',
     ).on(sql`${table.transactionDate} DESC`),
+    transactionTypeCheck: check(
+      'investment_transactions_transaction_type_check',
+      sql`${table.transactionType} IN ('PURCHASE', 'REDEMPTION', 'SWITCH_IN', 'SWITCH_OUT', 'DIVIDEND')`,
+    ),
   }),
 );
