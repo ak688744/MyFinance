@@ -167,5 +167,6 @@ Classification rules:
 
 ## 8. Open Items / Next Step
 
-- [ ] Build the orchestration wiring itself (SessionStart hook + `myfinance-sdlc` skill + CLAUDE.md pointer). *This is its own small setup task before L0.*
-- [ ] **Then:** brainstorm **L0 — Foundation** as the first real layer spec (new session).
+- [x] Build the orchestration wiring (SessionStart hook + `myfinance-sdlc` skill + CLAUDE.md pointer). **Done** (commit 644a23e). Files: `.claude/hooks/sdlc-session-start.js`, `.claude/skills/myfinance-sdlc/SKILL.md`, CLAUDE.md pointer block.
+  - ⚠️ The hook is registered in `.claude/settings.local.json`, which is **gitignored**. On a fresh clone / new machine, re-add the SessionStart hook entry pointing at `.claude/hooks/sdlc-session-start.js`. The hook script and skill themselves are committed.
+- [ ] **Next:** brainstorm **L0 — Foundation** as the first real layer spec (new session). The SessionStart hook will prompt tier classification automatically.
