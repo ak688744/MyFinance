@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# raw financial statements / exports — contain PII (name, PAN, mobile). NEVER commit.
+*.xlsx
+*.xls
+*.csv
+/Mutual_Funds_*
