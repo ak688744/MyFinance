@@ -52,6 +52,7 @@ function makeTxRepo(rows: TransactionWithSchemeMeta[]): InvestmentTxRepo {
     getAccounts: () =>
       Array.from(new Set(rows.map((r) => r.accountName))).sort((a, b) => a.localeCompare(b)),
     insert: () => 0,
+    deleteByAccountAppDateRange: () => 0,
   } as InvestmentTxRepo;
 }
 

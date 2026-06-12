@@ -67,5 +67,32 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .where(eq(transactions.id, id))
         .run();
     },
+
+    insertIgnore(tx) {
+      // INSERT OR IGNORE INTO transactions (...) — the UNIQUE dedupe_key drives
+      // the conflict. onConflictDoNothing == OR IGNORE. Returns changes (1/0).
+      const result = db
+        .insert(transactions)
+        .values({
+          transactionDate: tx.transactionDate,
+          valueDate: tx.valueDate,
+          referenceNumber: tx.referenceNumber,
+          description: tx.description,
+          normalizedDescription: tx.normalizedDescription,
+          merchantKey: tx.merchantKey,
+          upiNoteKeyword: tx.upiNoteKeyword,
+          amount: tx.amount,
+          direction: tx.direction,
+          categoryId: tx.categoryId,
+          categorySource: tx.categorySource,
+          balance: tx.balance,
+          sourceType: tx.sourceType,
+          importHistoryId: tx.importHistoryId,
+          dedupeKey: tx.dedupeKey,
+        })
+        .onConflictDoNothing()
+        .run();
+      return result.changes;
+    },
   };
 }

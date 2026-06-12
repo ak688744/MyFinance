@@ -110,6 +110,18 @@ describe('holdingsRepo.insert', () => {
     });
   });
 
+  it('deleteByAccountAppDate deletes only matching rows and returns count', () => {
+    // Seeded rows: 2 for account A (2024-12-31), 1 for B (2024-12-31).
+    const deleted = repo.deleteByAccountAppDate('A', 'groww', '2024-12-31');
+    expect(deleted).toBe(2);
+    const remaining = sqlite
+      .prepare('SELECT COUNT(*) AS c FROM investment_holdings')
+      .get() as { c: number };
+    expect(remaining.c).toBe(1); // B survives
+    // No rows for a non-matching date -> 0
+    expect(repo.deleteByAccountAppDate('B', 'groww', '2099-01-01')).toBe(0);
+  });
+
   it('inserts with null schemeId/folioNumber/returnsXirr', () => {
     const id = repo.insert({
       importHistoryId: 1,

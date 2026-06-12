@@ -18,6 +18,12 @@ export interface InvestmentTxRepo {
   getEarliestTransactionDate(filters: { account?: string; schemeId?: number }): string | null;
   getUnitsPerSchemeUpTo(endDate: string, filters: { account?: string }): Map<number, number>;
   /**
+   * DELETE FROM investment_transactions WHERE account_name = ? AND
+   * investment_app = ? AND transaction_date BETWEEN ? AND ?. Returns deleted row
+   * count. Used by importInvestmentTransactions for date-range replacement.
+   */
+  deleteByAccountAppDateRange(account: string, app: string, startDate: string, endDate: string): number;
+  /**
    * Transactions joined with scheme metadata (LEFT JOIN investment_schemes),
    * filtered to rows with a non-null scheme_id, ordered by transaction_date ASC.
    * Optional date window (BETWEEN start AND end, inclusive). This is what the
@@ -56,6 +62,12 @@ export interface HoldingsRepo {
     units: number; investedValue: number; currentValue: number;
     returnsAmount: number; returnsXirr: number | null; asOfDate: string;
   }): number;
+  /**
+   * DELETE FROM investment_holdings WHERE account_name = ? AND
+   * investment_app = ? AND as_of_date = ?. Returns deleted row count. Used by
+   * importHoldings for same-date replacement.
+   */
+  deleteByAccountAppDate(account: string, app: string, asOfDate: string): number;
 }
 
 export interface CategoryRepo {
@@ -87,6 +99,29 @@ export interface ExpenseTransactionRepo {
   list(filters?: { limit?: number; offset?: number; categoryId?: string }): unknown[];
   getNonManualForRecategorization(): { id: number; description: string; merchantKey: string | null; upiNoteKeyword: string | null }[];
   updateCategory(id: number, categoryId: string | null, categorySource: string | null): void;
+  /**
+   * INSERT OR IGNORE INTO transactions (...all columns incl. dedupe_key,
+   * category_id, category_source). Returns the changed-row count (1 inserted,
+   * 0 ignored on dedupe_key conflict). Faithful port of importTransactions'
+   * INSERT OR IGNORE.
+   */
+  insertIgnore(tx: {
+    transactionDate: string;
+    valueDate: string | null;
+    referenceNumber: string | null;
+    description: string;
+    normalizedDescription: string;
+    merchantKey: string | null;
+    upiNoteKeyword: string | null;
+    amount: number;
+    direction: 'debit' | 'credit';
+    categoryId: string | null;
+    categorySource: string | null;
+    balance: number | null;
+    sourceType: string;
+    importHistoryId: number;
+    dedupeKey: string;
+  }): number;
 }
 
 export interface ImportHistoryRepo {
@@ -97,4 +132,15 @@ export interface ImportHistoryRepo {
     totalInvested?: number; totalCurrentValue?: number; totalXirr?: number;
     holderName?: string; holderPan?: string;
   }): number;
+  /**
+   * SELECT id FROM investment_import_history WHERE account_name = ? AND
+   * investment_app = ? AND import_type = ? AND start_date = ? AND end_date = ?.
+   * Used by importHoldings to find prior same-date import rows for replacement.
+   */
+  findInvestmentImports(filters: {
+    account: string; app: string; importType: 'holdings'|'transactions';
+    startDate: string; endDate: string;
+  }): { id: number }[];
+  /** DELETE FROM investment_import_history WHERE id = ?. */
+  deleteInvestmentImport(id: number): void;
 }

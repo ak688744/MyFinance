@@ -268,5 +268,21 @@ export function makeInvestmentTxRepo(db: Db): InvestmentTxRepo {
 
       return result.id;
     },
+
+    deleteByAccountAppDateRange(account, app, startDate, endDate) {
+      // DELETE FROM investment_transactions WHERE account_name = ? AND
+      // investment_app = ? AND transaction_date BETWEEN ? AND ?
+      const result = db
+        .delete(tx)
+        .where(
+          and(
+            eq(tx.accountName, account),
+            eq(tx.investmentApp, app),
+            between(tx.transactionDate, startDate, endDate),
+          ),
+        )
+        .run();
+      return result.changes;
+    },
   };
 }

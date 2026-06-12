@@ -208,6 +208,9 @@ function makeFakeTxRepo(
         t.categorySource = categorySource;
       }
     },
+    insertIgnore() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }

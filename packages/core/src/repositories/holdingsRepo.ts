@@ -58,5 +58,21 @@ export function makeHoldingsRepo(db: Db): HoldingsRepo {
 
       return result.id;
     },
+
+    deleteByAccountAppDate(account, app, asOfDate) {
+      // DELETE FROM investment_holdings WHERE account_name = ? AND
+      // investment_app = ? AND as_of_date = ?
+      const result = db
+        .delete(holdings)
+        .where(
+          and(
+            eq(holdings.accountName, account),
+            eq(holdings.investmentApp, app),
+            eq(holdings.asOfDate, asOfDate),
+          ),
+        )
+        .run();
+      return result.changes;
+    },
   };
 }

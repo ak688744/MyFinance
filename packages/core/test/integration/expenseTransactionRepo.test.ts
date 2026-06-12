@@ -92,6 +92,62 @@ describe('expenseTransactionRepo.getNonManualForRecategorization', () => {
   });
 });
 
+describe('expenseTransactionRepo.insertIgnore', () => {
+  beforeEach(() => {
+    sqlite
+      .prepare(
+        `INSERT INTO import_history (id, source_name, source_type, transaction_count)
+         VALUES (1, 'hdfc.xls', 'xls', 0)`,
+      )
+      .run();
+  });
+
+  const tx = (dedupeKey: string) => ({
+    transactionDate: '2024-05-01',
+    valueDate: '2024-05-01',
+    referenceNumber: 'REF',
+    description: 'new tx',
+    normalizedDescription: 'new tx',
+    merchantKey: 'shop',
+    upiNoteKeyword: null,
+    amount: 99,
+    direction: 'debit' as const,
+    categoryId: 'food',
+    categorySource: 'merchant_rule',
+    balance: 1000,
+    sourceType: 'xls',
+    importHistoryId: 1,
+    dedupeKey,
+  });
+
+  it('inserts a new row (returns 1) and persists all columns', () => {
+    const changes = repo.insertIgnore(tx('new-1'));
+    expect(changes).toBe(1);
+    const row = sqlite
+      .prepare(
+        `SELECT category_id, category_source, import_history_id, dedupe_key, amount
+         FROM transactions WHERE dedupe_key = 'new-1'`,
+      )
+      .get() as Record<string, unknown>;
+    expect(row).toMatchObject({
+      category_id: 'food',
+      category_source: 'merchant_rule',
+      import_history_id: 1,
+      dedupe_key: 'new-1',
+      amount: 99,
+    });
+  });
+
+  it('ignores a duplicate dedupe_key (returns 0, no second row)', () => {
+    expect(repo.insertIgnore(tx('dup'))).toBe(1);
+    expect(repo.insertIgnore(tx('dup'))).toBe(0);
+    const count = sqlite
+      .prepare(`SELECT COUNT(*) AS c FROM transactions WHERE dedupe_key = 'dup'`)
+      .get() as { c: number };
+    expect(count.c).toBe(1);
+  });
+});
+
 describe('expenseTransactionRepo.updateCategory', () => {
   it('persists category_id + category_source', () => {
     const rows = repo.list() as ListedRow[];

@@ -1,3 +1,4 @@
+import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { importHistory, investmentImportHistory } from '../db/schema';
 import type { ImportHistoryRepo } from './types';
@@ -48,6 +49,30 @@ export function makeImportHistoryRepo(db: Db): ImportHistoryRepo {
         .get();
 
       return result.id;
+    },
+
+    findInvestmentImports(filters) {
+      // SELECT id FROM investment_import_history WHERE account_name = ? AND
+      // investment_app = ? AND import_type = ? AND start_date = ? AND end_date = ?
+      return db
+        .select({ id: investmentImportHistory.id })
+        .from(investmentImportHistory)
+        .where(
+          and(
+            eq(investmentImportHistory.accountName, filters.account),
+            eq(investmentImportHistory.investmentApp, filters.app),
+            eq(investmentImportHistory.importType, filters.importType),
+            eq(investmentImportHistory.startDate, filters.startDate),
+            eq(investmentImportHistory.endDate, filters.endDate),
+          ),
+        )
+        .all();
+    },
+
+    deleteInvestmentImport(id) {
+      db.delete(investmentImportHistory)
+        .where(eq(investmentImportHistory.id, id))
+        .run();
     },
   };
 }

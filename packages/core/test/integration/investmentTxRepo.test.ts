@@ -35,6 +35,23 @@ beforeEach(() => {
     .run();
 });
 
+describe('investmentTxRepo.deleteByAccountAppDateRange', () => {
+  it('deletes only matching account/app rows in the date range and returns count', () => {
+    // Account A 'groww' rows fall on 2024-01-01, 06-01, 03-01, 05-01.
+    const deleted = repo.deleteByAccountAppDateRange('A', 'groww', '2024-02-01', '2024-05-31');
+    expect(deleted).toBe(2); // 2024-03-01 + 2024-05-01
+    const remaining = sqlite
+      .prepare('SELECT COUNT(*) AS c FROM investment_transactions')
+      .get() as { c: number };
+    expect(remaining.c).toBe(3);
+    // B's 2024-04-01 row is untouched (different account)
+    const bRows = sqlite
+      .prepare(`SELECT COUNT(*) AS c FROM investment_transactions WHERE account_name = 'B'`)
+      .get() as { c: number };
+    expect(bRows.c).toBe(1);
+  });
+});
+
 describe('investmentTxRepo.getCashFlows', () => {
   it('purchase negative, redemption positive, asc', () => {
     const cf = repo.getCashFlows({ schemeId: 1 });

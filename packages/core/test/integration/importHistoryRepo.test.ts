@@ -68,6 +68,44 @@ describe('importHistoryRepo.createInvestmentImport', () => {
     });
   });
 
+  it('findInvestmentImports matches on account/app/type/dates; deleteInvestmentImport removes', () => {
+    const id = repo.createInvestmentImport({
+      accountName: 'A',
+      investmentApp: 'groww',
+      importType: 'holdings',
+      startDate: '2024-12-31',
+      endDate: '2024-12-31',
+    });
+    // A different row that must NOT match (different type).
+    repo.createInvestmentImport({
+      accountName: 'A',
+      investmentApp: 'groww',
+      importType: 'transactions',
+      startDate: '2024-12-31',
+      endDate: '2024-12-31',
+    });
+
+    const found = repo.findInvestmentImports({
+      account: 'A',
+      app: 'groww',
+      importType: 'holdings',
+      startDate: '2024-12-31',
+      endDate: '2024-12-31',
+    });
+    expect(found).toEqual([{ id }]);
+
+    repo.deleteInvestmentImport(id);
+    expect(
+      repo.findInvestmentImports({
+        account: 'A',
+        app: 'groww',
+        importType: 'holdings',
+        startDate: '2024-12-31',
+        endDate: '2024-12-31',
+      }),
+    ).toEqual([]);
+  });
+
   it('inserts with only required fields (optionals -> null)', () => {
     const id = repo.createInvestmentImport({
       accountName: 'B',

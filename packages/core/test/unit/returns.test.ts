@@ -121,6 +121,9 @@ function makeTxRepo(fixtures: TxFixture[]): InvestmentTxRepo {
     insert() {
       throw new Error('not used');
     },
+    deleteByAccountAppDateRange() {
+      throw new Error('not used');
+    },
   };
 }
 
@@ -144,6 +147,7 @@ function makeHoldingsRepo(value: { currentValue: number; investedValue: number }
   return {
     getHoldingsValue: () => value,
     insert: () => 0,
+    deleteByAccountAppDate: () => 0,
   };
 }
 
