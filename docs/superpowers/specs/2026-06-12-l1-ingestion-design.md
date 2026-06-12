@@ -18,6 +18,13 @@ on `packages/api` over `core`. **`core` itself is not modified** except one mino
 non-financial additive repo method (`ImportHistoryRepo.listAll()`).
 
 ### Non-goals (deferred)
+- **Enriched expense reads — deferred to L2.** L1 keeps L0's basic `GET /transactions`
+  (paginated, `categoryId` filter) unchanged. Richer expense surface — date-range /
+  direction / search filters on the list, and a `GET /expenses/summary` aggregation
+  (period totals + per-category breakdown) — is **designed in L2** against concrete web
+  layouts, so the API is shaped by real intuitive-UI needs rather than guessed. (The
+  existing `GET /transactions` is still exercised in L1 only to verify rule-CRUD
+  recategorization.)
 - Parse-then-confirm preview flow — L2 holds the preview client-side and re-uploads on confirm.
 - Auth / multi-user.
 - Category create / rename / delete (still deferred per L0; needs `CategoryRepo` extension).
