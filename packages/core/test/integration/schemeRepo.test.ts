@@ -151,6 +151,25 @@ describe('schemeRepo.updateAmfiCode', () => {
   });
 });
 
+describe('schemeRepo.getUnmatchedSchemes', () => {
+  it('returns only NULL-amfi schemes, ordered by scheme_name ASC', () => {
+    const zeta = repo.matchOrCreateScheme({ schemeName: 'Zeta Fund' });
+    repo.matchOrCreateScheme({ schemeName: 'Alpha Fund' });
+    const coded = repo.matchOrCreateScheme({ schemeName: 'Coded Fund' });
+    repo.updateAmfiCode(coded, '147482');
+    void zeta;
+
+    const names = repo.getUnmatchedSchemes().map((s) => s.schemeName);
+    expect(names).toEqual(['Alpha Fund', 'Zeta Fund']);
+  });
+
+  it('returns [] when every scheme has an amfi code', () => {
+    const id = repo.matchOrCreateScheme({ schemeName: 'Solo' });
+    repo.updateAmfiCode(id, '100000');
+    expect(repo.getUnmatchedSchemes()).toEqual([]);
+  });
+});
+
 describe('schemeRepo.getSchemesWithAmfi', () => {
   beforeEach(() => {
     // scheme 1 has amfi, scheme 2 null amfi

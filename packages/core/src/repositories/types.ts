@@ -36,6 +36,12 @@ export interface SchemeRepo {
   getSchemes(filters?: { category?: 'equity'|'debt'|'hybrid'|'other'; amc?: string; search?: string }): Scheme[];
   findSchemeByName(schemeName: string): Scheme | null;
   getSchemesWithAmfi(filters: { account?: string }): { schemeId: number; amfiCode: string }[];
+  /**
+   * Schemes with a NULL amfi_code, ordered by scheme_name ASC. Faithful port of
+   * the `SELECT ... WHERE amfi_code IS NULL ORDER BY scheme_name` that the
+   * original amfiMatcher.autoMatchAmfiCodes ran directly against the DB.
+   */
+  getUnmatchedSchemes(): Scheme[];
   updateAmfiCode(schemeId: number, amfiCode: string): void;
   matchOrCreateScheme(p: { schemeName: string; amcName?: string;
     category?: 'equity'|'debt'|'hybrid'|'other'; subCategory?: string }): number;

@@ -133,6 +133,8 @@ function makeSchemeRepo(schemes: Record<number, Scheme>): SchemeRepo {
       Object.values(schemes)
         .filter((s) => s.amfiCode !== null)
         .map((s) => ({ schemeId: s.id, amfiCode: s.amfiCode as string })),
+    getUnmatchedSchemes: () =>
+      Object.values(schemes).filter((s) => s.amfiCode === null),
     updateAmfiCode: () => {},
     matchOrCreateScheme: () => 0,
   };

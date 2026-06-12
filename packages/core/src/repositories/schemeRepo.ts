@@ -114,6 +114,18 @@ export function makeSchemeRepo(db: Db): SchemeRepo {
       }));
     },
 
+    getUnmatchedSchemes(): Scheme[] {
+      // SELECT <scheme columns> FROM investment_schemes
+      // WHERE amfi_code IS NULL ORDER BY scheme_name ASC
+      return db
+        .select(SCHEME_COLUMNS)
+        .from(schemes)
+        .where(isNull(schemes.amfiCode))
+        .orderBy(asc(schemes.schemeName))
+        .all()
+        .map(mapRowToScheme);
+    },
+
     updateAmfiCode(schemeId: number, amfiCode: string): void {
       db.update(schemes)
         .set({ amfiCode, updatedAt: sql`CURRENT_TIMESTAMP` })
