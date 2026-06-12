@@ -1,5 +1,6 @@
 import type {
   InvestmentTransaction, Scheme, CashFlow, TransactionType, TransactionSummary,
+  TransactionWithSchemeMeta,
 } from '../types';
 
 export interface InvestmentTxRepo {
@@ -16,6 +17,17 @@ export interface InvestmentTxRepo {
   }): TransactionSummary;
   getEarliestTransactionDate(filters: { account?: string; schemeId?: number }): string | null;
   getUnitsPerSchemeUpTo(endDate: string, filters: { account?: string }): Map<number, number>;
+  /**
+   * Transactions joined with scheme metadata (LEFT JOIN investment_schemes),
+   * filtered to rows with a non-null scheme_id, ordered by transaction_date ASC.
+   * Optional date window (BETWEEN start AND end, inclusive). This is what the
+   * original portfolioService read for holdings/period aggregation.
+   */
+  getTransactionsWithSchemeMeta(filters: {
+    account?: string; startDate?: string; endDate?: string;
+  }): TransactionWithSchemeMeta[];
+  /** DISTINCT account_name FROM investment_transactions ORDER BY account_name ASC. */
+  getAccounts(): string[];
   insert(tx: Omit<InvestmentTransaction, 'id'>): number;
 }
 

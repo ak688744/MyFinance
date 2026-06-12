@@ -1,11 +1,15 @@
 import { and, asc, between, desc, eq, gte, lte, min, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
-import { investmentTransactions as tx } from '../db/schema';
+import {
+  investmentSchemes as schemes,
+  investmentTransactions as tx,
+} from '../db/schema';
 import type {
   CashFlow,
   InvestmentTransaction,
   TransactionSummary,
   TransactionType,
+  TransactionWithSchemeMeta,
 } from '../types';
 import type { InvestmentTxRepo } from './types';
 
@@ -189,6 +193,60 @@ export function makeInvestmentTxRepo(db: Db): InvestmentTxRepo {
       }
 
       return unitsMap;
+    },
+
+    getTransactionsWithSchemeMeta(filters) {
+      // Faithful port of the LEFT JOIN query in portfolioService
+      // (aggregateHoldingsFromTransactions / aggregateTransactionsInWindow):
+      //   SELECT t.*, s.amfi_code, s.amc_name, s.category, s.sub_category
+      //   FROM investment_transactions t
+      //   LEFT JOIN investment_schemes s ON t.scheme_id = s.id
+      //   WHERE t.scheme_id IS NOT NULL
+      //     [AND t.account_name = ?] [AND t.transaction_date BETWEEN ? AND ?]
+      //   ORDER BY t.transaction_date ASC
+      const conditions = [
+        sql`${tx.schemeId} IS NOT NULL`,
+        filters.account !== undefined ? eq(tx.accountName, filters.account) : undefined,
+        dateRangeCondition(filters.startDate, filters.endDate),
+      ].filter((c): c is NonNullable<typeof c> => c !== undefined);
+
+      const rows = db
+        .select({
+          schemeId: tx.schemeId,
+          schemeName: tx.schemeName,
+          accountName: tx.accountName,
+          investmentApp: tx.investmentApp,
+          transactionType: tx.transactionType,
+          units: tx.units,
+          amount: tx.amount,
+          transactionDate: tx.transactionDate,
+          amfiCode: schemes.amfiCode,
+          amcName: schemes.amcName,
+          category: schemes.category,
+          subCategory: schemes.subCategory,
+        })
+        .from(tx)
+        .leftJoin(schemes, eq(tx.schemeId, schemes.id))
+        .where(and(...conditions))
+        .orderBy(asc(tx.transactionDate))
+        .all();
+
+      // scheme_id IS NOT NULL is guaranteed by the WHERE clause.
+      return rows.map((r) => ({
+        ...r,
+        schemeId: r.schemeId as number,
+      })) as TransactionWithSchemeMeta[];
+    },
+
+    getAccounts() {
+      // SELECT DISTINCT account_name FROM investment_transactions
+      // ORDER BY account_name ASC
+      return db
+        .selectDistinct({ accountName: tx.accountName })
+        .from(tx)
+        .orderBy(asc(tx.accountName))
+        .all()
+        .map((r) => r.accountName);
     },
 
     insert(t: Omit<InvestmentTransaction, 'id'>) {

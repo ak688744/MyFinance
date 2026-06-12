@@ -16,8 +16,10 @@ beforeEach(() => {
   // FK parents: investment_transactions.scheme_id -> investment_schemes.id
   sqlite
     .prepare(
-      `INSERT INTO investment_schemes (id, scheme_name)
-        VALUES (1,'X'),(2,'Y'),(3,'Z')`,
+      `INSERT INTO investment_schemes (id, scheme_name, amfi_code, amc_name, category, sub_category)
+        VALUES (1,'X','111','AMC1','equity','Large Cap'),
+               (2,'Y','222','AMC2','debt',NULL),
+               (3,'Z',NULL,NULL,NULL,NULL)`,
     )
     .run();
   sqlite
@@ -215,6 +217,45 @@ describe('investmentTxRepo.getUnitsPerSchemeUpTo', () => {
     const m = repo.getUnitsPerSchemeUpTo('2024-12-31', { account: 'B' });
     expect(m.get(2)).toBe(5);
     expect(m.has(1)).toBe(false);
+  });
+});
+
+describe('investmentTxRepo.getTransactionsWithSchemeMeta', () => {
+  it('joins scheme metadata and orders by transaction_date ASC', () => {
+    const rows = repo.getTransactionsWithSchemeMeta({});
+    expect(rows).toHaveLength(5);
+    expect(rows.map((r) => r.transactionDate)).toEqual([
+      '2024-01-01',
+      '2024-03-01',
+      '2024-04-01',
+      '2024-05-01',
+      '2024-06-01',
+    ]);
+    const s1 = rows.find((r) => r.schemeId === 1 && r.transactionType === 'PURCHASE')!;
+    expect(s1).toMatchObject({
+      amfiCode: '111',
+      amcName: 'AMC1',
+      category: 'equity',
+      subCategory: 'Large Cap',
+    });
+    const s2 = rows.find((r) => r.schemeId === 2)!;
+    expect(s2.subCategory).toBeNull();
+  });
+
+  it('filters by account and date window (BETWEEN, inclusive)', () => {
+    const rows = repo.getTransactionsWithSchemeMeta({
+      account: 'A',
+      startDate: '2024-03-01',
+      endDate: '2024-05-01',
+    });
+    expect(rows.map((r) => r.transactionDate)).toEqual(['2024-03-01', '2024-05-01']);
+    expect(rows.every((r) => r.accountName === 'A')).toBe(true);
+  });
+});
+
+describe('investmentTxRepo.getAccounts', () => {
+  it('returns DISTINCT account_name sorted asc', () => {
+    expect(repo.getAccounts()).toEqual(['A', 'B']);
   });
 });
 
