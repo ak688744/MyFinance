@@ -118,6 +118,17 @@ describe('categoryRuleRepo.updateRuleCategory', () => {
     repo.updateRuleCategory(id, 'travel');
     expect(rawRule(id)?.category_id).toBe('travel');
   });
+
+  it('also updates rule_type + priority when provided (faithful manageRules port)', () => {
+    const id = repo.createRule({ ruleType: 'upi_note_keyword', patternValue: 'upd2', categoryId: 'food' });
+    expect(rawRule(id)?.rule_type).toBe('upi_note_keyword');
+    expect(rawRule(id)?.priority).toBe(100);
+    repo.updateRuleCategory(id, 'travel', 'merchant', 200);
+    const row = rawRule(id);
+    expect(row?.category_id).toBe('travel');
+    expect(row?.rule_type).toBe('merchant');
+    expect(row?.priority).toBe(200);
+  });
 });
 
 describe('categoryRuleRepo.deleteRule', () => {

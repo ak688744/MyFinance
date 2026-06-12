@@ -70,10 +70,20 @@ export function makeCategoryRuleRepo(db: Db): CategoryRuleRepo {
       return result.id;
     },
 
-    updateRuleCategory(ruleId, categoryId) {
-      // UPDATE category_rules SET category_id = ? WHERE id = ?
+    updateRuleCategory(ruleId, categoryId, ruleType, priority) {
+      // Source manageRules.updateRuleCategory sets category_id AND rule_type AND
+      // priority. ruleType/priority are optional here so callers that only need
+      // a category change still work:
+      //   UPDATE category_rules SET category_id = ?[, rule_type = ?, priority = ?]
+      //   WHERE id = ?
+      const set: { categoryId: string; ruleType?: typeof ruleType; priority?: number } = {
+        categoryId,
+      };
+      if (ruleType !== undefined) set.ruleType = ruleType;
+      if (priority !== undefined) set.priority = priority;
+
       db.update(categoryRules)
-        .set({ categoryId })
+        .set(set)
         .where(eq(categoryRules.id, ruleId))
         .run();
     },

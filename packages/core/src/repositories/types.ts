@@ -68,7 +68,12 @@ export interface StoredCategoryRule {
 export interface CategoryRuleRepo {
   getActiveRules(): StoredCategoryRule[];
   createRule(r: { ruleType: CategoryRuleType; patternValue: string; categoryId: string; priority?: number; createdFromTransactionId?: number }): number;
-  updateRuleCategory(ruleId: number, categoryId: string): void;
+  updateRuleCategory(
+    ruleId: number,
+    categoryId: string,
+    ruleType?: CategoryRuleType,
+    priority?: number,
+  ): void;
   deleteRule(ruleId: number): void;
 }
 
