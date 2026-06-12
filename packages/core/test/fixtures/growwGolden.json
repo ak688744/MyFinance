@@ -1,0 +1,889 @@
+{
+  "asOfDate": "2026-05-23",
+  "toleranceXirrPct": 0.5,
+  "note": "Anonymized from real Groww exports. Per-scheme XIRR golden-master. PII stripped. External (non-Groww) holdings excluded (no tx history).",
+  "schemes": [
+    {
+      "label": "SCHEME_A",
+      "growwXirrPct": -6.2,
+      "growwCurrentValue": 43909.25,
+      "growwUnits": 485.761,
+      "currentNav": 90.392703,
+      "category": "equity"
+    },
+    {
+      "label": "SCHEME_B",
+      "growwXirrPct": -6.1,
+      "growwCurrentValue": 81239.79,
+      "growwUnits": 766.45,
+      "currentNav": 105.994899,
+      "category": "equity"
+    },
+    {
+      "label": "SCHEME_C",
+      "growwXirrPct": 5.35,
+      "growwCurrentValue": 190310.91,
+      "growwUnits": 6048.894,
+      "currentNav": 31.4621,
+      "category": "equity"
+    },
+    {
+      "label": "SCHEME_D",
+      "growwXirrPct": 10.87,
+      "growwCurrentValue": 338354.26,
+      "growwUnits": 3229.471,
+      "currentNav": 104.7708,
+      "category": "equity"
+    },
+    {
+      "label": "SCHEME_E",
+      "growwXirrPct": 1.56,
+      "growwCurrentValue": 20426.05,
+      "growwUnits": 1423.964,
+      "currentNav": 14.344499,
+      "category": "equity"
+    },
+    {
+      "label": "SCHEME_F",
+      "growwXirrPct": 6.54,
+      "growwCurrentValue": 208964.75,
+      "growwUnits": 5726.254,
+      "currentNav": 36.4924,
+      "category": "hybrid"
+    }
+  ],
+  "transactions": [
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 155.18,
+      "nav": 32.22,
+      "amount": 4999,
+      "date": "2026-05-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 54.85,
+      "nav": 91.16,
+      "amount": 4999,
+      "date": "2026-05-05"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 47.44,
+      "nav": 105.39,
+      "amount": 4999,
+      "date": "2026-05-04"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 161.21,
+      "nav": 31.01,
+      "amount": 4999,
+      "date": "2026-04-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 57.15,
+      "nav": 87.49,
+      "amount": 4999,
+      "date": "2026-04-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 52.29,
+      "nav": 95.61,
+      "amount": 4999,
+      "date": "2026-04-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 154.48,
+      "nav": 32.37,
+      "amount": 4999,
+      "date": "2026-03-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 54.59,
+      "nav": 91.59,
+      "amount": 4999,
+      "date": "2026-03-05"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 49.32,
+      "nav": 101.37,
+      "amount": 4999,
+      "date": "2026-03-02"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 147.81,
+      "nav": 33.83,
+      "amount": 4999,
+      "date": "2026-02-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 53.44,
+      "nav": 93.56,
+      "amount": 4999,
+      "date": "2026-02-05"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 47.37,
+      "nav": 105.54,
+      "amount": 4999,
+      "date": "2026-02-02"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 144.71,
+      "nav": 34.55,
+      "amount": 4999,
+      "date": "2026-01-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 52.45,
+      "nav": 95.32,
+      "amount": 4999,
+      "date": "2026-01-05"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 43.89,
+      "nav": 113.91,
+      "amount": 4999,
+      "date": "2026-01-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 145.42,
+      "nav": 34.38,
+      "amount": 4999,
+      "date": "2025-12-08"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 52.42,
+      "nav": 95.37,
+      "amount": 4999,
+      "date": "2025-12-05"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 42.05,
+      "nav": 118.91,
+      "amount": 4999,
+      "date": "2025-12-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 145.84,
+      "nav": 34.28,
+      "amount": 4999,
+      "date": "2025-11-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 53.31,
+      "nav": 93.78,
+      "amount": 4999,
+      "date": "2025-11-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 41.77,
+      "nav": 119.71,
+      "amount": 4999,
+      "date": "2025-11-03"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 146.47,
+      "nav": 34.14,
+      "amount": 4999,
+      "date": "2025-10-06"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 53.76,
+      "nav": 93.01,
+      "amount": 4999,
+      "date": "2025-10-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 43.59,
+      "nav": 114.7,
+      "amount": 4999,
+      "date": "2025-10-01"
+    },
+    {
+      "scheme": "SCHEME_F",
+      "type": "PURCHASE",
+      "units": 5726.25,
+      "nav": 34.93,
+      "amount": 199990,
+      "date": "2025-09-12"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 145.99,
+      "nav": 34.25,
+      "amount": 4999,
+      "date": "2025-09-08"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 41.77,
+      "nav": 119.71,
+      "amount": 4999,
+      "date": "2025-09-02"
+    },
+    {
+      "scheme": "SCHEME_A",
+      "type": "PURCHASE",
+      "units": 53.8,
+      "nav": 92.94,
+      "amount": 4999,
+      "date": "2025-08-18"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 148.64,
+      "nav": 33.64,
+      "amount": 4999,
+      "date": "2025-08-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 43.03,
+      "nav": 116.2,
+      "amount": 4999,
+      "date": "2025-08-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 143.88,
+      "nav": 34.75,
+      "amount": 4999,
+      "date": "2025-07-07"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 41.73,
+      "nav": 119.81,
+      "amount": 4999,
+      "date": "2025-07-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 146.07,
+      "nav": 34.23,
+      "amount": 4999,
+      "date": "2025-06-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 43.86,
+      "nav": 114,
+      "amount": 4999,
+      "date": "2025-06-02"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 153.04,
+      "nav": 32.67,
+      "amount": 4999,
+      "date": "2025-05-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 46.31,
+      "nav": 107.95,
+      "amount": 4999,
+      "date": "2025-05-02"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 163.82,
+      "nav": 30.52,
+      "amount": 4999,
+      "date": "2025-04-07"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 47.92,
+      "nav": 104.34,
+      "amount": 4999,
+      "date": "2025-04-01"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 161.69,
+      "nav": 30.92,
+      "amount": 4999,
+      "date": "2025-03-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 49.26,
+      "nav": 101.5,
+      "amount": 4999,
+      "date": "2025-03-03"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 155.37,
+      "nav": 32.18,
+      "amount": 4999,
+      "date": "2025-02-06"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 45.4,
+      "nav": 110.14,
+      "amount": 4999,
+      "date": "2025-02-03"
+    },
+    {
+      "scheme": "SCHEME_E",
+      "type": "PURCHASE",
+      "units": 1423.96,
+      "nav": 14.04,
+      "amount": 19999,
+      "date": "2025-01-09"
+    },
+    {
+      "scheme": "SCHEME_B",
+      "type": "PURCHASE",
+      "units": 39.47,
+      "nav": 126.69,
+      "amount": 4999,
+      "date": "2024-12-26"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 154.53,
+      "nav": 32.35,
+      "amount": 4999,
+      "date": "2024-12-23"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 154.25,
+      "nav": 32.41,
+      "amount": 4999,
+      "date": "2024-09-09"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 159.11,
+      "nav": 31.42,
+      "amount": 4999,
+      "date": "2024-08-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 159.42,
+      "nav": 31.36,
+      "amount": 4999,
+      "date": "2024-07-10"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 168.94,
+      "nav": 29.59,
+      "amount": 4999,
+      "date": "2024-06-07"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 174.47,
+      "nav": 28.66,
+      "amount": 4999,
+      "date": "2024-05-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 175.97,
+      "nav": 28.41,
+      "amount": 4999,
+      "date": "2024-04-12"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 176.99,
+      "nav": 28.25,
+      "amount": 4999,
+      "date": "2024-03-11"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 179.09,
+      "nav": 27.92,
+      "amount": 4999,
+      "date": "2024-02-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 186.66,
+      "nav": 26.78,
+      "amount": 4999,
+      "date": "2024-01-10"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 190.41,
+      "nav": 26.26,
+      "amount": 4999,
+      "date": "2023-12-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 204.07,
+      "nav": 24.5,
+      "amount": 4999,
+      "date": "2023-11-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 207.3,
+      "nav": 24.12,
+      "amount": 4999,
+      "date": "2023-10-09"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 205.53,
+      "nav": 24.33,
+      "amount": 4999,
+      "date": "2023-09-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 214.79,
+      "nav": 23.28,
+      "amount": 4999,
+      "date": "2023-08-09"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 218.21,
+      "nav": 22.91,
+      "amount": 4999,
+      "date": "2023-07-07"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 225.42,
+      "nav": 22.18,
+      "amount": 4999,
+      "date": "2023-06-08"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 229.33,
+      "nav": 21.8,
+      "amount": 4999,
+      "date": "2023-05-10"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 72.38,
+      "nav": 69.07,
+      "amount": 4999,
+      "date": "2023-04-06"
+    },
+    {
+      "scheme": "SCHEME_C",
+      "type": "PURCHASE",
+      "units": 244.8,
+      "nav": 20.42,
+      "amount": 4999,
+      "date": "2023-03-29"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 72.75,
+      "nav": 68.72,
+      "amount": 4999,
+      "date": "2023-03-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 72.53,
+      "nav": 68.94,
+      "amount": 4999,
+      "date": "2023-02-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 69.81,
+      "nav": 71.62,
+      "amount": 4999,
+      "date": "2023-01-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 67.06,
+      "nav": 74.55,
+      "amount": 4999,
+      "date": "2022-12-02"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 67.16,
+      "nav": 74.45,
+      "amount": 4999,
+      "date": "2022-11-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 67.5,
+      "nav": 74.07,
+      "amount": 4999,
+      "date": "2022-10-06"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 65.53,
+      "nav": 76.3,
+      "amount": 4999,
+      "date": "2022-09-02"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 67.67,
+      "nav": 73.88,
+      "amount": 4999,
+      "date": "2022-08-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 76.2,
+      "nav": 65.61,
+      "amount": 4999,
+      "date": "2022-07-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 73.45,
+      "nav": 68.07,
+      "amount": 4999,
+      "date": "2022-06-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 69.55,
+      "nav": 71.89,
+      "amount": 4999,
+      "date": "2022-05-05"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 64.21,
+      "nav": 77.86,
+      "amount": 4999,
+      "date": "2022-04-05"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 69.73,
+      "nav": 71.7,
+      "amount": 4999,
+      "date": "2022-03-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 64.01,
+      "nav": 78.11,
+      "amount": 4999,
+      "date": "2022-02-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 59.63,
+      "nav": 83.85,
+      "amount": 4999,
+      "date": "2022-01-05"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 61.17,
+      "nav": 81.74,
+      "amount": 4999,
+      "date": "2021-12-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 59.98,
+      "nav": 83.35,
+      "amount": 4999,
+      "date": "2021-11-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 59.79,
+      "nav": 83.62,
+      "amount": 4999,
+      "date": "2021-10-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 60.97,
+      "nav": 82.01,
+      "amount": 4999,
+      "date": "2021-09-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 65.77,
+      "nav": 76.02,
+      "amount": 4999,
+      "date": "2021-08-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 68.08,
+      "nav": 73.44,
+      "amount": 4999,
+      "date": "2021-07-02"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 69.93,
+      "nav": 71.5,
+      "amount": 4999,
+      "date": "2021-06-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 74.44,
+      "nav": 67.17,
+      "amount": 4999,
+      "date": "2021-05-05"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 75.62,
+      "nav": 66.11,
+      "amount": 4999,
+      "date": "2021-04-05"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 72.33,
+      "nav": 69.13,
+      "amount": 4999,
+      "date": "2021-03-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 76.38,
+      "nav": 65.46,
+      "amount": 4999,
+      "date": "2021-02-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 76.94,
+      "nav": 64.98,
+      "amount": 4999,
+      "date": "2021-01-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 82.63,
+      "nav": 60.51,
+      "amount": 4999,
+      "date": "2020-12-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 94.53,
+      "nav": 52.89,
+      "amount": 4999,
+      "date": "2020-11-02"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 97.56,
+      "nav": 51.25,
+      "amount": 4999,
+      "date": "2020-10-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 97.53,
+      "nav": 51.26,
+      "amount": 4999,
+      "date": "2020-09-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 104,
+      "nav": 48.08,
+      "amount": 4999,
+      "date": "2020-08-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 105.8,
+      "nav": 47.26,
+      "amount": 4999,
+      "date": "2020-07-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 109.63,
+      "nav": 45.61,
+      "amount": 5000,
+      "date": "2020-06-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 113.69,
+      "nav": 43.98,
+      "amount": 5000,
+      "date": "2020-05-04"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 124.15,
+      "nav": 40.27,
+      "amount": 5000,
+      "date": "2020-04-01"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 94.69,
+      "nav": 52.8,
+      "amount": 5000,
+      "date": "2020-03-02"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 92.61,
+      "nav": 53.99,
+      "amount": 5000,
+      "date": "2020-02-03"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 96.68,
+      "nav": 51.72,
+      "amount": 5000,
+      "date": "2019-12-09"
+    },
+    {
+      "scheme": "SCHEME_D",
+      "type": "PURCHASE",
+      "units": 95.41,
+      "nav": 52.41,
+      "amount": 5000,
+      "date": "2019-11-25"
+    }
+  ]
+}
