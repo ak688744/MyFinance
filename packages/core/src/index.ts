@@ -30,6 +30,7 @@ export type {
   CategoryRuleRepo,
   ExpenseTransactionRepo,
   ImportHistoryRepo,
+  ImportRecord,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------

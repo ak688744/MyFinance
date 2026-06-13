@@ -4,6 +4,9 @@ import {
   getPeriodReturns,
   getLatestNAV,
   getNAVForDate,
+  getHoldings,
+  getAssetAllocation,
+  getAccounts,
   type NavLookup,
   type Period,
 } from '@myfinance/core';
@@ -54,5 +57,32 @@ export async function investmentRoutes(app: FastifyInstance): Promise<void> {
       { period },
     );
     return { data: returns };
+  });
+
+  // GET /investments/holdings?account&sortBy&sortOrder
+  app.get<{ Querystring: { account?: string; sortBy?: string; sortOrder?: string } }>(
+    '/investments/holdings',
+    async (req) => {
+      const { account, sortBy, sortOrder } = req.query;
+      const filters = {
+        ...(account ? { account } : {}),
+        ...(sortBy ? { sortBy: sortBy as any } : {}),
+        ...(sortOrder ? { sortOrder: sortOrder as any } : {}),
+      };
+      const holdings = await getHoldings({ txRepo: app.repos.txRepo, nav }, filters);
+      return { data: holdings };
+    },
+  );
+
+  // GET /investments/allocation?account
+  app.get<{ Querystring: { account?: string } }>('/investments/allocation', async (req) => {
+    const filters = req.query.account ? { account: req.query.account } : undefined;
+    const allocation = await getAssetAllocation({ txRepo: app.repos.txRepo, nav }, filters);
+    return { data: allocation };
+  });
+
+  // GET /investments/accounts
+  app.get('/investments/accounts', async () => {
+    return { data: getAccounts({ txRepo: app.repos.txRepo }) };
   });
 }

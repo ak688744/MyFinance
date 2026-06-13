@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { importHistory, investmentImportHistory } from '../db/schema';
-import type { ImportHistoryRepo } from './types';
+import type { ImportHistoryRepo, ImportRecord } from './types';
 
 /**
  * Faithful port of the import_history insert in
@@ -73,6 +73,46 @@ export function makeImportHistoryRepo(db: Db): ImportHistoryRepo {
       db.delete(investmentImportHistory)
         .where(eq(investmentImportHistory.id, id))
         .run();
+    },
+
+    listAll(): ImportRecord[] {
+      const expenses = db
+        .select()
+        .from(importHistory)
+        .all()
+        .map((r): ImportRecord => ({
+          kind: 'expense',
+          id: r.id,
+          sourceName: r.sourceName,
+          importType: null,
+          recordCount: r.transactionCount,
+          accountName: null,
+          investmentApp: null,
+          importedAt: r.importedAt,
+        }));
+
+      const investments = db
+        .select()
+        .from(investmentImportHistory)
+        .all()
+        .map((r): ImportRecord => ({
+          kind: 'investment',
+          id: r.id,
+          sourceName: r.fileName ?? null,
+          importType: r.importType,
+          recordCount: r.recordCount ?? null,
+          accountName: r.accountName,
+          investmentApp: r.investmentApp,
+          importedAt: r.importedAt,
+        }));
+
+      return [...expenses, ...investments].sort((a, b) => {
+        if (a.importedAt !== b.importedAt) {
+          return a.importedAt < b.importedAt ? 1 : -1; // desc
+        }
+        if (a.kind !== b.kind) return a.kind < b.kind ? 1 : -1;
+        return b.id - a.id;
+      });
     },
   };
 }

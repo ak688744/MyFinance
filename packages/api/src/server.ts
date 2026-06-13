@@ -1,18 +1,27 @@
+// packages/api/src/server.ts
 import Fastify, { type FastifyInstance } from 'fastify';
+import multipart from '@fastify/multipart';
 import { loadConfig } from './config';
 import { registerErrorHandler } from './errors';
 import { registerDb } from './plugins/db';
 import { healthRoutes } from './routes/health';
 import { transactionRoutes } from './routes/transactions';
 import { investmentRoutes } from './routes/investments';
+import { importRoutes, type AmfiMatch } from './routes/imports';
+import { categoryRoutes } from './routes/categories';
 
 export type BuildServerOpts = {
   dbPath?: string;
+  /**
+   * Post-import AMFI auto-match injected into the holdings import. Defaults to
+   * the real network matcher (core). Tests pass a no-network stub.
+   */
+  amfiMatch?: AmfiMatch;
 };
 
 /**
  * Build (but do NOT listen) a fully-wired Fastify instance: error handler,
- * DB + repos decoration, and the read-only routes. Tests import this and use
+ * DB + repos decoration, multipart, and the routes. Tests import this and use
  * `app.inject()`; the entrypoint block below calls `listen` for real runs.
  */
 export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyInstance> {
@@ -22,6 +31,10 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
 
   registerErrorHandler(app);
 
+  await app.register(multipart, {
+    limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+  });
+
   // Decorate the instance with db/sqlite/repos. Done directly (not via
   // app.register) so the decorations live on the root instance, not an
   // encapsulated child scope.
@@ -30,6 +43,8 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
   await app.register(investmentRoutes);
+  await app.register(categoryRoutes);
+  await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
 
   return app;
 }

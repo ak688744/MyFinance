@@ -124,6 +124,22 @@ export interface ExpenseTransactionRepo {
   }): number;
 }
 
+export type ImportRecord = {
+  kind: 'expense' | 'investment';
+  id: number;
+  /** expense: source_name; investment: file_name (may be null). */
+  sourceName: string | null;
+  /** investment only: 'holdings' | 'transactions'; null for expense. */
+  importType: 'holdings' | 'transactions' | null;
+  /** expense: transaction_count; investment: record_count (may be null). */
+  recordCount: number | null;
+  /** investment only; null for expense. */
+  accountName: string | null;
+  investmentApp: string | null;
+  /** ISO timestamp (imported_at). */
+  importedAt: string;
+};
+
 export interface ImportHistoryRepo {
   create(r: { sourceName: string; sourceType: string; transactionCount: number }): number;
   createInvestmentImport(r: {
@@ -143,4 +159,10 @@ export interface ImportHistoryRepo {
   }): { id: number }[];
   /** DELETE FROM investment_import_history WHERE id = ?. */
   deleteInvestmentImport(id: number): void;
+  /**
+   * Unified, date-descending list of all import runs across both expense
+   * (import_history) and investment (investment_import_history) tables.
+   * Non-financial read used by the API's GET /imports.
+   */
+  listAll(): ImportRecord[];
 }
