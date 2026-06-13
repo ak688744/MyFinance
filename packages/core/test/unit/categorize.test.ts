@@ -211,6 +211,9 @@ function makeFakeTxRepo(
     insertIgnore() {
       throw new Error('not used');
     },
+    updateAccount() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }

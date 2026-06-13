@@ -118,6 +118,7 @@ describe('expenseTransactionRepo.insertIgnore', () => {
     sourceType: 'xls',
     importHistoryId: 1,
     dedupeKey,
+    accountId: null,
   });
 
   it('inserts a new row (returns 1) and persists all columns', () => {

@@ -87,6 +87,7 @@ export function importTransactions(
         sourceType: transaction.sourceType,
         importHistoryId,
         dedupeKey: transaction.dedupeKey,
+        accountId: null,
       });
     }
     return inserted;
