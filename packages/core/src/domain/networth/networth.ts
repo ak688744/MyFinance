@@ -1,9 +1,7 @@
-import { formatDate, parseDate as parseLocal } from '../xirr';
-import { getHoldings } from '../portfolio';
+import { parseDate as parseLocal } from '../xirr';
 import { valueAsset, valueComputedAsset, valueManualAsset } from '../valuation';
 import { loanStatus } from '../loans/amortization';
 import type {
-  InvestmentTxRepo,
   AssetRepo,
   AssetContributionRepo,
   AssetRateRepo,
@@ -12,7 +10,6 @@ import type {
 } from '../../repositories/types';
 import type {
   Holding,
-  NavLookup,
   ValuedAsset,
   NetWorthSummary,
   NetWorthClassBreakdown,
