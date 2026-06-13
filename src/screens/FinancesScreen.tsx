@@ -14,6 +14,7 @@ type TransactionPreview = {
   category_id: string | null;
   merchant_key: string | null;
   upi_note_keyword: string | null;
+  balance: number | null;
 };
 
 type CategoryRecord = {
@@ -35,8 +36,6 @@ type CategoryInsight = {
   transactionCount: number;
 };
 
-type TimePeriod = '7d' | '30d' | 'prev_month' | 'custom';
-
 type CustomDateRange = {
   start: Date;
   end: Date;
@@ -48,8 +47,8 @@ type FinancesScreenProps = {
   categoryNameById: Record<string, string>;
   filteredTransactions: TransactionPreview[];
   displayedTransactions: TransactionPreview[];
-  selectedFilter: string;
-  selectedFilterName: string;
+  selectedFilters: string[];
+  selectedFilterNames: string;
   selectedCategoryTotal: number | null;
   directionFilter: 'debit' | 'credit';
   debitTotal: number;
@@ -58,14 +57,15 @@ type FinancesScreenProps = {
   editingTransactionId: number | null;
   showAllTransactions: boolean;
   isCategoryFilterOpen: boolean;
-  timePeriod: TimePeriod;
-  timePeriodLabels: Record<TimePeriod, string>;
-  timePeriods: readonly TimePeriod[];
+  selectedYear: number;
+  selectedMonth: number;
+  monthLabel: string;
   categoryInsights: CategoryInsight[];
-  monthlyAverage: number;
-  highestCategory: CategoryInsight | null;
+  openingBalance: number;
+  closingBalance: number;
   onToggleDirectionFilter: (direction: 'debit' | 'credit') => void;
-  onSelectFilter: (filterId: string) => void;
+  onToggleFilter: (filterId: string) => void;
+  onSelectAllFilter: () => void;
   onToggleCategoryFilter: () => void;
   onGoToImport: () => void;
   onToggleTransactionEdit: (transactionId: number) => void;
@@ -73,12 +73,24 @@ type FinancesScreenProps = {
     transaction: TransactionPreview,
     categoryId: string | null
   ) => void;
+  pendingCategoryChange: {
+    transaction: TransactionPreview;
+    categoryId: string | null;
+  } | null;
+  showRuleTypeSelection: boolean;
+  onApplyOneTime: () => void;
+  onShowRuleOptions: () => void;
+  onApplyWithRule: (ruleType: 'merchant' | 'upi_note_keyword') => void;
+  onCancelCategoryChange: () => void;
   onToggleShowAllTransactions: () => void;
-  onSelectTimePeriod: (period: TimePeriod) => void;
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
+  onOpenMonthPicker: () => void;
   isCustomPickerOpen: boolean;
   customDateRange: CustomDateRange | null;
   onCloseCustomPicker: () => void;
   onApplyCustomRange: (range: CustomDateRange) => void;
+  onSelectMonth: (year: number, month: number) => void;
 };
 
 function formatCurrency(amount: number) {
@@ -117,8 +129,8 @@ export function FinancesScreen({
   categoryNameById,
   filteredTransactions,
   displayedTransactions,
-  selectedFilter,
-  selectedFilterName,
+  selectedFilters,
+  selectedFilterNames,
   selectedCategoryTotal,
   directionFilter,
   debitTotal,
@@ -127,24 +139,34 @@ export function FinancesScreen({
   editingTransactionId,
   showAllTransactions,
   isCategoryFilterOpen,
-  timePeriod,
-  timePeriodLabels,
-  timePeriods,
+  selectedYear,
+  selectedMonth,
+  monthLabel,
   categoryInsights,
-  monthlyAverage,
-  highestCategory,
+  openingBalance,
+  closingBalance,
   onToggleDirectionFilter,
-  onSelectFilter,
+  onToggleFilter,
+  onSelectAllFilter,
   onToggleCategoryFilter,
   onGoToImport,
   onToggleTransactionEdit,
   onCategoryUpdate,
+  pendingCategoryChange,
+  showRuleTypeSelection,
+  onApplyOneTime,
+  onShowRuleOptions,
+  onApplyWithRule,
+  onCancelCategoryChange,
   onToggleShowAllTransactions,
-  onSelectTimePeriod,
+  onPreviousMonth,
+  onNextMonth,
+  onOpenMonthPicker,
   isCustomPickerOpen,
   customDateRange,
   onCloseCustomPicker,
   onApplyCustomRange,
+  onSelectMonth,
 }: FinancesScreenProps) {
   // Local state for date picker
   const [tempStartDate, setTempStartDate] = useState<Date>(
@@ -155,6 +177,15 @@ export function FinancesScreen({
   );
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+
+  // Sort category insights: selected first, then unselected
+  const sortedCategoryInsights = [...categoryInsights].sort((a, b) => {
+    const aSelected = selectedFilters.includes(a.categoryId);
+    const bSelected = selectedFilters.includes(b.categoryId);
+    if (aSelected && !bSelected) return -1;
+    if (!aSelected && bSelected) return 1;
+    return 0;
+  });
 
   // Quick select presets for custom picker
   const applyQuickSelect = (days: number) => {
@@ -215,37 +246,29 @@ export function FinancesScreen({
       ? Math.round(((creditTotal - debitTotal) / creditTotal) * 100)
       : 0;
 
+  // Check if we can go to next month (can't go past current month)
+  const now = new Date();
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
   return (
     <>
-      {/* Time Period Selector */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.timePeriodRow}
-      >
-        {timePeriods.map((period) => {
-          const isSelected = timePeriod === period;
-          return (
-            <Pressable
-              key={period}
-              onPress={() => onSelectTimePeriod(period)}
-              style={[
-                styles.timePeriodPill,
-                isSelected && styles.timePeriodPillSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.timePeriodText,
-                  isSelected && styles.timePeriodTextSelected,
-                ]}
-              >
-                {timePeriodLabels[period]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {/* Month Selector */}
+      <View style={styles.monthSelectorRow}>
+        <Pressable onPress={onPreviousMonth} style={styles.monthArrowButton}>
+          <Text style={styles.monthArrowText}>‹</Text>
+        </Pressable>
+        <Pressable onPress={onOpenMonthPicker} style={styles.monthLabelButton}>
+          <Text style={styles.monthLabelText}>{monthLabel}</Text>
+          <Text style={styles.monthDropdownIcon}>▾</Text>
+        </Pressable>
+        <Pressable
+          onPress={onNextMonth}
+          style={[styles.monthArrowButton, isCurrentMonth && styles.monthArrowDisabled]}
+          disabled={isCurrentMonth}
+        >
+          <Text style={[styles.monthArrowText, isCurrentMonth && styles.monthArrowTextDisabled]}>›</Text>
+        </Pressable>
+      </View>
 
       {/* Direction Toggle */}
       <View style={styles.directionToggleRow}>
@@ -343,26 +366,22 @@ export function FinancesScreen({
         )}
       </View>
 
-      {/* Insights Section */}
-      <View style={styles.insightsSection}>
-        <Text style={styles.sectionTitle}>Insights</Text>
-        <View style={styles.insightsRow}>
-          <View style={styles.insightCard}>
-            <Text style={styles.insightLabel}>MONTHLY AVG.</Text>
-            <Text style={styles.insightValue}>
-              {formatCompactCurrency(monthlyAverage)}
-            </Text>
-            <Text style={styles.insightSubtext}>projected spend</Text>
-          </View>
-          <View style={styles.insightCard}>
-            <Text style={styles.insightLabel}>HIGHEST EXPENSE</Text>
-            <Text style={styles.insightValue}>
-              {highestCategory ? formatCompactCurrency(highestCategory.amount) : '—'}
-            </Text>
-            <Text style={styles.insightSubtext}>
-              {highestCategory?.categoryName ?? 'No data'}
-            </Text>
-          </View>
+      {/* Balance Section */}
+      <View style={styles.balanceSection}>
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>OPENING BALANCE</Text>
+          <Text style={[styles.balanceValue, openingBalance >= 0 ? styles.creditText : styles.debitText]}>
+            {formatCurrency(Math.abs(openingBalance))}
+          </Text>
+          <Text style={styles.balanceSubtext}>start of period</Text>
+        </View>
+        <View style={styles.balanceDivider} />
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>CLOSING BALANCE</Text>
+          <Text style={[styles.balanceValue, closingBalance >= 0 ? styles.creditText : styles.debitText]}>
+            {formatCurrency(Math.abs(closingBalance))}
+          </Text>
+          <Text style={styles.balanceSubtext}>end of period</Text>
         </View>
       </View>
 
@@ -375,33 +394,59 @@ export function FinancesScreen({
             </Text>
             <Pressable onPress={onToggleCategoryFilter}>
               <Text style={styles.categoryFilterButton}>
-                {selectedFilter === 'all' ? 'All' : selectedFilterName} ▾
+                {selectedFilters.includes('all')
+                  ? 'All'
+                  : selectedFilters.length === 1
+                    ? selectedFilterNames
+                    : `${selectedFilters.length} selected`}{' '}
+                ▾
               </Text>
             </Pressable>
           </View>
 
           {isCategoryFilterOpen ? (
             <View style={styles.dropdownMenu}>
-              {transactionFilters.map((filter) => (
-                <Pressable
-                  key={filter.id}
-                  onPress={() => onSelectFilter(filter.id)}
-                  style={[
-                    styles.dropdownOption,
-                    selectedFilter === filter.id && styles.dropdownOptionSelected,
-                  ]}
-                >
-                  <Text
+              {transactionFilters.map((filter) => {
+                const isSelected =
+                  filter.id === 'all'
+                    ? selectedFilters.includes('all')
+                    : selectedFilters.includes(filter.id);
+                return (
+                  <Pressable
+                    key={filter.id}
+                    onPress={() =>
+                      filter.id === 'all'
+                        ? onSelectAllFilter()
+                        : onToggleFilter(filter.id)
+                    }
                     style={[
-                      styles.dropdownOptionText,
-                      selectedFilter === filter.id &&
-                        styles.dropdownOptionTextSelected,
+                      styles.dropdownOption,
+                      isSelected && styles.dropdownOptionSelected,
                     ]}
                   >
-                    {filter.id === 'all' ? 'All Categories' : filter.name}
-                  </Text>
-                </Pressable>
-              ))}
+                    <View style={styles.dropdownOptionRow}>
+                      <View
+                        style={[
+                          styles.checkbox,
+                          isSelected && styles.checkboxSelected,
+                        ]}
+                      >
+                        {isSelected ? (
+                          <Text style={styles.checkmark}>✓</Text>
+                        ) : null}
+                      </View>
+                      <Text
+                        style={[
+                          styles.dropdownOptionText,
+                          isSelected && styles.dropdownOptionTextSelected,
+                        ]}
+                      >
+                        {filter.id === 'all' ? 'All Categories' : filter.name}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
 
@@ -410,32 +455,35 @@ export function FinancesScreen({
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryTilesRow}
           >
-            {categoryInsights.map((insight) => (
-              <Pressable
-                key={insight.categoryId}
-                onPress={() => onSelectFilter(insight.categoryId)}
-                style={[
-                  styles.categoryTile,
-                  selectedFilter === insight.categoryId && styles.categoryTileSelected,
-                ]}
-              >
-                <Text style={styles.categoryTilePercent}>
-                  {insight.percentage.toFixed(0)}%
-                </Text>
-                <Text style={styles.categoryTileName} numberOfLines={1}>
-                  {insight.categoryName}
-                </Text>
-                <Text style={styles.categoryTileAmount}>
-                  {formatCompactCurrency(insight.amount)}
-                </Text>
-              </Pressable>
-            ))}
+            {sortedCategoryInsights.map((insight) => {
+              const isSelected = selectedFilters.includes(insight.categoryId);
+              return (
+                <Pressable
+                  key={insight.categoryId}
+                  onPress={() => onToggleFilter(insight.categoryId)}
+                  style={[
+                    styles.categoryTile,
+                    isSelected && styles.categoryTileSelected,
+                  ]}
+                >
+                  <Text style={styles.categoryTilePercent}>
+                    {insight.percentage.toFixed(0)}%
+                  </Text>
+                  <Text style={styles.categoryTileName} numberOfLines={1}>
+                    {insight.categoryName}
+                  </Text>
+                  <Text style={styles.categoryTileAmount}>
+                    {formatCompactCurrency(insight.amount)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
 
-          {selectedFilter !== 'all' && selectedCategoryTotal !== null ? (
+          {!selectedFilters.includes('all') && selectedCategoryTotal !== null ? (
             <View style={styles.focusBanner}>
               <Text style={styles.focusLabel}>
-                Focus: {selectedFilterName}
+                Focus: {selectedFilters.length === 1 ? selectedFilterNames : `${selectedFilters.length} categories`}
               </Text>
               <Text style={styles.focusValue}>
                 {formatCurrency(selectedCategoryTotal)}
@@ -467,100 +515,106 @@ export function FinancesScreen({
           </Pressable>
         </View>
       ) : (
-        <>
-          {displayedTransactions.map((transaction) => {
+        <View style={styles.transactionsList}>
+          {displayedTransactions.map((transaction, index) => {
             const presentation = presentTransaction({
               description: transaction.description,
               merchantKey: transaction.merchant_key,
               upiNoteKeyword: transaction.upi_note_keyword,
             });
             const isDebit = transaction.direction === 'debit';
+            const isLast = index === displayedTransactions.length - 1;
+            const isNearBottom = index >= displayedTransactions.length - 2;
 
             return (
-              <View key={`txn-${transaction.id}`} style={styles.transactionCard}>
-                <View style={styles.transactionTopRow}>
-                  <View
-                    style={[
-                      styles.transactionAccent,
-                      isDebit ? styles.debitAccent : styles.creditAccent,
-                    ]}
-                  />
-                  <View style={styles.transactionContent}>
-                    <Text style={styles.transactionMerchant} numberOfLines={1}>
-                      {presentation.merchantLabel}
+              <View
+                key={`txn-${transaction.id}`}
+                style={[styles.transactionRow, !isLast && styles.transactionRowBorder]}
+              >
+                <Text style={styles.transactionDate}>
+                  {new Date(transaction.transaction_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                </Text>
+                <View style={styles.transactionInfo}>
+                  <Text style={styles.transactionMerchant} numberOfLines={1}>
+                    {presentation.merchantLabel}
+                  </Text>
+                  {presentation.noteLabel ? (
+                    <Text style={styles.transactionNote} numberOfLines={1}>
+                      {presentation.noteLabel}
                     </Text>
-                    {presentation.noteLabel ? (
-                      <Text style={styles.transactionNote} numberOfLines={1}>
-                        {presentation.noteLabel}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View style={styles.transactionAmountBlock}>
-                    <Text
+                  ) : null}
+                  <View style={styles.categoryWrapper}>
+                    <Pressable
+                      onPress={() => onToggleTransactionEdit(transaction.id)}
                       style={[
-                        styles.transactionAmount,
-                        isDebit ? styles.debitText : styles.creditText,
+                        styles.categoryPill,
+                        editingTransactionId === transaction.id && styles.categoryPillActive,
                       ]}
                     >
-                      {isDebit ? '-' : '+'}
-                      {formatCurrency(transaction.amount)}
-                    </Text>
-                    <Text style={styles.transactionDate}>
-                      {formatDisplayDate(transaction.transaction_date)}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.transactionFooter}>
-                  <Pressable
-                    onPress={() => onToggleTransactionEdit(transaction.id)}
-                    style={styles.categoryTag}
-                  >
-                    <Text style={styles.categoryTagIcon}>✎</Text>
-                    <Text style={styles.categoryTagText}>
-                      {transaction.category_id
-                        ? categoryNameById[transaction.category_id] ??
-                          transaction.category_id
-                        : 'Uncategorized'}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {editingTransactionId === transaction.id ? (
-                  <View style={styles.inlineDropdown}>
-                    <Pressable
-                      onPress={() => onCategoryUpdate(transaction, null)}
-                      style={styles.dropdownOption}
-                    >
-                      <Text style={styles.dropdownOptionText}>Uncategorized</Text>
+                      <Text style={styles.categoryPillText} numberOfLines={1}>
+                        {transaction.category_id
+                          ? categoryNameById[transaction.category_id] ?? transaction.category_id
+                          : 'Uncategorized'}
+                      </Text>
+                      <Text style={styles.categoryPillIcon}>▾</Text>
                     </Pressable>
-                    {categories.map((category) => (
-                      <Pressable
-                        key={`${transaction.id}-${category.id}`}
-                        onPress={() => onCategoryUpdate(transaction, category.id)}
+                    {editingTransactionId === transaction.id ? (
+                      <ScrollView
                         style={[
-                          styles.dropdownOption,
-                          transaction.category_id === category.id &&
-                            styles.dropdownOptionSelected,
+                          styles.categoryDropdown,
+                          isNearBottom && styles.categoryDropdownAbove,
                         ]}
+                        nestedScrollEnabled
                       >
-                        <Text
+                        <Pressable
+                          onPress={() => onCategoryUpdate(transaction, null)}
                           style={[
-                            styles.dropdownOptionText,
-                            transaction.category_id === category.id &&
-                              styles.dropdownOptionTextSelected,
+                            styles.categoryDropdownOption,
+                            !transaction.category_id && styles.categoryDropdownOptionSelected,
                           ]}
                         >
-                          {category.name}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Text style={[
+                            styles.categoryDropdownText,
+                            !transaction.category_id && styles.categoryDropdownTextSelected,
+                          ]}>Uncategorized</Text>
+                        </Pressable>
+                        {categories.map((category) => (
+                          <Pressable
+                            key={`${transaction.id}-${category.id}`}
+                            onPress={() => onCategoryUpdate(transaction, category.id)}
+                            style={[
+                              styles.categoryDropdownOption,
+                              transaction.category_id === category.id &&
+                                styles.categoryDropdownOptionSelected,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryDropdownText,
+                                transaction.category_id === category.id &&
+                                  styles.categoryDropdownTextSelected,
+                              ]}
+                            >
+                              {category.name}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    ) : null}
                   </View>
-                ) : null}
+                </View>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    isDebit ? styles.debitText : styles.creditText,
+                  ]}
+                >
+                  {isDebit ? '-' : '+'}₹{transaction.amount.toLocaleString('en-IN')}
+                </Text>
               </View>
             );
           })}
-        </>
+        </View>
       )}
 
       {filteredTransactions.length > 8 ? (
@@ -581,7 +635,7 @@ export function FinancesScreen({
         <Text style={styles.syncText}>Local DB Synced</Text>
       </View>
 
-      {/* Custom Date Range Picker Modal */}
+      {/* Month Picker Modal */}
       <Modal
         visible={isCustomPickerOpen}
         transparent
@@ -589,147 +643,259 @@ export function FinancesScreen({
         onRequestClose={onCloseCustomPicker}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Custom Range</Text>
-              <Pressable onPress={onCloseCustomPicker} style={styles.modalClose}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </Pressable>
-            </View>
-
-            {/* Date Selection Fields */}
-            <View style={styles.dateRangeDisplay}>
-              <Pressable
-                style={styles.dateFieldTappable}
-                onPress={() => setShowStartPicker(true)}
-              >
-                <Text style={styles.dateFieldLabel}>START DATE</Text>
-                <Text style={styles.dateFieldValue}>
-                  {formatDateShort(tempStartDate)}
-                </Text>
-              </Pressable>
-              <Text style={styles.dateRangeSeparator}>→</Text>
-              <Pressable
-                style={styles.dateFieldTappable}
-                onPress={() => setShowEndPicker(true)}
-              >
-                <Text style={styles.dateFieldLabel}>END DATE</Text>
-                <Text style={styles.dateFieldValue}>
-                  {formatDateShort(tempEndDate)}
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Native Date Pickers */}
-            {showStartPicker && (
-              <View style={styles.pickerContainer}>
-                <DateTimePicker
-                  value={tempStartDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleStartDateChange}
-                  maximumDate={tempEndDate}
-                />
-                {Platform.OS === 'ios' && (
-                  <Pressable
-                    style={styles.pickerDoneButton}
-                    onPress={() => setShowStartPicker(false)}
-                  >
-                    <Text style={styles.pickerDoneText}>Done</Text>
-                  </Pressable>
-                )}
+          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Time Range</Text>
+                <Pressable onPress={onCloseCustomPicker} style={styles.modalClose}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </Pressable>
               </View>
-            )}
 
-            {showEndPicker && (
-              <View style={styles.pickerContainer}>
-                <DateTimePicker
-                  value={tempEndDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleEndDateChange}
-                  minimumDate={tempStartDate}
-                  maximumDate={new Date()}
-                />
-                {Platform.OS === 'ios' && (
-                  <Pressable
-                    style={styles.pickerDoneButton}
-                    onPress={() => setShowEndPicker(false)}
-                  >
-                    <Text style={styles.pickerDoneText}>Done</Text>
-                  </Pressable>
-                )}
+              {/* Quick Month Selection */}
+              <Text style={styles.quickSelectLabel}>SELECT MONTH</Text>
+              <View style={styles.monthGrid}>
+                {(() => {
+                  const months = [];
+                  const currentDate = new Date();
+                  // Show last 12 months
+                  for (let i = 0; i < 12; i++) {
+                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const isSelected = year === selectedYear && month === selectedMonth && !customDateRange;
+                    const label = date.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+                    months.push(
+                      <Pressable
+                        key={`${year}-${month}`}
+                        style={[styles.monthButton, isSelected && styles.monthButtonSelected]}
+                        onPress={() => onSelectMonth(year, month)}
+                      >
+                        <Text style={[styles.monthButtonText, isSelected && styles.monthButtonTextSelected]}>
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  }
+                  return months;
+                })()}
               </View>
+
+              {/* Custom Date Range Section */}
+              <Text style={styles.quickSelectLabel}>CUSTOM DATE RANGE</Text>
+              <View style={styles.dateRangeDisplay}>
+                <Pressable
+                  style={styles.dateFieldTappable}
+                  onPress={() => setShowStartPicker(true)}
+                >
+                  <Text style={styles.dateFieldLabel}>START DATE</Text>
+                  <Text style={styles.dateFieldValue}>
+                    {formatDateShort(tempStartDate)}
+                  </Text>
+                </Pressable>
+                <Text style={styles.dateRangeSeparator}>→</Text>
+                <Pressable
+                  style={styles.dateFieldTappable}
+                  onPress={() => setShowEndPicker(true)}
+                >
+                  <Text style={styles.dateFieldLabel}>END DATE</Text>
+                  <Text style={styles.dateFieldValue}>
+                    {formatDateShort(tempEndDate)}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Native Date Pickers */}
+              {showStartPicker && (
+                <View style={styles.pickerContainer}>
+                  <DateTimePicker
+                    value={tempStartDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleStartDateChange}
+                    maximumDate={tempEndDate}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <Pressable
+                      style={styles.pickerDoneButton}
+                      onPress={() => setShowStartPicker(false)}
+                    >
+                      <Text style={styles.pickerDoneText}>Done</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+
+              {showEndPicker && (
+                <View style={styles.pickerContainer}>
+                  <DateTimePicker
+                    value={tempEndDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleEndDateChange}
+                    minimumDate={tempStartDate}
+                    maximumDate={new Date()}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <Pressable
+                      style={styles.pickerDoneButton}
+                      onPress={() => setShowEndPicker(false)}
+                    >
+                      <Text style={styles.pickerDoneText}>Done</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+
+              {/* Apply Custom Range Button */}
+              <Pressable style={styles.applyButton} onPress={handleApplyRange}>
+                <Text style={styles.applyButtonText}>Apply Custom Range</Text>
+              </Pressable>
+
+              {/* Quick Select Options */}
+              <Text style={styles.quickSelectLabel}>QUICK SELECT</Text>
+              <View style={styles.quickSelectGrid}>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={() => applyQuickSelect(14)}
+                >
+                  <Text style={styles.quickSelectText}>Last 14 Days</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={() => applyQuickSelect(90)}
+                >
+                  <Text style={styles.quickSelectText}>Last 90 Days</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={applyCurrentQuarter}
+                >
+                  <Text style={styles.quickSelectText}>Current Quarter</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={applyFullYear}
+                >
+                  <Text style={styles.quickSelectText}>Full Year</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={() => applyQuickSelect(180)}
+                >
+                  <Text style={styles.quickSelectText}>6 Months</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickSelectButton}
+                  onPress={() => {
+                    const start = new Date(2000, 0, 1);
+                    const end = new Date();
+                    setTempStartDate(start);
+                    setTempEndDate(end);
+                    onApplyCustomRange({ start, end });
+                  }}
+                >
+                  <Text style={styles.quickSelectText}>All Time</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Category Change Confirmation Modal */}
+      <Modal
+        visible={pendingCategoryChange !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={onCancelCategoryChange}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <View style={styles.categoryModalContent}>
+            {!showRuleTypeSelection ? (
+              <>
+                <Text style={styles.categoryModalTitle}>Apply Category</Text>
+                <Text style={styles.categoryModalSubtitle}>
+                  How would you like to apply "{pendingCategoryChange?.categoryId ? categoryNameById[pendingCategoryChange.categoryId] : ''}"?
+                </Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.categoryModalOption,
+                    pressed && styles.categoryModalOptionPressed,
+                  ]}
+                  onPress={onApplyOneTime}
+                >
+                  <Text style={styles.categoryModalOptionTitle}>One time only</Text>
+                  <Text style={styles.categoryModalOptionDesc}>Apply to this transaction only</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.categoryModalOption,
+                    pressed && styles.categoryModalOptionPressed,
+                  ]}
+                  onPress={onShowRuleOptions}
+                >
+                  <Text style={styles.categoryModalOptionTitle}>Create a rule</Text>
+                  <Text style={styles.categoryModalOptionDesc}>Auto-apply to similar transactions</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.categoryModalCancel,
+                    pressed && styles.categoryModalCancelPressed,
+                  ]}
+                  onPress={onCancelCategoryChange}
+                >
+                  <Text style={styles.categoryModalCancelText}>Cancel</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.categoryModalTitle}>Create Rule Based On</Text>
+                {pendingCategoryChange?.transaction.merchant_key ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.categoryModalOption,
+                      pressed && styles.categoryModalOptionPressed,
+                    ]}
+                    onPress={() => onApplyWithRule('merchant')}
+                  >
+                    <Text style={styles.categoryModalOptionTitle}>Merchant</Text>
+                    <Text style={styles.categoryModalOptionDesc}>
+                      "{pendingCategoryChange.transaction.merchant_key}"
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {pendingCategoryChange?.transaction.upi_note_keyword ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.categoryModalOption,
+                      pressed && styles.categoryModalOptionPressed,
+                    ]}
+                    onPress={() => onApplyWithRule('upi_note_keyword')}
+                  >
+                    <Text style={styles.categoryModalOptionTitle}>UPI Note</Text>
+                    <Text style={styles.categoryModalOptionDesc}>
+                      "{pendingCategoryChange.transaction.upi_note_keyword}"
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {!pendingCategoryChange?.transaction.merchant_key &&
+                 !pendingCategoryChange?.transaction.upi_note_keyword ? (
+                  <Text style={styles.categoryModalNoRule}>
+                    No merchant or UPI note available for this transaction. Applying one-time only.
+                  </Text>
+                ) : null}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.categoryModalCancel,
+                    pressed && styles.categoryModalCancelPressed,
+                  ]}
+                  onPress={onCancelCategoryChange}
+                >
+                  <Text style={styles.categoryModalCancelText}>Cancel</Text>
+                </Pressable>
+              </>
             )}
-
-            {/* Apply Button */}
-            <Pressable style={styles.applyButton} onPress={handleApplyRange}>
-              <Text style={styles.applyButtonText}>Apply Range</Text>
-            </Pressable>
-
-            {/* Quick Select Options */}
-            <Text style={styles.quickSelectLabel}>QUICK SELECT</Text>
-            <View style={styles.quickSelectGrid}>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => applyQuickSelect(14)}
-              >
-                <Text style={styles.quickSelectText}>Last 14 Days</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => applyQuickSelect(90)}
-              >
-                <Text style={styles.quickSelectText}>Last 90 Days</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={applyCurrentQuarter}
-              >
-                <Text style={styles.quickSelectText}>Current Quarter</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={applyFullYear}
-              >
-                <Text style={styles.quickSelectText}>Full Year</Text>
-              </Pressable>
-            </View>
-
-            {/* Extended Options */}
-            <Text style={styles.quickSelectLabel}>MORE OPTIONS</Text>
-            <View style={styles.quickSelectGrid}>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => applyQuickSelect(180)}
-              >
-                <Text style={styles.quickSelectText}>6 Months</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => applyQuickSelect(365)}
-              >
-                <Text style={styles.quickSelectText}>1 Year</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => applyQuickSelect(730)}
-              >
-                <Text style={styles.quickSelectText}>2 Years</Text>
-              </Pressable>
-              <Pressable
-                style={styles.quickSelectButton}
-                onPress={() => {
-                  const start = new Date(2000, 0, 1);
-                  const end = new Date();
-                  setTempStartDate(start);
-                  setTempEndDate(end);
-                  onApplyCustomRange({ start, end });
-                }}
-              >
-                <Text style={styles.quickSelectText}>All Time</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
       </Modal>
@@ -738,29 +904,51 @@ export function FinancesScreen({
 }
 
 const styles = StyleSheet.create({
-  // Time Period Selector
-  timePeriodRow: {
+  // Month Selector
+  monthSelectorRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  timePeriodPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: palette.surfaceContainerLow,
+    borderRadius: 12,
+    padding: 8,
+    gap: 8,
   },
-  timePeriodPillSelected: {
-    backgroundColor: palette.accent,
+  monthArrowButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  timePeriodText: {
-    fontSize: 13,
-    fontWeight: '500',
+  monthArrowDisabled: {
+    opacity: 0.4,
+  },
+  monthArrowText: {
+    fontSize: 24,
+    fontWeight: '300',
+    color: palette.accent,
+  },
+  monthArrowTextDisabled: {
     color: palette.mutedText,
   },
-  timePeriodTextSelected: {
-    color: palette.surface,
+  monthLabelButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 6,
+  },
+  monthLabelText: {
+    fontSize: 17,
     fontWeight: '600',
+    color: palette.primaryText,
+  },
+  monthDropdownIcon: {
+    fontSize: 12,
+    color: palette.accent,
   },
 
   // Direction Toggle
@@ -862,40 +1050,43 @@ const styles = StyleSheet.create({
     color: palette.success,
   },
 
-  // Insights Section
-  insightsSection: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: palette.primaryText,
-  },
-  insightsRow: {
+  // Balance Section
+  balanceSection: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  insightCard: {
-    flex: 1,
-    backgroundColor: palette.surfaceContainerLow,
+    backgroundColor: palette.surface,
     borderRadius: 12,
     padding: 16,
+    alignItems: 'center',
+  },
+  balanceCard: {
+    flex: 1,
+    alignItems: 'center',
     gap: 4,
   },
-  insightLabel: {
+  balanceDivider: {
+    width: 1,
+    height: 48,
+    backgroundColor: palette.border,
+    marginHorizontal: 12,
+  },
+  balanceLabel: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,
     color: palette.mutedText,
   },
-  insightValue: {
-    fontSize: 20,
+  balanceValue: {
+    fontSize: 18,
     fontWeight: '700',
-    color: palette.accent,
   },
-  insightSubtext: {
-    fontSize: 12,
+  balanceSubtext: {
+    fontSize: 11,
     color: palette.mutedText,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.primaryText,
   },
 
   // Category Insights
@@ -983,6 +1174,29 @@ const styles = StyleSheet.create({
   dropdownOptionSelected: {
     backgroundColor: palette.accentSoftMuted,
   },
+  dropdownOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: palette.accent,
+    borderColor: palette.accent,
+  },
+  checkmark: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: palette.surface,
+  },
   dropdownOptionText: {
     fontSize: 14,
     fontWeight: '500',
@@ -1049,29 +1263,29 @@ const styles = StyleSheet.create({
     color: palette.surface,
   },
 
-  // Transaction Cards
-  transactionCard: {
+  // Transaction List (high-density)
+  transactionsList: {
     backgroundColor: palette.surface,
     borderRadius: 12,
-    padding: 14,
   },
-  transactionTopRow: {
+  transactionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 12,
-    alignItems: 'flex-start',
   },
-  transactionAccent: {
-    width: 4,
-    height: 40,
-    borderRadius: 2,
+  transactionRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.border,
   },
-  debitAccent: {
-    backgroundColor: palette.danger,
+  transactionDate: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: palette.mutedText,
+    width: 44,
   },
-  creditAccent: {
-    backgroundColor: palette.success,
-  },
-  transactionContent: {
+  transactionInfo: {
     flex: 1,
     gap: 2,
   },
@@ -1083,49 +1297,87 @@ const styles = StyleSheet.create({
   transactionNote: {
     fontSize: 12,
     color: palette.mutedText,
+    marginTop: 2,
   },
-  transactionAmountBlock: {
-    alignItems: 'flex-end',
-    gap: 2,
+  categoryWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-start',
   },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: palette.mutedText,
-  },
-  transactionFooter: {
-    paddingTop: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  categoryTag: {
+  categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     backgroundColor: palette.surfaceContainerLow,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    gap: 4,
   },
-  categoryTagIcon: {
+  categoryPillActive: {
+    backgroundColor: palette.accentSoftMuted,
+    borderWidth: 1,
+    borderColor: palette.accent,
+  },
+  categoryPillText: {
     fontSize: 11,
+    fontWeight: '500',
+    color: palette.secondaryText,
+    maxWidth: 100,
+  },
+  categoryPillIcon: {
+    fontSize: 8,
     color: palette.mutedText,
   },
-  categoryTagText: {
-    fontSize: 12,
-    fontWeight: '500',
+  categoryDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: 4,
+    backgroundColor: palette.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: palette.border,
+    minWidth: 140,
+    maxHeight: 180,
+    zIndex: 100,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    overflow: 'hidden',
+  },
+  categoryDropdownAbove: {
+    top: 'auto',
+    bottom: '100%',
+    marginTop: 0,
+    marginBottom: 4,
+  },
+  categoryDropdownOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  categoryDropdownOptionSelected: {
+    backgroundColor: palette.accentSoftMuted,
+  },
+  categoryDropdownText: {
+    fontSize: 13,
     color: palette.primaryText,
   },
-  inlineDropdown: {
-    backgroundColor: palette.surfaceContainerLow,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginTop: 8,
+  categoryDropdownTextSelected: {
+    color: palette.accent,
+    fontWeight: '600',
+  },
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'right',
+    minWidth: 80,
+  },
+  debitAccent: {
+    backgroundColor: palette.danger,
+  },
+  creditAccent: {
+    backgroundColor: palette.success,
   },
 
   // Outline Button
@@ -1172,12 +1424,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalScrollView: {
+    maxHeight: '85%',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     backgroundColor: palette.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
+  },
+  // Month Grid
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  monthButton: {
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    minWidth: '30%',
+    alignItems: 'center',
+  },
+  monthButtonSelected: {
+    backgroundColor: palette.accent,
+  },
+  monthButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: palette.primaryText,
+  },
+  monthButtonTextSelected: {
+    color: palette.surface,
+    fontWeight: '600',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1290,5 +1576,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: palette.primaryText,
+  },
+
+  // Category Change Modal
+  categoryModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  categoryModalContent: {
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 320,
+  },
+  categoryModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: palette.primaryText,
+    marginBottom: 8,
+  },
+  categoryModalSubtitle: {
+    fontSize: 14,
+    color: palette.mutedText,
+    marginBottom: 20,
+  },
+  categoryModalOption: {
+    backgroundColor: palette.surfaceContainerLow,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+  },
+  categoryModalOptionPressed: {
+    backgroundColor: '#d0e8ff',
+  },
+  categoryModalOptionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.primaryText,
+    marginBottom: 2,
+  },
+  categoryModalOptionDesc: {
+    fontSize: 12,
+    color: palette.mutedText,
+  },
+  categoryModalNoRule: {
+    fontSize: 13,
+    color: palette.mutedText,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  categoryModalCancel: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 4,
+    borderRadius: 8,
+  },
+  categoryModalCancelPressed: {
+    backgroundColor: '#d0e8ff',
+  },
+  categoryModalCancelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: palette.mutedText,
   },
 });

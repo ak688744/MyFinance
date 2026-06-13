@@ -18,6 +18,14 @@ function getGlyph(section: string) {
     return '≣';
   }
 
+  if (section === 'investments') {
+    return '◈';
+  }
+
+  if (section === 'ai') {
+    return '✦';
+  }
+
   return '⇪';
 }
 

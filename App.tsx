@@ -31,8 +31,10 @@ import {
 } from './src/features/categories/manageCategories';
 import { parseHdfcStatementXls } from './src/features/import/hdfcParser';
 import { importTransactions } from './src/features/import/importTransactions';
+import { AIScreen } from './src/screens/AIScreen';
 import { FinancesScreen } from './src/screens/FinancesScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
+import { InvestmentScreen } from './src/screens/InvestmentScreen';
 import { RulesScreen } from './src/screens/RulesScreen';
 import { palette } from './src/theme/palette';
 
@@ -45,26 +47,21 @@ type TransactionPreview = {
   category_id: string | null;
   merchant_key: string | null;
   upi_note_keyword: string | null;
+  balance: number | null;
 };
 
-const appSections = ['finances', 'rules', 'import'] as const;
+const appSections = ['finances', 'rules', 'investments', 'ai', 'import'] as const;
 
 type AppSection = (typeof appSections)[number];
-
-const timePeriods = ['7d', '30d', 'prev_month', 'custom'] as const;
-
-type TimePeriod = (typeof timePeriods)[number];
-
-const timePeriodLabels: Record<TimePeriod, string> = {
-  '7d': '7 Days',
-  '30d': '30 Days',
-  prev_month: 'Prev Month',
-  custom: 'Custom',
-};
 
 type CustomDateRange = {
   start: Date;
   end: Date;
+};
+
+type PendingCategoryChange = {
+  transaction: TransactionPreview;
+  categoryId: string | null;
 };
 
 type CategoryInsight = {
@@ -75,46 +72,29 @@ type CategoryInsight = {
   transactionCount: number;
 };
 
-function getDateRangeForPeriod(
-  period: TimePeriod,
+function getDateRangeForMonth(
+  year: number,
+  month: number,
   customRange?: CustomDateRange
 ): { start: Date; end: Date } {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  switch (period) {
-    case '7d': {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 6);
-      return { start, end: today };
-    }
-    case '30d': {
-      const start = new Date(today);
-      start.setDate(start.getDate() - 29);
-      return { start, end: today };
-    }
-    case 'prev_month': {
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth(), 0);
-      return { start, end };
-    }
-    case 'custom': {
-      if (customRange) {
-        return customRange;
-      }
-      // Default to last 90 days if no custom range set
-      const start = new Date(today);
-      start.setDate(start.getDate() - 89);
-      return { start, end: today };
-    }
-    default:
-      return { start: new Date(0), end: today };
+  if (customRange) {
+    return customRange;
   }
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0, 23, 59, 59, 999); // Last day of month at end of day
+  return { start, end };
+}
+
+function formatMonthYear(year: number, month: number): string {
+  const date = new Date(year, month, 1);
+  return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 }
 
 const sectionLabels: Record<AppSection, string> = {
   finances: 'Finances',
   rules: 'Rules',
+  investments: 'Investments',
+  ai: 'AI',
   import: 'Import',
 };
 
@@ -138,7 +118,7 @@ function DashboardScreen() {
   );
   const [isImporting, setIsImporting] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(['all']);
   const [editingTransactionId, setEditingTransactionId] = useState<
     number | null
   >(null);
@@ -161,11 +141,16 @@ function DashboardScreen() {
     'debit'
   );
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('30d');
+  // Month-based time selector
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [customDateRange, setCustomDateRange] = useState<CustomDateRange | null>(null);
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
   const [expandedRuleId, setExpandedRuleId] = useState<number | null>(null);
   const [isRuleCategoryDropdownOpen, setIsRuleCategoryDropdownOpen] = useState(false);
+  const [pendingCategoryChange, setPendingCategoryChange] = useState<PendingCategoryChange | null>(null);
+  const [showRuleTypeSelection, setShowRuleTypeSelection] = useState(false);
 
   const categoryNameById = Object.fromEntries(
     categories.map((category) => [category.id, category.name])
@@ -192,8 +177,9 @@ function DashboardScreen() {
   ];
 
   // Time-filtered transactions
-  const dateRange = getDateRangeForPeriod(
-    timePeriod,
+  const dateRange = getDateRangeForMonth(
+    selectedYear,
+    selectedMonth,
     customDateRange ?? undefined
   );
   const timeFilteredTransactions = allTransactions.filter((transaction) => {
@@ -236,7 +222,7 @@ function DashboardScreen() {
       .sort((a, b) => b.amount - a.amount);
   })();
 
-  // Insights
+  // Period totals
   const periodDebitTotal = timeFilteredTransactions
     .filter((t) => t.direction === 'debit')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -244,16 +230,23 @@ function DashboardScreen() {
     .filter((t) => t.direction === 'credit')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const daysInPeriod = Math.max(
-    1,
-    Math.ceil(
-      (dateRange.end.getTime() - dateRange.start.getTime()) /
-        (1000 * 60 * 60 * 24)
-    ) + 1
+  // Opening and Closing Balance (using stored balance from bank statement)
+  const periodStartDate = dateRange.start.toISOString().split('T')[0];
+  const periodEndDate = dateRange.end.toISOString().split('T')[0];
+
+  // Opening balance: balance from last transaction before period start
+  // (allTransactions is sorted DESC, so find first one before period)
+  const lastTxnBeforePeriod = allTransactions.find(
+    (t) => t.transaction_date < periodStartDate && t.balance !== null
   );
-  const dailyAverage = periodDebitTotal / daysInPeriod;
-  const monthlyAverage = dailyAverage * 30;
-  const highestCategory = categoryInsights[0] ?? null;
+  const openingBalance = lastTxnBeforePeriod?.balance ?? 0;
+
+  // Closing balance: balance from last transaction in the period
+  // (find first one <= period end since sorted DESC)
+  const lastTxnInPeriod = allTransactions.find(
+    (t) => t.transaction_date <= periodEndDate && t.balance !== null
+  );
+  const closingBalance = lastTxnInPeriod?.balance ?? openingBalance;
 
   useEffect(() => {
     let isActive = true;
@@ -263,7 +256,7 @@ function DashboardScreen() {
         await Promise.all([
           db.getAllAsync<TransactionPreview>(
             `
-              SELECT id, transaction_date, description, amount, direction, category_id, merchant_key, upi_note_keyword
+              SELECT id, transaction_date, description, amount, direction, category_id, merchant_key, upi_note_keyword, balance
               FROM transactions
               ORDER BY transaction_date DESC, id DESC
             `
@@ -300,7 +293,7 @@ function DashboardScreen() {
       await Promise.all([
         db.getAllAsync<TransactionPreview>(
           `
-            SELECT id, transaction_date, description, amount, direction, category_id, merchant_key, upi_note_keyword
+            SELECT id, transaction_date, description, amount, direction, category_id, merchant_key, upi_note_keyword, balance
             FROM transactions
             ORDER BY transaction_date DESC, id DESC
           `
@@ -363,7 +356,22 @@ function DashboardScreen() {
     }
   }
 
-  async function handleCategoryUpdate(
+  function handleCategoryUpdate(
+    transaction: TransactionPreview,
+    categoryId: string | null
+  ) {
+    // If setting to uncategorized, apply directly
+    if (!categoryId) {
+      applyOneTimeCategory(transaction, null);
+      return;
+    }
+    // Show the confirmation modal
+    setPendingCategoryChange({ transaction, categoryId });
+    setShowRuleTypeSelection(false);
+    setEditingTransactionId(null);
+  }
+
+  async function applyOneTimeCategory(
     transaction: TransactionPreview,
     categoryId: string | null
   ) {
@@ -376,17 +384,34 @@ function DashboardScreen() {
       categoryId,
       transaction.id
     );
+    await refreshDashboard();
+    setPendingCategoryChange(null);
+    setShowRuleTypeSelection(false);
+  }
 
-    if (categoryId) {
+  async function applyWithRule(ruleType: CategoryRuleType) {
+    if (!pendingCategoryChange || !pendingCategoryChange.categoryId) return;
+
+    const { transaction, categoryId } = pendingCategoryChange;
+
+    await db.runAsync(
+      `
+        UPDATE transactions
+        SET category_id = ?, category_source = 'manual', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      categoryId,
+      transaction.id
+    );
+
+    const patternValue = ruleType === 'merchant'
+      ? transaction.merchant_key
+      : transaction.upi_note_keyword;
+
+    if (patternValue) {
       await saveCategoryMemoryRule(db, {
-        ruleType: 'merchant',
-        patternValue: transaction.merchant_key,
-        categoryId,
-        createdFromTransactionId: transaction.id,
-      });
-      await saveCategoryMemoryRule(db, {
-        ruleType: 'upi_note_keyword',
-        patternValue: transaction.upi_note_keyword,
+        ruleType,
+        patternValue,
         categoryId,
         createdFromTransactionId: transaction.id,
       });
@@ -394,7 +419,13 @@ function DashboardScreen() {
     }
 
     await refreshDashboard();
-    setEditingTransactionId(null);
+    setPendingCategoryChange(null);
+    setShowRuleTypeSelection(false);
+  }
+
+  function cancelCategoryChange() {
+    setPendingCategoryChange(null);
+    setShowRuleTypeSelection(false);
   }
 
   async function handleCreateCategory() {
@@ -430,9 +461,10 @@ function DashboardScreen() {
   async function handleDeleteCategory(categoryId: string) {
     await deleteCategory(db, { categoryId });
 
-    if (selectedFilter === categoryId) {
-      setSelectedFilter('all');
-    }
+    setSelectedFilters((current) => {
+      const filtered = current.filter((id) => id !== categoryId);
+      return filtered.length === 0 ? ['all'] : filtered;
+    });
 
     setSelectedCategoryId(null);
     setEditingCategoryId(null);
@@ -505,25 +537,28 @@ function DashboardScreen() {
       return false;
     }
 
-    if (selectedFilter === 'all') {
+    if (selectedFilters.includes('all')) {
       return true;
     }
 
-    if (selectedFilter === 'uncategorized') {
-      return transaction.category_id === null;
+    if (selectedFilters.includes('uncategorized') && transaction.category_id === null) {
+      return true;
     }
 
-    return transaction.category_id === selectedFilter;
+    return transaction.category_id !== null && selectedFilters.includes(transaction.category_id);
   });
 
   const displayedTransactions = showAllTransactions
     ? filteredTransactions
     : filteredTransactions.slice(0, 8);
-  const selectedFilterName =
-    transactionFilters.find((filter) => filter.id === selectedFilter)?.name ??
-    'All';
+  const selectedFilterNames = selectedFilters.includes('all')
+    ? 'All'
+    : selectedFilters
+        .map((id) => transactionFilters.find((f) => f.id === id)?.name)
+        .filter(Boolean)
+        .join(', ') || 'All';
   const selectedCategoryTotal =
-    selectedFilter === 'all'
+    selectedFilters.includes('all')
       ? null
       : filteredTransactions.reduce(
           (sum, transaction) => sum + transaction.amount,
@@ -536,25 +571,28 @@ function DashboardScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Pressable onPress={dismissAllOverlays} style={styles.dismissLayer}>
-        <AppHeader
-          sections={appSections}
-          labels={sectionLabels}
-          activeSection={activeSection}
-          isMenuOpen={isMenuOpen}
-          onToggleMenu={() => setIsMenuOpen((current) => !current)}
-          onSelectSection={(section) => {
-            setActiveSection(section);
-            setIsMenuOpen(false);
-          }}
-        />
+      <View style={styles.container}>
+        {activeSection !== 'ai' ? (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          style={styles.scrollView}
+        >
+          <Pressable onPress={dismissAllOverlays} style={styles.dismissLayer}>
+            <AppHeader
+              sections={appSections}
+              labels={sectionLabels}
+              activeSection={activeSection}
+              isMenuOpen={isMenuOpen}
+              onToggleMenu={() => setIsMenuOpen((current) => !current)}
+              onSelectSection={(section) => {
+                setActiveSection(section);
+                setIsMenuOpen(false);
+              }}
+            />
 
-        <View style={styles.mainPane}>
+            <View style={styles.mainPane}>
         {activeSection === 'finances' ? (
           <FinancesScreen
             allTransactions={allTransactions}
@@ -562,8 +600,8 @@ function DashboardScreen() {
             categoryNameById={categoryNameById}
             filteredTransactions={filteredTransactions}
             displayedTransactions={displayedTransactions}
-            selectedFilter={selectedFilter}
-            selectedFilterName={selectedFilterName}
+            selectedFilters={selectedFilters}
+            selectedFilterNames={selectedFilterNames}
             selectedCategoryTotal={selectedCategoryTotal}
             directionFilter={directionFilter}
             debitTotal={debitTotal}
@@ -572,15 +610,28 @@ function DashboardScreen() {
             editingTransactionId={editingTransactionId}
             showAllTransactions={showAllTransactions}
             isCategoryFilterOpen={isCategoryFilterOpen}
-            timePeriod={timePeriod}
-            timePeriodLabels={timePeriodLabels}
-            timePeriods={timePeriods}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            monthLabel={formatMonthYear(selectedYear, selectedMonth)}
             categoryInsights={categoryInsights}
-            monthlyAverage={monthlyAverage}
-            highestCategory={highestCategory}
+            openingBalance={openingBalance}
+            closingBalance={closingBalance}
             onToggleDirectionFilter={(direction) => setDirectionFilter(direction)}
-            onSelectFilter={(filterId) => {
-              setSelectedFilter(filterId);
+            onToggleFilter={(filterId) => {
+              setSelectedFilters((current) => {
+                if (filterId === 'all') {
+                  return ['all'];
+                }
+                const withoutAll = current.filter((id) => id !== 'all');
+                if (withoutAll.includes(filterId)) {
+                  const newFilters = withoutAll.filter((id) => id !== filterId);
+                  return newFilters.length === 0 ? ['all'] : newFilters;
+                }
+                return [...withoutAll, filterId];
+              });
+            }}
+            onSelectAllFilter={() => {
+              setSelectedFilters(['all']);
               setIsCategoryFilterOpen(false);
             }}
             onToggleCategoryFilter={() =>
@@ -593,22 +644,53 @@ function DashboardScreen() {
               )
             }
             onCategoryUpdate={handleCategoryUpdate}
+            pendingCategoryChange={pendingCategoryChange}
+            showRuleTypeSelection={showRuleTypeSelection}
+            onApplyOneTime={() => {
+              if (pendingCategoryChange) {
+                applyOneTimeCategory(pendingCategoryChange.transaction, pendingCategoryChange.categoryId);
+              }
+            }}
+            onShowRuleOptions={() => setShowRuleTypeSelection(true)}
+            onApplyWithRule={applyWithRule}
+            onCancelCategoryChange={cancelCategoryChange}
             onToggleShowAllTransactions={() =>
               setShowAllTransactions((current) => !current)
             }
-            onSelectTimePeriod={(period) => {
-              if (period === 'custom') {
-                setIsCustomPickerOpen(true);
+            onPreviousMonth={() => {
+              if (selectedMonth === 0) {
+                setSelectedMonth(11);
+                setSelectedYear(selectedYear - 1);
               } else {
-                setTimePeriod(period);
+                setSelectedMonth(selectedMonth - 1);
+              }
+              setCustomDateRange(null);
+            }}
+            onNextMonth={() => {
+              const now = new Date();
+              const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+              if (!isCurrentMonth) {
+                if (selectedMonth === 11) {
+                  setSelectedMonth(0);
+                  setSelectedYear(selectedYear + 1);
+                } else {
+                  setSelectedMonth(selectedMonth + 1);
+                }
+                setCustomDateRange(null);
               }
             }}
+            onOpenMonthPicker={() => setIsCustomPickerOpen(true)}
             isCustomPickerOpen={isCustomPickerOpen}
             customDateRange={customDateRange}
             onCloseCustomPicker={() => setIsCustomPickerOpen(false)}
             onApplyCustomRange={(range) => {
               setCustomDateRange(range);
-              setTimePeriod('custom');
+              setIsCustomPickerOpen(false);
+            }}
+            onSelectMonth={(year, month) => {
+              setSelectedYear(year);
+              setSelectedMonth(month);
+              setCustomDateRange(null);
               setIsCustomPickerOpen(false);
             }}
           />
@@ -653,14 +735,28 @@ function DashboardScreen() {
           />
         ) : null}
 
-        {activeSection === 'import' ? (
-          <ImportScreen
-            isImporting={isImporting}
-            importMessage={importMessage}
-            onImportPress={handleImportPress}
+        {activeSection === 'investments' ? (
+          <InvestmentScreen
+            onGoToImport={() => setActiveSection('import')}
           />
         ) : null}
-        </View>
+
+
+          {activeSection === 'import' ? (
+            <ImportScreen
+              isImporting={isImporting}
+              importMessage={importMessage}
+              onImportPress={handleImportPress}
+            />
+          ) : null}
+          </View>
+          </Pressable>
+        </ScrollView>
+        ) : null}
+
+        {activeSection === 'ai' ? (
+          <AIScreen />
+        ) : null}
 
         <BottomNav
           sections={appSections}
@@ -668,8 +764,7 @@ function DashboardScreen() {
           activeSection={activeSection}
           onSelectSection={setActiveSection}
         />
-        </Pressable>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -680,10 +775,16 @@ const styles = StyleSheet.create({
     backgroundColor: palette.background,
     paddingTop: NativeStatusBar.currentHeight,
   },
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   dismissLayer: {
     gap: 16,
