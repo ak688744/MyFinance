@@ -1,6 +1,8 @@
 import type {
   InvestmentTransaction, Scheme, CashFlow, TransactionType, TransactionSummary,
   TransactionWithSchemeMeta,
+  Account, AccountDomain, Asset, AssetContribution, AssetRate, AssetValuation,
+  Liability,
 } from '../types';
 
 export interface InvestmentTxRepo {
@@ -121,7 +123,10 @@ export interface ExpenseTransactionRepo {
     sourceType: string;
     importHistoryId: number;
     dedupeKey: string;
+    accountId: number | null;
   }): number;
+  /** UPDATE transactions SET account_id = ? WHERE id = ?. */
+  updateAccount(id: number, accountId: number | null): void;
 }
 
 export type ImportRecord = {
@@ -165,4 +170,59 @@ export interface ImportHistoryRepo {
    * Non-financial read used by the API's GET /imports.
    */
   listAll(): ImportRecord[];
+}
+
+// ── L1.5 unified investment model repos ────────────────────────
+
+export interface AccountRepo {
+  list(filters?: { domain?: AccountDomain }): Account[];
+  getById(id: number): Account | null;
+  create(a: { domain: AccountDomain; assetClass?: string | null; institution: string; label: string }): number;
+  findByTriple(domain: AccountDomain, institution: string, label: string): Account | null;
+  /** Find-or-create by (domain, institution, label); returns the account id. */
+  ensureAccount(a: { domain: AccountDomain; assetClass?: string | null; institution: string; label: string }): number;
+}
+
+export interface AssetRepo {
+  list(filters?: { account?: number; assetClass?: string; status?: 'active' | 'closed' }): Asset[];
+  getById(id: number): Asset | null;
+  create(a: {
+    accountId: number; assetClass: Asset['assetClass']; name: string;
+    valuationStrategy: 'computed' | 'manual'; ingestionMode?: Asset['ingestionMode'];
+    params?: Asset['params']; status?: 'active' | 'closed'; openedAt?: string | null;
+  }): number;
+  update(id: number, patch: Partial<{
+    name: string; status: 'active' | 'closed'; params: Asset['params']; openedAt: string | null;
+  }>): void;
+  delete(id: number): void;
+}
+
+export interface AssetContributionRepo {
+  listByAsset(assetId: number): AssetContribution[];
+  insert(c: { assetId: number; contributionDate: string; amount: number; note?: string | null }): number;
+}
+
+export interface AssetRateRepo {
+  listByAsset(assetId: number): AssetRate[];
+  insert(r: { assetId: number; effectiveFrom: string; rate: number }): number;
+}
+
+export interface AssetValuationRepo {
+  listByAsset(assetId: number): AssetValuation[];
+  insert(v: { assetId: number; value: number; valuedAt: string; note?: string | null }): number;
+}
+
+export interface LiabilityRepo {
+  list(filters?: { status?: 'active' | 'closed' }): Liability[];
+  getById(id: number): Liability | null;
+  create(l: {
+    accountId?: number | null; name: string; loanType: Liability['loanType'];
+    principal: number; annualRate: number; tenureMonths?: number | null;
+    emiAmount?: number | null; startDate: string; status?: 'active' | 'closed';
+  }): number;
+  update(id: number, patch: Partial<{
+    name: string; loanType: Liability['loanType']; principal: number; annualRate: number;
+    tenureMonths: number | null; emiAmount: number | null; startDate: string; status: 'active' | 'closed';
+  }>): void;
+  delete(id: number): void;
 }
