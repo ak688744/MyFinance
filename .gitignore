@@ -45,3 +45,15 @@ yarn-error.*
 *.xls
 *.csv
 /Mutual_Funds_*
+
+# build artifacts (never commit — 64MB+ APKs bloat history)
+*.apk
+
+# IDE / editor / local tooling state
+.idea/
+.cursor/
+.ai-memory/
+
+# Claude Code session transcript dumps (may contain PII)
+*-context.txt
+*Context.txt
