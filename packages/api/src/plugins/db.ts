@@ -8,6 +8,7 @@ import {
   makeCategoryRuleRepo,
   makeExpenseTransactionRepo,
   makeImportHistoryRepo,
+  seedDatabase,
   type Db,
   type InvestmentTxRepo,
   type SchemeRepo,
@@ -48,6 +49,10 @@ declare module 'fastify' {
  */
 export async function registerDb(app: FastifyInstance, dbPath: string): Promise<void> {
   const { db, sqlite } = runMigrations(dbPath);
+
+  // Seed starter categories (idempotent; INSERT OR IGNORE) and run an initial
+  // recategorize so categories exist for reads and rule CRUD on a fresh DB.
+  seedDatabase(db);
 
   const repos: Repos = {
     txRepo: makeInvestmentTxRepo(db),

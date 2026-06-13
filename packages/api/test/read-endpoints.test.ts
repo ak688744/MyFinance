@@ -16,8 +16,10 @@ describe('read endpoints', () => {
     const db = app.sqlite;
 
     // --- expense side: a category + one transaction ---
+    // 'food' is now a seeded starter category (registerDb seeds on build), so
+    // use INSERT OR IGNORE to keep this idempotent against the seeded DB.
     db.prepare(
-      `INSERT INTO categories (id, name, icon) VALUES (?, ?, ?)`,
+      `INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?, ?, ?)`,
     ).run('food', 'Food', null);
 
     db.prepare(

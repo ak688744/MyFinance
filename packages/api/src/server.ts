@@ -8,7 +8,7 @@ import { healthRoutes } from './routes/health';
 import { transactionRoutes } from './routes/transactions';
 import { investmentRoutes } from './routes/investments';
 import { importRoutes, type AmfiMatch } from './routes/imports';
-// import { categoryRoutes } from './routes/categories'; // Task 7
+import { categoryRoutes } from './routes/categories';
 
 export type BuildServerOpts = {
   dbPath?: string;
@@ -43,7 +43,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
   await app.register(investmentRoutes);
-  // await app.register(categoryRoutes); // Task 7
+  await app.register(categoryRoutes);
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
 
   return app;
