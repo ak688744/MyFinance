@@ -26,6 +26,25 @@ export const categories = sqliteTable('categories', {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const accounts = sqliteTable(
+  'accounts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    domain: text('domain', { enum: ['investment', 'expense'] }).notNull(),
+    assetClass: text('asset_class'),
+    institution: text('institution').notNull(),
+    label: text('label').notNull(),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    uniqueAccount: unique().on(table.domain, table.institution, table.label),
+    domainCheck: check(
+      'accounts_domain_check',
+      sql`${table.domain} IN ('investment', 'expense')`,
+    ),
+  }),
+);
+
 export const importHistory = sqliteTable('import_history', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   sourceName: text('source_name').notNull(),
@@ -56,6 +75,7 @@ export const transactions = sqliteTable(
     importHistoryId: integer('import_history_id').references(
       () => importHistory.id,
     ),
+    accountId: integer('account_id').references(() => accounts.id),
     dedupeKey: text('dedupe_key').notNull().unique(),
     createdAt: text('created_at')
       .notNull()
@@ -246,6 +266,151 @@ export const investmentTransactions = sqliteTable(
     transactionTypeCheck: check(
       'investment_transactions_transaction_type_check',
       sql`${table.transactionType} IN ('PURCHASE', 'REDEMPTION', 'SWITCH_IN', 'SWITCH_OUT', 'DIVIDEND')`,
+    ),
+  }),
+);
+
+export const assets = sqliteTable(
+  'assets',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    accountId: integer('account_id')
+      .notNull()
+      .references(() => accounts.id),
+    assetClass: text('asset_class', {
+      enum: ['ppf', 'epf', 'nps', 'fd', 'gold', 'real_estate', 'cash'],
+    }).notNull(),
+    name: text('name').notNull(),
+    valuationStrategy: text('valuation_strategy', {
+      enum: ['computed', 'manual'],
+    }).notNull(),
+    ingestionMode: text('ingestion_mode', {
+      enum: ['manual_entry', 'file_import'],
+    })
+      .notNull()
+      .default('manual_entry'),
+    params: text('params'),
+    status: text('status', { enum: ['active', 'closed'] })
+      .notNull()
+      .default('active'),
+    openedAt: text('opened_at'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    idxAssetsAccount: index('idx_assets_account').on(table.accountId),
+    idxAssetsClass: index('idx_assets_class').on(table.assetClass),
+    assetClassCheck: check(
+      'assets_asset_class_check',
+      sql`${table.assetClass} IN ('ppf', 'epf', 'nps', 'fd', 'gold', 'real_estate', 'cash')`,
+    ),
+    valuationStrategyCheck: check(
+      'assets_valuation_strategy_check',
+      sql`${table.valuationStrategy} IN ('computed', 'manual')`,
+    ),
+    ingestionModeCheck: check(
+      'assets_ingestion_mode_check',
+      sql`${table.ingestionMode} IN ('manual_entry', 'file_import')`,
+    ),
+    statusCheck: check(
+      'assets_status_check',
+      sql`${table.status} IN ('active', 'closed')`,
+    ),
+  }),
+);
+
+export const assetContributions = sqliteTable(
+  'asset_contributions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    assetId: integer('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    contributionDate: text('contribution_date').notNull(),
+    amount: real('amount').notNull(),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    idxContributionsAsset: index('idx_asset_contributions_asset').on(
+      table.assetId,
+      table.contributionDate,
+    ),
+  }),
+);
+
+export const assetRates = sqliteTable(
+  'asset_rates',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    assetId: integer('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    effectiveFrom: text('effective_from').notNull(),
+    rate: real('rate').notNull(),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    uniqueAssetEffective: unique().on(table.assetId, table.effectiveFrom),
+    idxRatesAsset: index('idx_asset_rates_asset').on(
+      table.assetId,
+      table.effectiveFrom,
+    ),
+  }),
+);
+
+export const assetValuations = sqliteTable(
+  'asset_valuations',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    assetId: integer('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    value: real('value').notNull(),
+    valuedAt: text('valued_at').notNull(),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    idxValuationsAsset: index('idx_asset_valuations_asset').on(
+      table.assetId,
+      table.valuedAt,
+    ),
+  }),
+);
+
+export const liabilities = sqliteTable(
+  'liabilities',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    accountId: integer('account_id').references(() => accounts.id),
+    name: text('name').notNull(),
+    loanType: text('loan_type', {
+      enum: ['home', 'car', 'personal', 'other'],
+    }).notNull(),
+    principal: real('principal').notNull(),
+    annualRate: real('annual_rate').notNull(),
+    tenureMonths: integer('tenure_months'),
+    emiAmount: real('emi_amount'),
+    startDate: text('start_date').notNull(),
+    status: text('status', { enum: ['active', 'closed'] })
+      .notNull()
+      .default('active'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    loanTypeCheck: check(
+      'liabilities_loan_type_check',
+      sql`${table.loanType} IN ('home', 'car', 'personal', 'other')`,
+    ),
+    statusCheck: check(
+      'liabilities_status_check',
+      sql`${table.status} IN ('active', 'closed')`,
+    ),
+    tenureOrEmiCheck: check(
+      'liabilities_tenure_or_emi_check',
+      sql`${table.tenureMonths} IS NOT NULL OR ${table.emiAmount} IS NOT NULL`,
     ),
   }),
 );
