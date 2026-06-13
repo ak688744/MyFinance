@@ -8,9 +8,10 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
+    "@fastify/multipart": "^9.4.0",
     "@myfinance/core": "workspace:*",
     "fastify": "^5.0.0"
   },
