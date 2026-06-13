@@ -19,6 +19,12 @@ export { makeCategoryRepo } from './repositories/categoryRepo';
 export { makeCategoryRuleRepo } from './repositories/categoryRuleRepo';
 export { makeExpenseTransactionRepo } from './repositories/expenseTransactionRepo';
 export { makeImportHistoryRepo } from './repositories/importHistoryRepo';
+export { makeAccountRepo } from './repositories/accountRepo';
+export { makeAssetRepo } from './repositories/assetRepo';
+export { makeAssetContributionRepo } from './repositories/assetContributionRepo';
+export { makeAssetRateRepo } from './repositories/assetRateRepo';
+export { makeAssetValuationRepo } from './repositories/assetValuationRepo';
+export { makeLiabilityRepo } from './repositories/liabilityRepo';
 
 export type {
   InvestmentTxRepo,
@@ -31,6 +37,12 @@ export type {
   ExpenseTransactionRepo,
   ImportHistoryRepo,
   ImportRecord,
+  AccountRepo,
+  AssetRepo,
+  AssetContributionRepo,
+  AssetRateRepo,
+  AssetValuationRepo,
+  LiabilityRepo,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------
@@ -100,6 +112,32 @@ export {
 } from './domain/amfiMatcher';
 
 // ---------------------------------------------------------------------------
+// Domain — valuation / loans / net-worth (L1.5)
+// ---------------------------------------------------------------------------
+export {
+  valueAsset,
+  valueComputedAsset,
+  valueManualAsset,
+  compoundContribution,
+  type AssetInputs,
+} from './domain/valuation';
+
+export {
+  computeEmi,
+  amortizationSchedule,
+  loanStatus,
+} from './domain/loans/amortization';
+
+export {
+  getAllAssets,
+  getNetWorth,
+  getNetWorthHistory,
+  type NetWorthDeps,
+  type NetWorthHistoryDeps,
+  type NetWorthFilters,
+} from './domain/networth/networth';
+
+// ---------------------------------------------------------------------------
 // Import — parsers
 // ---------------------------------------------------------------------------
 export {
@@ -159,4 +197,22 @@ export type {
   AssetAllocation,
   TransactionWithSchemeMeta,
   NavLookup,
+  AccountDomain,
+  Account,
+  AssetClass,
+  ValuationStrategy,
+  IngestionMode,
+  CompoundingFrequency,
+  AssetParams,
+  Asset,
+  AssetContribution,
+  AssetRate,
+  AssetValuation,
+  Liability,
+  ValuedAsset,
+  AmortizationRow,
+  LoanStatus,
+  NetWorthClassBreakdown,
+  NetWorthSummary,
+  NetWorthPoint,
 } from './types';
