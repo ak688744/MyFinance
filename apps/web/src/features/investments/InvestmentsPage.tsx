@@ -51,8 +51,10 @@ export function InvestmentsPage() {
               <div className="flex flex-col gap-1">
                 {g.items.map((it, i) => {
                   const schemeId = 'schemeId' in it ? it.schemeId : null;
+                  const assetId = 'assetId' in it ? it.assetId : null;
+                  const rowKey = schemeId ?? assetId ?? i;
                   return (
-                    <div key={i} className="flex justify-between text-sm py-1 border-t border-gray-50">
+                    <div key={rowKey} className="flex justify-between text-sm py-1 border-t border-gray-50">
                       {schemeId ? (
                         <Link to={`/investments/${schemeId}`} className="text-brand hover:underline">{it.name}</Link>
                       ) : <span>{it.name}</span>}

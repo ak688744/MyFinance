@@ -23,6 +23,14 @@ export function AddInvestmentModal({ open, onClose }: { open: boolean; onClose: 
   const submit = async () => {
     setErr(null);
     if (!name || accountId === '') { setErr('Name and account are required.'); return; }
+    if (isComputed && (!principal || !rate || !startDate)) {
+      setErr('Principal, rate, and start date are required for computed assets.');
+      return;
+    }
+    if (!isComputed && !value) {
+      setErr('Current value is required.');
+      return;
+    }
     const body: Record<string, unknown> = {
       accountId: Number(accountId), assetClass, name, valuationStrategy, ingestionMode: 'manual_entry',
     };
