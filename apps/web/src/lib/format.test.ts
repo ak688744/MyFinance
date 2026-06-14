@@ -37,4 +37,7 @@ describe('formatDate', () => {
   it('formats ISO to dd MMM yyyy', () => {
     expect(formatDate('2025-01-15')).toBe('15 Jan 2025');
   });
+  it('falls back to the raw string on malformed input', () => {
+    expect(formatDate('not-a-date')).toBe('not-a-date');
+  });
 });

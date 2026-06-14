@@ -19,6 +19,7 @@ export function formatCompactINR(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
+  // Compact display per design spike: crore to 2 decimals (₹1.84Cr), lakh to 1 (₹11.8L).
   if (abs >= 1e7) return `${sign}₹${(abs / 1e7).toFixed(2).replace(/\.?0+$/, '')}Cr`;
   if (abs >= 1e5) return `${sign}₹${(abs / 1e5).toFixed(1).replace(/\.0$/, '')}L`;
   return formatINR(value);
@@ -32,5 +33,6 @@ export function formatPercent(value: number | null | undefined): string {
 
 export function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!m || m < 1 || m > 12 || !d || !y) return iso; // fallback on malformed input
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
