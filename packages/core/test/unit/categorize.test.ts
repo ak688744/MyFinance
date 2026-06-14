@@ -214,6 +214,12 @@ function makeFakeTxRepo(
     updateAccount() {
       throw new Error('not used');
     },
+    query() {
+      throw new Error('not used');
+    },
+    summary() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }

@@ -97,10 +97,54 @@ export interface CategoryRuleRepo {
   deleteRule(ruleId: number): void;
 }
 
+export type ExpenseTransactionRow = {
+  id: number;
+  transactionDate: string;
+  description: string;
+  amount: number;
+  direction: 'debit' | 'credit';
+  categoryId: string | null;
+  accountId: number | null;
+  balance: number | null;
+};
+
 export interface ExpenseTransactionRepo {
   list(filters?: { limit?: number; offset?: number; categoryId?: string }): unknown[];
   getNonManualForRecategorization(): { id: number; description: string; merchantKey: string | null; upiNoteKeyword: string | null }[];
   updateCategory(id: number, categoryId: string | null, categorySource: string | null): void;
+  /**
+   * Filterable expense-transaction query (richer than list). All filters
+   * optional and AND-combined. direction filters on the credit/debit column.
+   * search is a case-insensitive LIKE over description.
+   */
+  query(filters?: {
+    from?: string;            // ISO date inclusive
+    to?: string;              // ISO date inclusive
+    direction?: 'in' | 'out'; // in => credit, out => debit
+    search?: string;
+    categoryId?: string;
+    accountId?: number;
+    limit?: number;
+    offset?: number;
+  }): ExpenseTransactionRow[];
+
+  /**
+   * Aggregated expense summary over the same filter window (no pagination).
+   * totalSpent = sum(debit), totalIncome = sum(credit), saved = income - spent.
+   * byCategory groups debit spend by category; byMonth groups debit spend by
+   * YYYY-MM. Pure read aggregation — no financial-logic math.
+   */
+  summary(filters?: {
+    from?: string;
+    to?: string;
+    accountId?: number;
+  }): {
+    totalSpent: number;
+    totalIncome: number;
+    saved: number;
+    byCategory: { categoryId: string | null; amount: number }[];
+    byMonth: { month: string; spent: number }[];
+  };
   /**
    * INSERT OR IGNORE INTO transactions (...all columns incl. dedupe_key,
    * category_id, category_source). Returns the changed-row count (1 inserted,
