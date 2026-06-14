@@ -20,8 +20,8 @@ describe('groupHoldingsByClass', () => {
 describe('allocationToChartData', () => {
   it('maps byAssetClass into name/value/percentage rows', () => {
     const rows = allocationToChartData([
-      { assetClass: 'mutual_fund', value: 75, percentage: 75, count: 3 },
-      { assetClass: 'fd', value: 25, percentage: 25, count: 1 },
+      { assetClass: 'mutual_fund', value: 75, percentage: 75 },
+      { assetClass: 'fd', value: 25, percentage: 25 },
     ]);
     expect(rows).toEqual([
       { name: 'Mutual Funds', value: 75, percentage: 75 },
