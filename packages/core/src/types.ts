@@ -128,3 +128,135 @@ export type NavLookup = {
   getNAVForDate(amfiCode: string, date: string): Promise<{ date: string; nav: number } | null>;
   getLatestNAV(amfiCode: string): Promise<number | null>;
 };
+
+// ── L1.5 unified investment model ──────────────────────────────
+
+export type AccountDomain = 'investment' | 'expense';
+
+export type Account = {
+  id: number;
+  domain: AccountDomain;
+  assetClass: string | null;
+  institution: string;
+  label: string;
+};
+
+export type AssetClass =
+  | 'ppf' | 'epf' | 'nps' | 'fd' | 'gold' | 'real_estate' | 'cash';
+
+export type ValuationStrategy = 'market' | 'computed' | 'manual';
+export type IngestionMode = 'manual_entry' | 'file_import';
+export type CompoundingFrequency =
+  | 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+
+/** Heterogeneous per-class inputs stored as JSON in assets.params. */
+export type AssetParams = {
+  compounding?: CompoundingFrequency;
+  maturityDate?: string;            // FD
+  payout?: 'cumulative' | 'periodic'; // FD
+  grams?: number;                   // gold (informational)
+  [k: string]: unknown;
+};
+
+export type Asset = {
+  id: number;
+  accountId: number;
+  assetClass: AssetClass;
+  name: string;
+  valuationStrategy: 'computed' | 'manual';
+  ingestionMode: IngestionMode;
+  params: AssetParams | null;
+  status: 'active' | 'closed';
+  openedAt: string | null;
+};
+
+export type AssetContribution = {
+  id: number;
+  assetId: number;
+  contributionDate: string;
+  amount: number;
+  note: string | null;
+};
+
+export type AssetRate = {
+  id: number;
+  assetId: number;
+  effectiveFrom: string;
+  rate: number; // annual %
+};
+
+export type AssetValuation = {
+  id: number;
+  assetId: number;
+  value: number;
+  valuedAt: string;
+  note: string | null;
+};
+
+export type Liability = {
+  id: number;
+  accountId: number | null;
+  name: string;
+  loanType: 'home' | 'car' | 'personal' | 'other';
+  principal: number;
+  annualRate: number; // annual %
+  tenureMonths: number | null;
+  emiAmount: number | null;
+  startDate: string;
+  status: 'active' | 'closed';
+};
+
+/** Uniform shape every valuation strategy projects into. */
+export type ValuedAsset = {
+  assetId: number | null;       // null for MF projections (keyed by scheme/account)
+  assetClass: string;           // 'mutual_fund' for MF; AssetClass otherwise
+  accountId: number | null;
+  name: string;
+  valuationStrategy: ValuationStrategy;
+  currentValue: number;
+  invested: number | null;
+  returns: number | null;
+  asOf: string;
+  valuedAt?: string;            // manual
+  ageDays?: number;             // manual freshness
+};
+
+export type AmortizationRow = {
+  period: number;
+  dueDate: string;
+  emi: number;
+  principalComponent: number;
+  interestComponent: number;
+  balance: number;
+};
+
+export type LoanStatus = {
+  outstanding: number;
+  paidPrincipal: number;
+  interestPaid: number;
+  interestRemaining: number;
+  monthsRemaining: number;
+  nextDueDate: string | null;
+  progressPercent: number;
+};
+
+export type NetWorthClassBreakdown = {
+  assetClass: string;
+  value: number;
+  percentage: number;
+  count: number;
+};
+
+export type NetWorthSummary = {
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  byAssetClass: NetWorthClassBreakdown[];
+};
+
+export type NetWorthPoint = {
+  date: string;
+  netWorth: number;
+  totalAssets: number;
+  totalLiabilities: number;
+};

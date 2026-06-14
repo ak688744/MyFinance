@@ -77,6 +77,13 @@ export async function importRoutes(
     const { file, fields } = await requireUpload(req);
     const accountName = requireField(fields, 'accountName');
     const investmentApp = requireField(fields, 'investmentApp');
+    // Non-financial sync: ensure an investment account exists for this
+    // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
+    app.repos.accountRepo.ensureAccount({
+      domain: 'investment',
+      institution: investmentApp,
+      label: accountName,
+    });
     const platform = fields.platform?.trim() || 'groww';
     const parse = resolveParser(platform, 'holdings');
 
@@ -105,6 +112,13 @@ export async function importRoutes(
     const { file, fields } = await requireUpload(req);
     const accountName = requireField(fields, 'accountName');
     const investmentApp = requireField(fields, 'investmentApp');
+    // Non-financial sync: ensure an investment account exists for this
+    // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
+    app.repos.accountRepo.ensureAccount({
+      domain: 'investment',
+      institution: investmentApp,
+      label: accountName,
+    });
     const platform = fields.platform?.trim() || 'groww';
     const parse = resolveParser(platform, 'transactions');
 

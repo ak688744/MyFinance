@@ -89,10 +89,18 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           sourceType: tx.sourceType,
           importHistoryId: tx.importHistoryId,
           dedupeKey: tx.dedupeKey,
+          accountId: tx.accountId ?? null,
         })
         .onConflictDoNothing()
         .run();
       return result.changes;
+    },
+
+    updateAccount(id, accountId) {
+      db.update(transactions)
+        .set({ accountId })
+        .where(eq(transactions.id, id))
+        .run();
     },
   };
 }

@@ -8,6 +8,12 @@ import {
   makeCategoryRuleRepo,
   makeExpenseTransactionRepo,
   makeImportHistoryRepo,
+  makeAccountRepo,
+  makeAssetRepo,
+  makeAssetContributionRepo,
+  makeAssetRateRepo,
+  makeAssetValuationRepo,
+  makeLiabilityRepo,
   seedDatabase,
   type Db,
   type InvestmentTxRepo,
@@ -17,6 +23,12 @@ import {
   type CategoryRuleRepo,
   type ExpenseTransactionRepo,
   type ImportHistoryRepo,
+  type AccountRepo,
+  type AssetRepo,
+  type AssetContributionRepo,
+  type AssetRateRepo,
+  type AssetValuationRepo,
+  type LiabilityRepo,
 } from '@myfinance/core';
 
 // Derived from core's runMigrations return type to avoid a direct
@@ -31,6 +43,12 @@ export type Repos = {
   categoryRuleRepo: CategoryRuleRepo;
   expenseTxRepo: ExpenseTransactionRepo;
   importHistoryRepo: ImportHistoryRepo;
+  accountRepo: AccountRepo;
+  assetRepo: AssetRepo;
+  assetContributionRepo: AssetContributionRepo;
+  assetRateRepo: AssetRateRepo;
+  assetValuationRepo: AssetValuationRepo;
+  liabilityRepo: LiabilityRepo;
 };
 
 // Module augmentation so app.db / app.sqlite / app.repos are typed everywhere.
@@ -62,6 +80,12 @@ export async function registerDb(app: FastifyInstance, dbPath: string): Promise<
     categoryRuleRepo: makeCategoryRuleRepo(db),
     expenseTxRepo: makeExpenseTransactionRepo(db),
     importHistoryRepo: makeImportHistoryRepo(db),
+    accountRepo: makeAccountRepo(db),
+    assetRepo: makeAssetRepo(db),
+    assetContributionRepo: makeAssetContributionRepo(db),
+    assetRateRepo: makeAssetRateRepo(db),
+    assetValuationRepo: makeAssetValuationRepo(db),
+    liabilityRepo: makeLiabilityRepo(db),
   };
 
   app.decorate('db', db);
