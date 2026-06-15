@@ -68,6 +68,20 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .run();
     },
 
+    getById(id) {
+      // SELECT id, description FROM transactions WHERE id = ? LIMIT 1
+      const result = db
+        .select({
+          id: transactions.id,
+          description: transactions.description,
+        })
+        .from(transactions)
+        .where(eq(transactions.id, id))
+        .limit(1)
+        .get();
+      return result ?? null;
+    },
+
     insertIgnore(tx) {
       // INSERT OR IGNORE INTO transactions (...) — the UNIQUE dedupe_key drives
       // the conflict. onConflictDoNothing == OR IGNORE. Returns changes (1/0).

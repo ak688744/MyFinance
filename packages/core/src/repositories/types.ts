@@ -121,6 +121,7 @@ export interface ExpenseTransactionRepo {
   list(filters?: { limit?: number; offset?: number; categoryId?: string }): unknown[];
   getNonManualForRecategorization(): { id: number; description: string; merchantKey: string | null; upiNoteKeyword: string | null }[];
   updateCategory(id: number, categoryId: string | null, categorySource: string | null): void;
+  getById(id: number): { id: number; description: string } | null;
   /**
    * Filterable expense-transaction query (richer than list). All filters
    * optional and AND-combined. direction filters on the credit/debit column.
