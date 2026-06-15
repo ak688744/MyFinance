@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useExpenses, useExpenseSummary, useCategories } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
@@ -6,11 +7,13 @@ import { DonutChart, SpendBarChart } from '../../components/ui/charts';
 import { formatINR, formatDate } from '../../lib/format';
 import { summaryByCategoryWithNames } from '../../lib/transforms';
 import { CategoryChip } from './CategoryChip';
+import { ManageCategoriesModal } from './ManageCategoriesModal';
 
 export function ExpensesPage() {
   const summary = useExpenseSummary({});
   const txns = useExpenses({ limit: '50' });
   const categories = useCategories();
+  const [manageModalOpen, setManageModalOpen] = useState(false);
 
   const byCategory = summary.data
     ? summaryByCategoryWithNames(summary.data.byCategory, categories.data ?? [])
@@ -18,7 +21,17 @@ export function ExpensesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl">Expenses</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="font-heading text-2xl">Expenses</h1>
+        <button
+          onClick={() => setManageModalOpen(true)}
+          className="text-sm bg-white border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 transition-colors"
+        >
+          Manage categories & rules
+        </button>
+      </div>
+
+      <ManageCategoriesModal open={manageModalOpen} onClose={() => setManageModalOpen(false)} />
 
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
         {summary.data && (
