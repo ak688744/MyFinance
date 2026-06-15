@@ -6,9 +6,11 @@ import { Card, KPIStat, Badge } from '../../components/ui/primitives';
 import { formatINR, formatPercent } from '../../lib/format';
 import { groupHoldingsByClass } from '../../lib/transforms';
 import { AddInvestmentModal } from './AddInvestmentModal';
+import { AddAccountModal } from '../accounts/AddAccountModal';
 
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
   const summary = useInvestmentSummary();
   const holdings = useHoldings();
   const assets = useAssets();
@@ -23,7 +25,10 @@ export function InvestmentsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
         <h1 className="font-heading text-2xl">Investments</h1>
-        <button onClick={() => setAddOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add investment</button>
+        <div className="flex gap-2">
+          <button onClick={() => setAddAccountOpen(true)} className="border border-brand text-brand rounded-lg px-4 py-2 text-sm">+ Add account</button>
+          <button onClick={() => setAddOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add investment</button>
+        </div>
       </div>
 
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
@@ -69,6 +74,7 @@ export function InvestmentsPage() {
       </DataState>
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <AddAccountModal open={addAccountOpen} onClose={() => setAddAccountOpen(false)} />
     </div>
   );
 }

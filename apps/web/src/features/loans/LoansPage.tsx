@@ -5,14 +5,19 @@ import { Card } from '../../components/ui/primitives';
 import { AIInsightCard } from '../../components/ui/AIInsightCard';
 import { formatINR, formatPercent } from '../../lib/format';
 import { AmortizationDrawer } from './AmortizationDrawer';
+import { AddLoanModal } from './AddLoanModal';
 
 export function LoansPage() {
   const loans = useLiabilities('active');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [addLoanOpen, setAddLoanOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl">Loans</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="font-heading text-2xl">Loans</h1>
+        <button onClick={() => setAddLoanOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add loan</button>
+      </div>
       <DataState isLoading={loans.isLoading} error={loans.error} isEmpty={(loans.data ?? []).length === 0} emptyMessage="No loans tracked." onRetry={loans.refetch}>
         <div className="flex flex-col gap-4">
           {(loans.data ?? []).map((l) => (
@@ -33,6 +38,7 @@ export function LoansPage() {
       </DataState>
       <AIInsightCard text="Prepayment-optimization advice will be provided by the assistant in L4." />
       <AmortizationDrawer id={openId} onClose={() => setOpenId(null)} />
+      <AddLoanModal open={addLoanOpen} onClose={() => setAddLoanOpen(false)} />
     </div>
   );
 }
