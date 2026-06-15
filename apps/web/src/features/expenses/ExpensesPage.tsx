@@ -5,6 +5,7 @@ import { AIInsightCard } from '../../components/ui/AIInsightCard';
 import { DonutChart, SpendBarChart } from '../../components/ui/charts';
 import { formatINR, formatDate } from '../../lib/format';
 import { summaryByCategoryWithNames } from '../../lib/transforms';
+import { CategoryChip } from './CategoryChip';
 
 export function ExpensesPage() {
   const summary = useExpenseSummary({});
@@ -49,7 +50,7 @@ export function ExpensesPage() {
             {(txns.data ?? []).map((t) => (
               <div key={t.id} className="flex justify-between items-center text-sm py-2 border-t border-gray-50">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs bg-gray-100 rounded px-2 py-0.5">{t.categoryId ?? 'Uncategorized'}</span>
+                  <CategoryChip txId={t.id} categoryId={t.categoryId} merchantLabel={t.description} categories={categories.data ?? []} />
                   <span>{t.description}</span>
                 </div>
                 <div className="flex items-center gap-4">
