@@ -50,3 +50,6 @@ yarn-error.*
 *.db
 *.db-shm
 *.db-wal
+
+# manual-test screenshots (runtime artifacts)
+apps/web/test-screenshots/*.png
