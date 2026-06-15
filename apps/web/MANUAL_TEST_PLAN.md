@@ -38,6 +38,30 @@ API `inject()` tests; this plan covers the visual/integration layer.
 - [ ] Month-on-month Spend bars render one bar per YYYY-MM.
 - [ ] Recent transactions list shows category chip, description, date, amount; credits are green, debits neutral (intentional).
 
+### Categorization & rules (Expenses)
+Demo seed (via `DB_PATH=demo.db`): 10 txns — 3× Swiggy + Netflix auto-categorized (`food`/`bills` via built-in rules); Uber ×2, Amazon, Zomato, BigBazaar (POS), ACME salary credit start **uncategorized**. (Re-seed: see the seeding block at the top + `POST /recategorize`.)
+
+**Editable chip + flag uncategorized**
+- [ ] Uncategorized rows render a **dashed amber "Uncategorized"** chip; categorized rows render a normal gray chip showing the category **name** (not the raw id).
+- [ ] Clicking any chip opens an inline category picker.
+
+**Learn prompt (the core flow)**
+- [ ] Reassign an **Uber** row to a category → the row updates immediately (one-off), THEN an inline prompt appears: *"Always categorize ‹…› as ‹X›?"*.
+- [ ] Click **Yes** → a merchant rule is created AND the **other Uber row auto-recategorizes** to the same category (verify it flips without manual action).
+- [ ] Repeat on another merchant, click **No** → only that one row changes; the sibling stays as-is; no rule created.
+- [ ] Reassigning an **already-categorized** row (e.g. a Swiggy `food` chip) also works (chip is editable regardless of source).
+- [ ] Edge: reassigning a row whose description has **no bank-format merchant key** still assigns the category, but the "always" path creates no rule (expected — merchant key only derives from `UPI-`/`ACH`/`POS` formats).
+
+**Manage Categories & Rules panel** (button in Expenses header)
+- [ ] **Add category** (e.g. "Travel") → appears in the list and in chip pickers; adding a duplicate name shows a 409 "already exists" error inline.
+- [ ] **Rename** a category → reflected in chips/donut.
+- [ ] **Delete** a category in use → confirm step → its transactions revert to **Uncategorized** (not deleted); any rules targeting it disappear.
+- [ ] **Rules section** lists rules as `ruleType · pattern → category`; add a rule, edit its category, delete a rule.
+- [ ] **"Recategorize all"** re-applies rules to non-manual transactions (manually-set rows are NOT overwritten).
+
+**Cross-check (API)**
+- [ ] After a "Yes" learn action, `GET /api/categories/rules` shows the new `merchant` rule; the spending donut re-tallies to match.
+
 ## Loans (`/loans`)
 - [ ] Loan cards show name, type, rate, EMI, principal.
 - [ ] "View amortization schedule" opens the drawer with period / due date / EMI / principal / interest / balance rows.
