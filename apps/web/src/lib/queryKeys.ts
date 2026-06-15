@@ -12,5 +12,6 @@ export const qk = {
   expenses: (params: Record<string, unknown>) => ['expenses', params] as const,
   expenseSummary: (params: Record<string, unknown>) => ['expenses', 'summary', params] as const,
   categories: () => ['categories'] as const,
+  rules: () => ['categories', 'rules'] as const,
   accounts: (domain?: string) => ['accounts', domain ?? 'all'] as const,
 };

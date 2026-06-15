@@ -4,7 +4,7 @@ import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Liability, Account, ExpenseRow, ExpenseSummary,
-  Category, LiabilityDetail,
+  Category, CategoryRule, LiabilityDetail,
 } from '../types';
 
 export const useNetWorth = () => useQuery({ queryKey: qk.networth(), queryFn: () => apiGet<NetWorthSummary>('/networth') });
@@ -56,4 +56,43 @@ export function useImportFile() {
     mutationFn: ({ path, form }: { path: string; form: FormData }) => apiUpload<unknown>(path, form),
     onSuccess: () => { qc.invalidateQueries(); },
   });
+}
+
+export const useRules = () => useQuery({ queryKey: qk.rules(), queryFn: () => apiGet<CategoryRule[]>('/categories/rules') });
+
+export function useUpdateTxCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: number; categoryId: string | null; createRuleMerchant?: boolean }) =>
+      apiSend<{ ok: boolean }>('PATCH', `/transactions/${v.id}/category`, { categoryId: v.categoryId, createRuleMerchant: v.createRuleMerchant }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
+}
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (b: { name: string; icon?: string | null }) => apiSend<{ id: string }>('POST', '/categories', b), onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }) });
+}
+export function useRenameCategory() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (v: { id: string; name: string }) => apiSend<{ id: string }>('PATCH', `/categories/${v.id}`, { name: v.name }), onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }) });
+}
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiSend<{ ok: boolean }>('DELETE', `/categories/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+}
+export function useCreateRule() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (b: { ruleType: 'merchant' | 'upi_note_keyword'; patternValue: string; categoryId: string }) => apiSend('POST', '/categories/rules', b), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+}
+export function useUpdateRule() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (v: { id: number; categoryId: string; ruleType: 'merchant' | 'upi_note_keyword' }) => apiSend('PATCH', `/categories/rules/${v.id}`, { categoryId: v.categoryId, ruleType: v.ruleType }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+}
+export function useDeleteRule() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: number) => apiSend('DELETE', `/categories/rules/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+}
+export function useRecategorize() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => apiSend('POST', '/recategorize', {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }) });
 }

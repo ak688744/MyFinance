@@ -18,6 +18,14 @@ export type ExpenseSummary = {
 
 export type Category = { id: string; name: string; icon: string | null };
 
+export type CategoryRule = {
+  id: number;
+  ruleType: 'merchant' | 'upi_note_keyword';
+  patternValue: string;
+  categoryId: string;
+  priority: number;
+};
+
 export type LiabilityDetail = {
   liability: import('@myfinance/core').Liability;
   status: import('@myfinance/core').LoanStatus;
