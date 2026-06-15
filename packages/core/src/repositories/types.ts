@@ -75,6 +75,15 @@ export interface HoldingsRepo {
 export interface CategoryRepo {
   list(): { id: string; name: string; icon: string | null }[];
   upsertStarter(c: { id: string; name: string; icon: string | null }): void;
+  create(c: { id: string; name: string; icon?: string | null }): void;
+  rename(id: string, name: string): void;
+  /**
+   * Delete a category. Reassigns any transactions tagged with it to NULL
+   * (Uncategorized) and deletes any category_rules targeting it, then removes
+   * the category row — all in one transaction. Non-destructive to txn rows.
+   */
+  delete(id: string): void;
+  exists(id: string): boolean;
 }
 
 export type CategoryRuleType = 'merchant' | 'upi_note_keyword';
