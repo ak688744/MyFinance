@@ -45,3 +45,8 @@ yarn-error.*
 *.xls
 *.csv
 /Mutual_Funds_*
+
+# local SQLite databases (runtime/demo) — never commit
+*.db
+*.db-shm
+*.db-wal
