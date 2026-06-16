@@ -53,3 +53,15 @@ yarn-error.*
 
 # manual-test screenshots (runtime artifacts)
 apps/web/test-screenshots/*.png
+
+# IDE / editor config (machine-specific)
+.idea/
+.cursor/
+
+# local AI tooling runtime artifacts (machine-specific paths)
+.ai-memory/
+.playwright-mcp/
+.mcp.json
+
+# build artifacts
+*.apk

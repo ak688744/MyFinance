@@ -1,0 +1,47 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: MyFinance
+    - link "Net Worth" [active] [ref=e6] [cursor=pointer]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer]:
+      - /url: /assistant
+  - main [ref=e11]:
+    - generic [ref=e112]:
+      - heading "Net Worth" [level=1] [ref=e113]
+      - generic [ref=e114]:
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e117]: Net Worth
+            - generic [ref=e118]: ₹1L
+          - generic [ref=e119]:
+            - button "1M" [ref=e120] [cursor=pointer]
+            - button "6M" [ref=e121] [cursor=pointer]
+            - button "1Y" [ref=e122] [cursor=pointer]
+            - button "ALL" [ref=e123] [cursor=pointer]
+        - generic [ref=e125]: Net-worth history will appear once historical valuations are available.
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: Total Assets
+          - generic [ref=e129]: ₹1,03,323
+        - generic [ref=e130]:
+          - generic [ref=e131]: Total Liabilities
+          - generic [ref=e132]: ₹0
+        - generic [ref=e133]:
+          - generic [ref=e134]: Net Worth
+          - generic [ref=e135]: ₹1,03,323
+      - generic [ref=e136]:
+        - generic [ref=e137]: Asset Composition
+        - img [ref=e140]:
+          - img [ref=e153]
+      - generic [ref=e145]:
+        - generic [ref=e146]:
+          - generic [ref=e147]: AI Insight
+          - generic [ref=e148]: BETA
+        - paragraph [ref=e149]: Your net worth reflects all tracked assets minus liabilities. Connect more accounts to sharpen the picture.
+        - button "Ask the assistant · Coming in L4" [disabled] [ref=e150]

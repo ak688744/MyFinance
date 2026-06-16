@@ -1,0 +1,40 @@
+- generic [ref=e3] [box=0,0,1200,959]:
+  - navigation [ref=e4] [box=0,0,224,876]:
+    - generic [ref=e5] [box=16,16,191,60]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+      - /url: /assistant
+  - main [ref=e11] [box=224,0,976,959]:
+    - generic [ref=e12] [box=256,32,912,895]:
+      - heading "Net Worth" [level=1] [ref=e13] [box=256,32,912,32]
+      - generic [ref=e14] [box=256,88,912,308]:
+        - generic [ref=e15] [box=276,108,872,60]:
+          - generic [ref=e16] [box=276,108,73,60]
+          - generic [ref=e19] [box=995,108,153,32]
+        - generic [ref=e25] [box=276,184,872,192]: Net-worth history will appear once historical valuations are available.
+      - generic [ref=e26] [box=256,420,912,92]:
+        - generic [ref=e27] [box=256,420,293,92]:
+          - generic [ref=e28] [box=276,440,253,16]: Total Assets
+          - generic [ref=e29] [box=276,460,253,32]: ₹0
+        - generic [ref=e30] [box=565,420,293,92]:
+          - generic [ref=e31] [box=585,440,253,16]: Total Liabilities
+          - generic [ref=e32] [box=585,460,253,32]: ₹0
+        - generic [ref=e33] [box=875,420,293,92]:
+          - generic [ref=e34] [box=895,440,253,16]: Net Worth
+          - generic [ref=e35] [box=895,460,253,32]: ₹0
+      - generic [ref=e36] [box=256,536,912,264]:
+        - generic [ref=e37] [box=276,556,872,20]: Asset Composition
+        - generic [ref=e38] [box=276,588,872,192]: No data.
+      - generic [ref=e39] [box=256,824,912,103]:
+        - generic [ref=e40] [box=276,840,876,20]:
+          - generic [ref=e41] [box=276,842,64,16]: AI Insight
+          - generic [ref=e42] [box=348,840,38,20]: BETA
+        - paragraph [ref=e43] [box=276,864,876,20]: Your net worth reflects all tracked assets minus liabilities. Connect more accounts to sharpen the picture.
+        - button "Ask the assistant · Coming in L4" [disabled] [ref=e44] [box=276,892,182,16]

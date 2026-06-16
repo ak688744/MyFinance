@@ -1,0 +1,74 @@
+- generic [ref=e3] [box=0,0,1440,960]:
+  - navigation [ref=e4] [box=0,0,224,960]:
+    - generic [ref=e5] [box=16,16,191,60]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+      - /url: /assistant
+  - main [ref=e11] [box=224,0,1216,960]:
+    - generic [ref=e12] [box=256,32,1152,283]:
+      - generic [ref=e13] [box=256,32,1152,38]:
+        - heading "Investments" [level=1] [ref=e14] [box=256,35,141,32]
+        - generic [ref=e15] [box=998,32,410,38]:
+          - button "+ Import file" [ref=e16] [cursor=pointer] [box=998,32,114,38]
+          - button "+ Add account" [ref=e17] [cursor=pointer] [box=1120,32,131,38]
+          - button "+ Add investment" [ref=e18] [cursor=pointer] [box=1260,32,148,38]
+      - generic [ref=e19] [box=256,94,1152,92]:
+        - generic [ref=e20] [box=256,94,276,92]:
+          - generic [ref=e21] [box=276,114,236,16]: Total Invested
+          - generic [ref=e22] [box=276,134,236,32]: ₹0
+        - generic [ref=e23] [box=548,94,276,92]:
+          - generic [ref=e24] [box=568,114,236,16]: Current Value
+          - generic [ref=e25] [box=568,134,236,32]: ₹0
+        - generic [ref=e26] [box=840,94,276,92]:
+          - generic [ref=e27] [box=860,114,236,16]: Total Returns
+          - generic [ref=e28] [box=860,134,236,32]: ₹0
+        - generic [ref=e29] [box=1132,94,276,92]:
+          - generic [ref=e30] [box=1152,114,236,16]: Portfolio XIRR
+          - generic [ref=e31] [box=1152,134,236,32]: —
+      - generic [ref=e33] [box=256,210,1152,105]:
+        - generic [ref=e34] [box=276,230,1112,24]:
+          - generic [ref=e35] [box=276,230,193,24]:
+            - generic [ref=e36] [box=276,230,111,24]: Fixed Deposits
+            - generic [ref=e37] [box=395,233,74,19]: computed
+          - generic [ref=e38] [box=1308,230,80,24]: ₹1,03,323
+        - generic [ref=e40] [box=276,266,1112,29]:
+          - generic [ref=e41] [box=276,271,50,20]: Test FD
+          - generic [ref=e42] [box=1318,271,70,20]: ₹1,03,323
+      - generic [ref=e44] [box=480,211,480,538]:
+        - generic [ref=e45] [box=504,235,432,28]:
+          - heading "Add Investment" [level=2] [ref=e46] [box=504,235,133,28]
+          - button "✕" [ref=e47] [cursor=pointer] [box=924,237,12,24]
+        - generic [ref=e48] [box=504,279,432,446]:
+          - generic [ref=e49] [box=504,279,432,61]:
+            - text: Asset class
+            - combobox "Asset class" [ref=e50] [box=504,303,432,37]:
+              - option "fd" [box=0,0,0,0]
+              - option "ppf" [box=0,0,0,0]
+              - option "epf" [box=0,0,0,0]
+              - option "nps" [box=0,0,0,0]
+              - option "gold" [selected] [box=0,0,0,0]
+              - option "real_estate" [box=0,0,0,0]
+              - option "cash" [box=0,0,0,0]
+          - generic [ref=e51] [box=504,352,432,16]: MANUAL — you state the current value.
+          - generic [ref=e52] [box=504,380,432,62]:
+            - text: Name
+            - textbox "Name" [ref=e53] [box=504,404,432,38]: Gold coins
+          - generic [ref=e54] [box=504,454,432,61]:
+            - text: Account
+            - combobox "Account" [ref=e55] [box=504,478,432,37]:
+              - option "Select…" [box=0,0,0,0]
+              - option "HDFC Bank · Primary" [selected] [box=0,0,0,0]
+          - generic [ref=e56] [box=504,527,432,62]:
+            - text: Current value
+            - spinbutton "Current value" [ref=e63] [box=504,551,432,38]: "50000"
+          - generic [ref=e58] [box=504,601,432,64]:
+            - text: Valued on
+            - textbox "Valued on" [active] [ref=e64] [box=504,625,432,40]: 2026-06-15
+          - button "Add investment" [ref=e62] [cursor=pointer] [box=504,685,432,40]

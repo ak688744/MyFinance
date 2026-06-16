@@ -1,0 +1,74 @@
+- generic [ref=e3] [box=0,0,1728,922]:
+  - navigation [ref=e4] [box=0,0,224,922]:
+    - generic [ref=e5] [box=16,16,191,60]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+      - /url: /assistant
+  - main [ref=e11] [box=224,0,1400,922]:
+    - generic [ref=e12] [box=256,32,1336,624]:
+      - generic [ref=e13] [box=256,32,1336,38]:
+        - heading "Investments" [level=1] [ref=e14] [box=256,35,141,32]
+        - generic [ref=e15] [box=1182,32,410,38]:
+          - button "+ Import file" [ref=e16] [cursor=pointer] [box=1182,32,114,38]
+          - button "+ Add account" [ref=e17] [cursor=pointer] [box=1304,32,131,38]
+          - button "+ Add investment" [ref=e18] [cursor=pointer] [box=1444,32,148,38]
+      - generic [ref=e19] [box=256,94,1336,92]:
+        - generic [ref=e20] [box=256,94,322,92]:
+          - generic [ref=e21] [box=276,114,282,16]: Total Invested
+          - generic [ref=e22] [box=276,134,282,32]: ₹16,000
+        - generic [ref=e23] [box=594,94,322,92]:
+          - generic [ref=e24] [box=614,114,282,16]: Current Value
+          - generic [ref=e25] [box=614,134,282,32]: ₹16,000
+        - generic [ref=e26] [box=932,94,322,92]:
+          - generic [ref=e27] [box=952,114,282,16]: Total Returns
+          - generic [ref=e28] [box=952,134,282,32]: ₹0
+        - generic [ref=e29] [box=1270,94,322,92]:
+          - generic [ref=e30] [box=1290,114,282,16]: Portfolio XIRR
+          - generic [ref=e31] [box=1290,134,282,32]: "-0.0%"
+      - generic [ref=e32] [box=256,210,1336,446]:
+        - generic [ref=e33] [box=256,210,1336,204]:
+          - generic [ref=e34] [box=276,230,1296,24]:
+            - generic [ref=e35] [box=276,230,169,24]:
+              - generic [ref=e36] [box=276,230,103,24]: Mutual Funds
+              - generic [ref=e37] [box=387,233,59,19]: market
+            - generic [ref=e38] [box=1507,230,65,24]: ₹32,000
+          - generic [ref=e39] [box=276,266,1296,128]:
+            - generic [ref=e40] [box=276,266,1296,29]:
+              - link "Test Flexi Cap Fund" [ref=e41] [cursor=pointer] [box=276,271,130,20]:
+                - /url: /investments/1
+              - generic [ref=e42] [box=1515,271,57,20]: ₹10,000
+            - generic [ref=e43] [box=276,299,1296,29]:
+              - link "Test Index Fund" [ref=e44] [cursor=pointer] [box=276,304,105,20]:
+                - /url: /investments/2
+              - generic [ref=e45] [box=1524,304,48,20]: ₹6,000
+            - generic [ref=e46] [box=276,332,1296,29]:
+              - generic [ref=e47] [box=276,337,130,20]: Test Flexi Cap Fund
+              - generic [ref=e48] [box=1515,337,57,20]: ₹10,000
+            - generic [ref=e49] [box=276,365,1296,29]:
+              - generic [ref=e50] [box=276,370,105,20]: Test Index Fund
+              - generic [ref=e51] [box=1524,370,48,20]: ₹6,000
+        - generic [ref=e52] [box=256,430,1336,105]:
+          - generic [ref=e53] [box=276,450,1296,24]:
+            - generic [ref=e54] [box=276,450,193,24]:
+              - generic [ref=e55] [box=276,450,111,24]: Fixed Deposits
+              - generic [ref=e56] [box=395,453,74,19]: computed
+            - generic [ref=e57] [box=1492,450,80,24]: ₹1,03,323
+          - generic [ref=e59] [box=276,486,1296,29]:
+            - generic [ref=e60] [box=276,491,50,20]: Test FD
+            - generic [ref=e61] [box=1502,491,70,20]: ₹1,03,323
+        - generic [ref=e62] [box=256,551,1336,105]:
+          - generic [ref=e63] [box=276,571,1296,24]:
+            - generic [ref=e64] [box=276,571,103,24]:
+              - generic [ref=e65] [box=276,571,35,24]: Gold
+              - generic [ref=e66] [box=319,574,60,19]: manual
+            - generic [ref=e67] [box=1507,571,65,24]: ₹50,000
+          - generic [ref=e69] [box=276,607,1296,29]:
+            - generic [ref=e70] [box=276,612,70,20]: Gold coins
+            - generic [ref=e71] [box=1515,612,57,20]: ₹50,000

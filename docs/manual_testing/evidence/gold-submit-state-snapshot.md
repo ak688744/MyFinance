@@ -1,0 +1,43 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer]:
+      - /url: /assistant
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Investments" [level=1] [ref=e14]
+        - generic [ref=e15]:
+          - button "+ Import file" [ref=e16] [cursor=pointer]
+          - button "+ Add account" [ref=e17] [cursor=pointer]
+          - button "+ Add investment" [ref=e18] [cursor=pointer]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: Total Invested
+          - generic [ref=e22]: ₹0
+        - generic [ref=e23]:
+          - generic [ref=e24]: Current Value
+          - generic [ref=e25]: ₹0
+        - generic [ref=e26]:
+          - generic [ref=e27]: Total Returns
+          - generic [ref=e28]: ₹0
+        - generic [ref=e29]:
+          - generic [ref=e30]: Portfolio XIRR
+          - generic [ref=e31]: —
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: Fixed Deposits
+            - generic [ref=e37]: computed
+          - generic [ref=e38]: ₹1,03,323
+        - generic [ref=e40]:
+          - generic [ref=e41]: Test FD
+          - generic [ref=e42]: ₹1,03,323
