@@ -25,7 +25,7 @@ export function LoansPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <div className="font-heading font-semibold capitalize">{l.name}</div>
-                  <div className="text-xs text-gray-500 capitalize">{l.loanType} · {formatPercent(l.annualRate)} · EMI {formatINR(l.emiAmount)}</div>
+                  <div className="text-xs text-gray-500 capitalize">{l.loanType} · {formatPercent(l.annualRate)} · EMI {formatINR(l.emi)}</div>
                 </div>
                 <div className="text-right">
                   <div className="tabular font-semibold">{formatINR(l.principal)}</div>

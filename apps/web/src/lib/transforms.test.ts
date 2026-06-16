@@ -15,6 +15,22 @@ describe('groupHoldingsByClass', () => {
     expect(fd?.valuationStrategy).toBe('computed');
     expect(groups.find((g) => g.assetClass === 'mutual_fund')?.totalValue).toBe(100);
   });
+
+  it('does not double-count MF that also appears among generic assets (BUG-002)', () => {
+    // /investments/holdings supplies MF via `mf`; /assets (getAllAssets) also
+    // projects the same MF as a 'mutual_fund' generic asset. The generic copy
+    // must be ignored so MF is counted once.
+    const mf = [{ name: 'Fund A', currentValue: 100, schemeId: 7 }];
+    const assets = [
+      { assetId: null, name: 'Fund A', assetClass: 'mutual_fund', currentValue: 100, valuationStrategy: 'market' },
+      { assetId: 1, name: 'FD 1', assetClass: 'fd', currentValue: 50, valuationStrategy: 'computed' },
+    ];
+    const groups = groupHoldingsByClass(mf as any, assets as any);
+    const mfGroup = groups.find((g) => g.assetClass === 'mutual_fund');
+    expect(mfGroup?.items).toHaveLength(1);
+    expect(mfGroup?.totalValue).toBe(100);
+    expect(groups.find((g) => g.assetClass === 'fd')?.totalValue).toBe(50);
+  });
 });
 
 describe('allocationToChartData', () => {

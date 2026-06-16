@@ -34,7 +34,13 @@ export function groupHoldingsByClass(mf: MfHolding[], assets: GenericAsset[]): H
     g.totalValue += value;
   };
   for (const h of mf) push('mutual_fund', 'market', h, h.currentValue);
-  for (const a of assets) push(a.assetClass, a.valuationStrategy, a, a.currentValue);
+  for (const a of assets) {
+    // MF holdings arrive via the `mf` param (from /investments/holdings).
+    // /assets (getAllAssets) ALSO projects MF as assetClass 'mutual_fund';
+    // skip those here so MF is not displayed/counted twice. See BUG-002.
+    if (a.assetClass === 'mutual_fund') continue;
+    push(a.assetClass, a.valuationStrategy, a, a.currentValue);
+  }
   return [...groups.values()];
 }
 

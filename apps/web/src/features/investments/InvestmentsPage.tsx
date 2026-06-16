@@ -22,6 +22,10 @@ export function InvestmentsPage() {
     mfItems,
     (assets.data ?? []).map((a) => ({ assetId: a.assetId, name: a.name, assetClass: a.assetClass, currentValue: a.currentValue, valuationStrategy: a.valuationStrategy })),
   );
+  // Total current value across ALL investment asset classes (MF + FD/gold/…),
+  // so the page surfaces the full investment value, not just the MF portfolio
+  // that /investments/summary covers. See BUG-001.
+  const allAssetsValue = groups.reduce((sum, g) => sum + g.totalValue, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -36,17 +40,21 @@ export function InvestmentsPage() {
 
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
         {summary.data && (
-          <div className="grid grid-cols-4 gap-4">
-            <KPIStat label="Total Invested" value={formatINR(summary.data.totalInvested)} />
-            <KPIStat label="Current Value" value={formatINR(summary.data.totalCurrentValue)} />
-            <KPIStat label="Total Returns" value={formatINR(summary.data.totalReturns)} />
-            <KPIStat label="Portfolio XIRR" value={formatPercent(summary.data.xirr)} />
-          </div>
+          <>
+            <div className="text-xs text-gray-500 uppercase tracking-wide">Mutual fund portfolio</div>
+            <div className="grid grid-cols-4 gap-4">
+              <KPIStat label="Total Invested" value={formatINR(summary.data.totalInvested)} />
+              <KPIStat label="Current Value" value={formatINR(summary.data.totalCurrentValue)} />
+              <KPIStat label="Total Returns" value={formatINR(summary.data.totalReturns)} />
+              <KPIStat label="Portfolio XIRR" value={formatPercent(summary.data.xirr)} />
+            </div>
+          </>
         )}
       </DataState>
 
-      <DataState isLoading={holdings.isLoading || assets.isLoading} error={holdings.error ?? assets.error} isEmpty={groups.length === 0} emptyMessage="No investments yet. Add your first.">
+      <DataState isLoading={holdings.isLoading || assets.isLoading} error={holdings.error ?? assets.error} isEmpty={groups.length === 0} emptyMessage="No investments yet. Add your first." onRetry={() => { holdings.refetch(); assets.refetch(); }}>
         <div className="flex flex-col gap-4">
+          <KPIStat label="Total Value (all investment assets)" value={formatINR(allAssetsValue)} />
           {groups.map((g) => (
             <Card key={g.assetClass}>
               <div className="flex justify-between items-center mb-3">

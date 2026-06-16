@@ -39,10 +39,17 @@ export async function apiSend<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  // Only declare a JSON content-type when we are actually sending a body.
+  // Fastify rejects a request that advertises `application/json` but has an
+  // empty body with 400 "Body cannot be empty…" — which broke body-less
+  // DELETEs (categories/rules). See BUG-003.
+  const hasBody = body !== undefined;
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: hasBody
+      ? { 'Content-Type': 'application/json', Accept: 'application/json' }
+      : { Accept: 'application/json' },
+    body: hasBody ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw await parseError(res);
   return (await res.json()).data as T;

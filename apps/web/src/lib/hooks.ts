@@ -3,8 +3,8 @@ import { apiGet, apiSend, apiUpload } from './apiClient';
 import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
-  AssetAllocation, ValuedAsset, Liability, Account, ExpenseRow, ExpenseSummary,
-  Category, CategoryRule, LiabilityDetail,
+  AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
+  Category, CategoryRule, LiabilityDetail, LiabilityListItem,
 } from '../types';
 
 export const useNetWorth = () => useQuery({ queryKey: qk.networth(), queryFn: () => apiGet<NetWorthSummary>('/networth') });
@@ -17,7 +17,7 @@ export const useAllocation = (account?: string) => useQuery({ queryKey: qk.alloc
 export const useInvestmentAccounts = () => useQuery({ queryKey: qk.investmentAccounts(), queryFn: () => apiGet<string[]>('/investments/accounts') });
 export const useAssets = (account?: string, assetClass?: string) =>
   useQuery({ queryKey: qk.assets(account, assetClass), queryFn: () => apiGet<ValuedAsset[]>('/assets', { ...(account ? { account } : {}), ...(assetClass ? { assetClass } : {}) }) });
-export const useLiabilities = (status?: string) => useQuery({ queryKey: qk.liabilities(status), queryFn: () => apiGet<Liability[]>('/liabilities', status ? { status } : undefined) });
+export const useLiabilities = (status?: string) => useQuery({ queryKey: qk.liabilities(status), queryFn: () => apiGet<LiabilityListItem[]>('/liabilities', status ? { status } : undefined) });
 export const useLiability = (id: string) => useQuery({ queryKey: qk.liability(id), queryFn: () => apiGet<LiabilityDetail>(`/liabilities/${id}`), enabled: !!id });
 export const useExpenses = (params: Record<string, string | undefined>) =>
   useQuery({ queryKey: qk.expenses(params), queryFn: () => apiGet<ExpenseRow[]>('/expenses', params) });
