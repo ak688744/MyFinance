@@ -20,25 +20,25 @@ export function ExpensesPage() {
   const byCategory = summary.data
     ? summaryByCategoryWithNames(summary.data.byCategory, categories.data ?? [])
     : [];
+  const savingsRate = summary.data && summary.data.totalIncome > 0
+    ? (summary.data.saved / summary.data.totalIncome) * 100
+    : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-between items-center">
-        <h1 className="font-heading text-2xl">Expenses</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setImportOpen(true)}
-            className="text-sm border border-brand text-brand rounded-lg px-4 py-2 hover:bg-blue-50 transition-colors"
-          >
-            + Import expenses
-          </button>
-          <button
-            onClick={() => setManageModalOpen(true)}
-            className="text-sm bg-white border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 transition-colors"
-          >
-            Manage categories & rules
-          </button>
-        </div>
+    <div className="flex flex-col gap-5">
+      <div className="flex justify-end items-center gap-2">
+        <button
+          onClick={() => setImportOpen(true)}
+          className="text-sm border border-brand text-brand rounded-lg px-4 py-2 hover:bg-blue-50 transition-colors"
+        >
+          + Import expenses
+        </button>
+        <button
+          onClick={() => setManageModalOpen(true)}
+          className="text-sm bg-white border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
+        >
+          Manage categories & rules
+        </button>
       </div>
 
       <ManageCategoriesModal open={manageModalOpen} onClose={() => setManageModalOpen(false)} />
@@ -46,17 +46,21 @@ export function ExpensesPage() {
 
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
         {summary.data && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <KPIStat label="Total Spent" value={formatINR(summary.data.totalSpent)} />
             <KPIStat label="Income" value={formatINR(summary.data.totalIncome)} />
-            <KPIStat label="Saved" value={formatINR(summary.data.saved)} />
+            <Card>
+              <div className="text-xs text-gray-500 uppercase tracking-wide">Saved</div>
+              <div className="font-heading text-2xl mt-1 tabular text-gain">{formatINR(summary.data.saved)}</div>
+              {savingsRate !== null && <div className="text-xs text-gray-400 mt-1 tabular">{savingsRate.toFixed(1)}% savings rate</div>}
+            </Card>
           </div>
         )}
       </DataState>
 
       <AIInsightCard text="Spending insights and category trends will be analysed by the assistant in L4." />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <div className="text-sm font-semibold mb-3">Spending Breakdown</div>
           <DonutChart data={byCategory.map((c) => ({ name: c.name, value: c.amount }))} />
@@ -68,22 +72,36 @@ export function ExpensesPage() {
       </div>
 
       <Card>
-        <div className="text-sm font-semibold mb-3">Recent Transactions</div>
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-sm font-semibold">Recent Transactions</div>
+        </div>
         <DataState isLoading={txns.isLoading} error={txns.error} isEmpty={(txns.data ?? []).length === 0} emptyMessage="No transactions yet." onRetry={txns.refetch}>
-          <div className="flex flex-col">
-            {(txns.data ?? []).map((t) => (
-              <div key={t.id} className="flex justify-between items-center text-sm py-2 border-t border-gray-50">
-                <div className="flex items-center gap-3">
-                  <CategoryChip txId={t.id} categoryId={t.categoryId} merchantLabel={t.description} categories={categories.data ?? []} />
-                  <span>{t.description}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-400 text-xs">{formatDate(t.transactionDate)}</span>
-                  <span className={`tabular ${t.direction === 'credit' ? 'text-gain' : ''}`}>{formatINR(t.amount)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[11px] uppercase text-gray-400 text-left">
+                <th className="font-medium py-2">Merchant</th>
+                <th className="font-medium py-2">Category</th>
+                <th className="font-medium py-2">Account</th>
+                <th className="font-medium py-2 text-right">Date</th>
+                <th className="font-medium py-2 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(txns.data ?? []).map((t) => (
+                <tr key={t.id} className="border-t border-gray-50">
+                  <td className="py-2.5 pr-3 max-w-[280px] truncate">{t.description}</td>
+                  <td className="py-2.5 pr-3">
+                    <CategoryChip txId={t.id} categoryId={t.categoryId} merchantLabel={t.description} categories={categories.data ?? []} />
+                  </td>
+                  <td className="py-2.5 pr-3 text-gray-500">{t.accountId != null ? `#${t.accountId}` : '—'}</td>
+                  <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(t.transactionDate)}</td>
+                  <td className={`py-2.5 text-right tabular ${t.direction === 'credit' ? 'text-gain' : ''}`}>
+                    {t.direction === 'credit' ? '+' : '-'}{formatINR(t.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </DataState>
       </Card>
     </div>
