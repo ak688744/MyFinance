@@ -7,16 +7,12 @@ import { formatINR, formatPercent } from '../../lib/format';
 import { classLabel } from '../../lib/transforms';
 import type { ValuedAsset } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
-import { AddAccountModal } from '../accounts/AddAccountModal';
-import { ImportModal } from '../imports/ImportModal';
 
 const delta = (n: number | null | undefined) =>
   n == null ? 'text-gray-700' : n >= 0 ? 'text-gain' : 'text-loss';
 
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
-  const [addAccountOpen, setAddAccountOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
 
   const summary = useInvestmentSummary();
@@ -63,11 +59,7 @@ export function InvestmentsPage() {
             );
           })}
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setImportOpen(true)} className="border border-brand text-brand rounded-lg px-4 py-2 text-sm">+ Import file</button>
-          <button onClick={() => setAddAccountOpen(true)} className="border border-brand text-brand rounded-lg px-4 py-2 text-sm">+ Add account</button>
-          <button onClick={() => setAddOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add investment</button>
-        </div>
+        <button onClick={() => setAddOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add investment</button>
       </div>
 
       {/* KPI strip: MF portfolio + all-assets total */}
@@ -177,8 +169,6 @@ export function InvestmentsPage() {
       </DataState>
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
-      <AddAccountModal open={addAccountOpen} onClose={() => setAddAccountOpen(false)} />
-      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
