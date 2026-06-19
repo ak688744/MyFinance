@@ -69,7 +69,11 @@ export function InvestmentsPage() {
             <KPIStat label="Total Invested" value={formatINR(summary.data.totalInvested)} />
             <KPIStat label="MF Current Value" value={formatINR(summary.data.totalCurrentValue)} delta={summary.data.totalInvested > 0 ? (summary.data.totalReturns / summary.data.totalInvested) * 100 : null} />
             <KPIStat label="Total Returns" value={formatINR(summary.data.totalReturns)} />
-            <KPIStat label="Portfolio XIRR" value={formatPercent(summary.data.xirr)} />
+            {/* getPortfolioSummary.xirr is a raw FRACTION (e.g. 0.0949 = 9.49%),
+                the Groww-validated core convention. Per-holding returnsXirr is
+                already pre-scaled to a percentage, but this one is not — scale
+                it here for display. */}
+            <KPIStat label="Portfolio XIRR" value={formatPercent(summary.data.xirr == null ? null : summary.data.xirr * 100)} />
           </div>
         )}
       </DataState>
