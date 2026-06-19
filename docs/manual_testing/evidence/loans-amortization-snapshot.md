@@ -1,0 +1,102 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]: MyFinance
+      - link "Net Worth" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - link "Investments" [ref=e7] [cursor=pointer]:
+        - /url: /investments
+      - link "Expenses" [ref=e8] [cursor=pointer]:
+        - /url: /expenses
+      - link "Loans" [ref=e9] [cursor=pointer]:
+        - /url: /loans
+      - link "Assistant" [ref=e10] [cursor=pointer]:
+        - /url: /assistant
+    - main [ref=e11]:
+      - generic [ref=e462]:
+        - generic [ref=e463]:
+          - heading "Loans" [level=1] [ref=e464]
+          - button "+ Add loan" [ref=e465] [cursor=pointer]
+        - generic [ref=e493]:
+          - generic [ref=e494]:
+            - generic [ref=e495]: Test personal loan
+            - generic [ref=e496]: personal · +10.0% · EMI —
+          - generic [ref=e497]:
+            - generic [ref=e498]: ₹5,00,000
+            - button "View amortization schedule" [active] [ref=e499] [cursor=pointer]
+        - generic [ref=e467]:
+          - generic [ref=e468]:
+            - generic [ref=e469]: AI Insight
+            - generic [ref=e470]: BETA
+          - paragraph [ref=e471]: Prepayment-optimization advice will be provided by the assistant in L4.
+          - button "Ask the assistant · Coming in L4" [disabled] [ref=e472]
+        - generic [ref=e501]:
+          - generic [ref=e502]:
+            - heading "Amortization Schedule" [level=2] [ref=e503]
+            - button "✕" [ref=e504] [cursor=pointer]
+          - table [ref=e505]:
+            - rowgroup [ref=e506]:
+              - row "# Due EMI Principal Interest Balance" [ref=e507]
+            - rowgroup [ref=e514]:
+              - row "1 1 Feb 2026 ₹9,263 ₹5,096 ₹4,167 ₹4,94,904" [ref=e515]
+              - row "2 1 Mar 2026 ₹9,263 ₹5,139 ₹4,124 ₹4,89,765" [ref=e522]
+              - row "3 1 Apr 2026 ₹9,263 ₹5,182 ₹4,081 ₹4,84,583" [ref=e529]
+              - row "4 1 May 2026 ₹9,263 ₹5,225 ₹4,038 ₹4,79,359" [ref=e536]
+              - row "5 1 Jun 2026 ₹9,263 ₹5,268 ₹3,995 ₹4,74,090" [ref=e543]
+              - row "6 1 Jul 2026 ₹9,263 ₹5,312 ₹3,951 ₹4,68,778" [ref=e550]
+              - row "7 1 Aug 2026 ₹9,263 ₹5,356 ₹3,906 ₹4,63,422" [ref=e557]
+              - row "8 1 Sep 2026 ₹9,263 ₹5,401 ₹3,862 ₹4,58,021" [ref=e564]
+              - row "9 1 Oct 2026 ₹9,263 ₹5,446 ₹3,817 ₹4,52,575" [ref=e571]
+              - row "10 1 Nov 2026 ₹9,263 ₹5,491 ₹3,771 ₹4,47,083" [ref=e578]
+              - row "11 1 Dec 2026 ₹9,263 ₹5,537 ₹3,726 ₹4,41,546" [ref=e585]
+              - row "12 1 Jan 2027 ₹9,263 ₹5,583 ₹3,680 ₹4,35,963" [ref=e592]
+              - row "13 1 Feb 2027 ₹9,263 ₹5,630 ₹3,633 ₹4,30,333" [ref=e599]
+              - row "14 1 Mar 2027 ₹9,263 ₹5,677 ₹3,586 ₹4,24,656" [ref=e606]
+              - row "15 1 Apr 2027 ₹9,263 ₹5,724 ₹3,539 ₹4,18,932" [ref=e613]
+              - row "16 1 May 2027 ₹9,263 ₹5,772 ₹3,491 ₹4,13,160" [ref=e620]
+              - row "17 1 Jun 2027 ₹9,263 ₹5,820 ₹3,443 ₹4,07,340" [ref=e627]
+              - row "18 1 Jul 2027 ₹9,263 ₹5,868 ₹3,395 ₹4,01,472" [ref=e634]
+              - row "19 1 Aug 2027 ₹9,263 ₹5,917 ₹3,346 ₹3,95,554" [ref=e641]
+              - row "20 1 Sep 2027 ₹9,263 ₹5,967 ₹3,296 ₹3,89,588" [ref=e648]
+              - row "21 1 Oct 2027 ₹9,263 ₹6,016 ₹3,247 ₹3,83,571" [ref=e655]
+              - row "22 1 Nov 2027 ₹9,263 ₹6,066 ₹3,196 ₹3,77,505" [ref=e662]
+              - row "23 1 Dec 2027 ₹9,263 ₹6,117 ₹3,146 ₹3,71,388" [ref=e669]
+              - row "24 1 Jan 2028 ₹9,263 ₹6,168 ₹3,095 ₹3,65,220" [ref=e676]
+              - row "25 1 Feb 2028 ₹9,263 ₹6,219 ₹3,043 ₹3,59,000" [ref=e683]
+              - row "26 1 Mar 2028 ₹9,263 ₹6,271 ₹2,992 ₹3,52,729" [ref=e690]
+              - row "27 1 Apr 2028 ₹9,263 ₹6,324 ₹2,939 ₹3,46,406" [ref=e697]
+              - row "28 1 May 2028 ₹9,263 ₹6,376 ₹2,887 ₹3,40,029" [ref=e704]
+              - row "29 1 Jun 2028 ₹9,263 ₹6,429 ₹2,834 ₹3,33,600" [ref=e711]
+              - row "30 1 Jul 2028 ₹9,263 ₹6,483 ₹2,780 ₹3,27,117" [ref=e718]
+              - row "31 1 Aug 2028 ₹9,263 ₹6,537 ₹2,726 ₹3,20,580" [ref=e725]
+              - row "32 1 Sep 2028 ₹9,263 ₹6,591 ₹2,672 ₹3,13,989" [ref=e732]
+              - row "33 1 Oct 2028 ₹9,263 ₹6,646 ₹2,617 ₹3,07,343" [ref=e739]
+              - row "34 1 Nov 2028 ₹9,263 ₹6,702 ₹2,561 ₹3,00,641" [ref=e746]
+              - row "35 1 Dec 2028 ₹9,263 ₹6,758 ₹2,505 ₹2,93,883" [ref=e753]
+              - row "36 1 Jan 2029 ₹9,263 ₹6,814 ₹2,449 ₹2,87,069" [ref=e760]
+              - row "37 1 Feb 2029 ₹9,263 ₹6,871 ₹2,392 ₹2,80,199" [ref=e767]
+              - row "38 1 Mar 2029 ₹9,263 ₹6,928 ₹2,335 ₹2,73,271" [ref=e774]
+              - row "39 1 Apr 2029 ₹9,263 ₹6,986 ₹2,277 ₹2,66,285" [ref=e781]
+              - row "40 1 May 2029 ₹9,263 ₹7,044 ₹2,219 ₹2,59,241" [ref=e788]
+              - row "41 1 Jun 2029 ₹9,263 ₹7,103 ₹2,160 ₹2,52,139" [ref=e795]
+              - row "42 1 Jul 2029 ₹9,263 ₹7,162 ₹2,101 ₹2,44,977" [ref=e802]
+              - row "43 1 Aug 2029 ₹9,263 ₹7,221 ₹2,041 ₹2,37,755" [ref=e809]
+              - row "44 1 Sep 2029 ₹9,263 ₹7,282 ₹1,981 ₹2,30,474" [ref=e816]
+              - row "45 1 Oct 2029 ₹9,263 ₹7,342 ₹1,921 ₹2,23,131" [ref=e823]
+              - row "46 1 Nov 2029 ₹9,263 ₹7,403 ₹1,859 ₹2,15,728" [ref=e830]
+              - row "47 1 Dec 2029 ₹9,263 ₹7,465 ₹1,798 ₹2,08,263" [ref=e837]
+              - row "48 1 Jan 2030 ₹9,263 ₹7,527 ₹1,736 ₹2,00,735" [ref=e844]
+              - row "49 1 Feb 2030 ₹9,263 ₹7,590 ₹1,673 ₹1,93,145" [ref=e851]
+              - row "50 1 Mar 2030 ₹9,263 ₹7,653 ₹1,610 ₹1,85,492" [ref=e858]
+              - row "51 1 Apr 2030 ₹9,263 ₹7,717 ₹1,546 ₹1,77,775" [ref=e865]
+              - row "52 1 May 2030 ₹9,263 ₹7,781 ₹1,481 ₹1,69,993" [ref=e872]
+              - row "53 1 Jun 2030 ₹9,263 ₹7,846 ₹1,417 ₹1,62,147" [ref=e879]
+              - row "54 1 Jul 2030 ₹9,263 ₹7,912 ₹1,351 ₹1,54,235" [ref=e886]
+              - row "55 1 Aug 2030 ₹9,263 ₹7,978 ₹1,285 ₹1,46,258" [ref=e893]
+              - row "56 1 Sep 2030 ₹9,263 ₹8,044 ₹1,219 ₹1,38,214" [ref=e900]
+              - row "57 1 Oct 2030 ₹9,263 ₹8,111 ₹1,152 ₹1,30,102" [ref=e907]
+              - row "58 1 Nov 2030 ₹9,263 ₹8,179 ₹1,084 ₹1,21,924" [ref=e914]
+              - row "59 1 Dec 2030 ₹9,263 ₹8,247 ₹1,016 ₹1,13,677" [ref=e921]
+              - row "60 1 Jan 2031 ₹9,263 ₹8,316 ₹947 ₹1,05,361" [ref=e928]
+          - generic [ref=e935]: Showing first 60 of 72 periods.
+  - generic [ref=e217]: 2026-06

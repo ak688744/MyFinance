@@ -1,0 +1,27 @@
+- generic [ref=e1] [box=0,0,1728,922]:
+  - generic [ref=e3] [box=0,0,1728,922]:
+    - navigation [ref=e4] [box=0,0,224,922]:
+      - generic [ref=e5] [box=16,16,191,60]: MyFinance
+      - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+        - /url: /
+      - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+        - /url: /investments
+      - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+        - /url: /expenses
+      - link "Loans" [active] [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+        - /url: /loans
+      - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+        - /url: /assistant
+    - main [ref=e11] [box=224,0,1400,922]:
+      - generic [ref=e462] [box=256,32,1336,271]:
+        - generic [ref=e463] [box=256,32,1336,36]:
+          - heading "Loans" [level=1] [ref=e464] [box=256,34,68,32]
+          - button "+ Add loan" [ref=e465] [cursor=pointer] [box=1488,32,104,36]
+        - generic [ref=e466] [box=256,92,1336,84]: No loans tracked.
+        - generic [ref=e467] [box=256,200,1336,103]:
+          - generic [ref=e468] [box=276,216,1300,20]:
+            - generic [ref=e469] [box=276,218,64,16]: AI Insight
+            - generic [ref=e470] [box=348,216,38,20]: BETA
+          - paragraph [ref=e471] [box=276,240,1300,20]: Prepayment-optimization advice will be provided by the assistant in L4.
+          - button "Ask the assistant · Coming in L4" [disabled] [ref=e472] [box=276,268,182,16]
+  - generic [ref=e217] [box=0,-20000,46,17]: 2026-06

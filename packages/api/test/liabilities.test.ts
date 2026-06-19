@@ -19,6 +19,11 @@ describe('liabilities routes', () => {
 
     const list = await app.inject({ method: 'GET', url: '/liabilities' });
     expect(list.json().data.length).toBe(1);
+    // BUG-005: a tenure-based loan stores emiAmount=null; the list endpoint
+    // must surface a computed monthly EMI so the UI shows it.
+    const listed = list.json().data[0];
+    expect(listed.emiAmount).toBeNull();
+    expect(listed.emi).toBeGreaterThan(0);
 
     const one = await app.inject({ method: 'GET', url: `/liabilities/${id}` });
     expect(one.statusCode).toBe(200);

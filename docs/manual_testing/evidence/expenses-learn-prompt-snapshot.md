@@ -1,0 +1,122 @@
+- generic [active] [ref=e1] [box=0,0,1728,1135]:
+  - generic [ref=e3] [box=0,0,1728,1135]:
+    - navigation [ref=e4] [box=0,0,224,922]:
+      - generic [ref=e5] [box=16,16,191,60]: MyFinance
+      - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+        - /url: /
+      - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+        - /url: /investments
+      - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+        - /url: /expenses
+      - link "Loans" [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+        - /url: /loans
+      - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+        - /url: /assistant
+    - main [ref=e11] [box=224,0,1400,1135]:
+      - generic [ref=e96] [box=256,32,1336,1071]:
+        - generic [ref=e97] [box=256,32,1336,34]:
+          - heading "Expenses" [level=1] [ref=e98] [box=256,33,109,32]
+          - button "Manage categories & rules" [ref=e99] [cursor=pointer] [box=1389,32,203,34]
+        - generic [ref=e100] [box=256,90,1336,92]:
+          - generic [ref=e101] [box=256,90,435,92]:
+            - generic [ref=e102] [box=276,110,395,16]: Total Spent
+            - generic [ref=e103] [box=276,130,395,32]: ₹7,548
+          - generic [ref=e104] [box=707,90,435,92]:
+            - generic [ref=e105] [box=727,110,395,16]: Income
+            - generic [ref=e106] [box=727,130,395,32]: ₹1,85,000
+          - generic [ref=e107] [box=1157,90,435,92]:
+            - generic [ref=e108] [box=1177,110,395,16]: Saved
+            - generic [ref=e109] [box=1177,130,395,32]: ₹1,77,452
+        - generic [ref=e110] [box=256,206,1336,103]:
+          - generic [ref=e111] [box=276,222,1300,20]:
+            - generic [ref=e112] [box=276,224,64,16]: AI Insight
+            - generic [ref=e113] [box=348,222,38,20]: BETA
+          - paragraph [ref=e114] [box=276,246,1300,20]: Spending insights and category trends will be analysed by the assistant in L4.
+          - button "Ask the assistant · Coming in L4" [disabled] [ref=e115] [box=276,274,182,16]
+        - generic [ref=e116] [box=256,333,1336,292]:
+          - generic [ref=e117] [box=256,333,660,292]:
+            - generic [ref=e118] [box=276,353,620,20]: Spending Breakdown
+            - img [ref=e121] [box=276,385,620,220]:
+              - generic [ref=e249] [box=496,405,180,180]:
+                - img [ref=e251] [box=496,405,180,175]
+                - img [ref=e253] [box=561,552,47,32]
+                - img [ref=e255] [box=603,524,62,57]
+                - img [ref=e257] [box=639,497,37,39]
+          - generic [ref=e130] [box=932,333,660,292]:
+            - generic [ref=e131] [box=952,353,620,20]: Month-on-month Spend
+            - img [ref=e134] [box=952,385,620,220]:
+              - generic [ref=e259] [box=1239,575,46,13]: 2026-06
+        - generic [ref=e144] [box=256,649,1336,454]:
+          - generic [ref=e145] [box=276,669,1296,20]: Recent Transactions
+          - generic [ref=e146] [box=276,701,1296,382]:
+            - generic [ref=e147] [box=276,701,1296,37]:
+              - generic [ref=e148] [box=276,710,747,20]:
+                - generic [ref=e263] [box=276,710,526,20]
+                - generic [ref=e150] [box=814,710,208,20]: UPI-UBER-uber@paytm-airport
+              - generic [ref=e151] [box=1451,710,121,20]:
+                - generic [ref=e152] [box=1451,712,70,16]: 18 Jun 2026
+                - generic [ref=e153] [box=1537,710,35,20]: ₹540
+            - generic [ref=e154] [box=276,738,1296,37]:
+              - generic [ref=e155] [box=276,747,315,20]:
+                - button "Bills" [ref=e156] [cursor=pointer] [box=276,747,39,20]
+                - generic [ref=e157] [box=327,747,265,20]: UPI-NETFLIX-netflix@hdfc-subscription
+              - generic [ref=e158] [box=1452,747,120,20]:
+                - generic [ref=e159] [box=1452,749,69,16]: 15 Jun 2026
+                - generic [ref=e160] [box=1537,747,35,20]: ₹649
+            - generic [ref=e161] [box=276,775,1296,37]:
+              - generic [ref=e162] [box=276,784,288,20]:
+                - button "Food" [ref=e163] [cursor=pointer] [box=276,784,44,20]
+                - generic [ref=e164] [box=332,784,232,20]: UPI-SWIGGY-swiggy@axis-snacks
+              - generic [ref=e165] [box=1452,784,120,20]:
+                - generic [ref=e166] [box=1452,786,70,16]: 12 Jun 2026
+                - generic [ref=e167] [box=1537,784,35,20]: ₹310
+            - generic [ref=e168] [box=276,812,1296,39]:
+              - generic [ref=e169] [box=276,821,378,22]:
+                - button "Uncategorized" [ref=e170] [cursor=pointer] [box=276,821,101,22]
+                - generic [ref=e171] [box=389,822,265,20]: POS 1234 567890 BIGBAZAAR MUMBAI
+              - generic [ref=e172] [box=1438,822,134,20]:
+                - generic [ref=e173] [box=1438,824,70,16]: 10 Jun 2026
+                - generic [ref=e174] [box=1524,822,48,20]: ₹2,340
+            - generic [ref=e175] [box=276,851,1296,39]:
+              - generic [ref=e176] [box=276,860,364,22]:
+                - button "Uncategorized" [ref=e177] [cursor=pointer] [box=276,860,101,22]
+                - generic [ref=e178] [box=389,861,251,20]: UPI-AMAZON-amazon@apl-shopping
+              - generic [ref=e179] [box=1443,861,129,20]:
+                - generic [ref=e180] [box=1443,863,65,16]: 9 Jun 2026
+                - generic [ref=e181] [box=1524,861,48,20]: ₹1,899
+            - generic [ref=e182] [box=276,890,1296,39]:
+              - generic [ref=e183] [box=276,899,303,22]:
+                - button "Uncategorized" [ref=e184] [cursor=pointer] [box=276,899,101,22]
+                - generic [ref=e185] [box=389,900,190,20]: UPI-UBER-uber@paytm-ride
+              - generic [ref=e186] [box=1457,900,115,20]:
+                - generic [ref=e187] [box=1457,902,64,16]: 7 Jun 2026
+                - generic [ref=e188] [box=1537,900,35,20]: ₹260
+            - generic [ref=e189] [box=276,929,1296,39]:
+              - generic [ref=e190] [box=276,938,344,22]:
+                - button "Uncategorized" [ref=e191] [cursor=pointer] [box=276,938,101,22]
+                - generic [ref=e192] [box=389,939,230,20]: UPI-ZOMATO-zomato@hdfc-lunch
+              - generic [ref=e193] [box=1457,939,115,20]:
+                - generic [ref=e194] [box=1457,941,65,16]: 5 Jun 2026
+                - generic [ref=e195] [box=1537,939,35,20]: ₹420
+            - generic [ref=e196] [box=276,968,1296,37]:
+              - generic [ref=e197] [box=276,977,283,20]:
+                - button "Food" [ref=e198] [cursor=pointer] [box=276,977,44,20]
+                - generic [ref=e199] [box=332,977,227,20]: UPI-SWIGGY-swiggy@axis-dinner
+              - generic [ref=e200] [box=1456,977,116,20]:
+                - generic [ref=e201] [box=1456,979,65,16]: 3 Jun 2026
+                - generic [ref=e202] [box=1537,977,35,20]: ₹650
+            - generic [ref=e203] [box=276,1005,1296,39]:
+              - generic [ref=e204] [box=276,1014,310,22]:
+                - button "Uncategorized" [ref=e205] [cursor=pointer] [box=276,1014,101,22]
+                - generic [ref=e206] [box=389,1015,196,20]: ACME CORP SALARY CREDIT
+              - generic [ref=e207] [box=1422,1015,150,20]:
+                - generic [ref=e208] [box=1422,1017,65,16]: 2 Jun 2026
+                - generic [ref=e209] [box=1502,1015,70,20]: ₹1,85,000
+            - generic [ref=e210] [box=276,1044,1296,39]:
+              - generic [ref=e211] [box=276,1053,334,22]:
+                - button "Uncategorized" [ref=e212] [cursor=pointer] [box=276,1053,101,22]
+                - generic [ref=e213] [box=389,1054,220,20]: UPI-SWIGGY-swiggy@axis-order
+              - generic [ref=e214] [box=1459,1054,113,20]:
+                - generic [ref=e215] [box=1459,1056,62,16]: 1 Jun 2026
+                - generic [ref=e216] [box=1537,1054,35,20]: ₹480
+  - generic [ref=e217] [box=0,-20000,46,17]: 2026-06

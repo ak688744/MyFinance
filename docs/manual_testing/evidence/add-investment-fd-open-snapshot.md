@@ -1,0 +1,69 @@
+- generic [ref=e3] [box=0,0,1440,960]:
+  - navigation [ref=e4] [box=0,0,224,960]:
+    - generic [ref=e5] [box=16,16,191,60]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer] [box=16,80,191,36]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer] [box=16,120,191,36]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer] [box=16,160,191,36]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer] [box=16,200,191,36]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer] [box=16,240,191,36]:
+      - /url: /assistant
+  - main [ref=e11] [box=224,0,1216,960]:
+    - generic [ref=e45] [box=256,32,1152,262]:
+      - generic [ref=e46] [box=256,32,1152,38]:
+        - heading "Investments" [level=1] [ref=e47] [box=256,35,141,32]
+        - generic [ref=e48] [box=998,32,410,38]:
+          - button "+ Import file" [ref=e49] [cursor=pointer] [box=998,32,114,38]
+          - button "+ Add account" [ref=e50] [cursor=pointer] [box=1120,32,131,38]
+          - button "+ Add investment" [active] [ref=e51] [cursor=pointer] [box=1260,32,148,38]
+      - generic [ref=e52] [box=256,94,1152,92]:
+        - generic [ref=e53] [box=256,94,276,92]:
+          - generic [ref=e54] [box=276,114,236,16]: Total Invested
+          - generic [ref=e55] [box=276,134,236,32]: ₹0
+        - generic [ref=e56] [box=548,94,276,92]:
+          - generic [ref=e57] [box=568,114,236,16]: Current Value
+          - generic [ref=e58] [box=568,134,236,32]: ₹0
+        - generic [ref=e59] [box=840,94,276,92]:
+          - generic [ref=e60] [box=860,114,236,16]: Total Returns
+          - generic [ref=e61] [box=860,134,236,32]: ₹0
+        - generic [ref=e62] [box=1132,94,276,92]:
+          - generic [ref=e63] [box=1152,114,236,16]: Portfolio XIRR
+          - generic [ref=e64] [box=1152,134,236,32]: —
+      - generic [ref=e65] [box=256,210,1152,84]: No investments yet. Add your first.
+      - generic [ref=e82] [box=480,174,480,612]:
+        - generic [ref=e83] [box=504,198,432,28]:
+          - heading "Add Investment" [level=2] [ref=e84] [box=504,198,133,28]
+          - button "✕" [ref=e85] [cursor=pointer] [box=924,200,12,24]
+        - generic [ref=e86] [box=504,242,432,520]:
+          - generic [ref=e87] [box=504,242,432,61]:
+            - text: Asset class
+            - combobox "Asset class" [ref=e88] [box=504,266,432,37]:
+              - option "fd" [selected] [box=0,0,0,0]
+              - option "ppf" [box=0,0,0,0]
+              - option "epf" [box=0,0,0,0]
+              - option "nps" [box=0,0,0,0]
+              - option "gold" [box=0,0,0,0]
+              - option "real_estate" [box=0,0,0,0]
+              - option "cash" [box=0,0,0,0]
+          - generic [ref=e89] [box=504,315,432,16]: COMPUTED — current value is derived from interest to today.
+          - generic [ref=e90] [box=504,343,432,62]:
+            - text: Name
+            - textbox "Name" [ref=e91] [box=504,367,432,38]
+          - generic [ref=e92] [box=504,417,432,61]:
+            - text: Account
+            - combobox "Account" [ref=e93] [box=504,441,432,37]:
+              - option "Select…" [selected] [box=0,0,0,0]
+              - option "HDFC Bank · Primary" [box=0,0,0,0]
+          - generic [ref=e94] [box=504,490,432,62]:
+            - text: Principal
+            - spinbutton "Principal" [ref=e95] [box=504,514,432,38]
+          - generic [ref=e96] [box=504,564,432,62]:
+            - text: Annual rate %
+            - spinbutton "Annual rate %" [ref=e97] [box=504,588,432,38]
+          - generic [ref=e98] [box=504,638,432,64]:
+            - text: Start date
+            - textbox "Start date" [ref=e99] [box=504,662,432,40]
+          - button "Add investment" [ref=e100] [cursor=pointer] [box=504,722,432,40]
