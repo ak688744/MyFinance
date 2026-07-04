@@ -121,6 +121,24 @@ describe('resolveCategoryFromRules — precedence', () => {
   });
 });
 
+describe('keyword (substring) rule type', () => {
+  const keywordRule = (patternValue: string, categoryId: string): StoredCategoryRule => ({
+    id: 1, ruleType: 'keyword', patternValue, categoryId, priority: 50,
+  });
+
+  it('matches when the normalized description CONTAINS the keyword (plain description)', () => {
+    const input = createCategorizationInput('SWIGGY ORDER 123');
+    const res = resolveCategoryFromRules(input, [keywordRule('swiggy', 'food')]);
+    expect(res).toEqual({ categoryId: 'food', categorySource: 'keyword_rule' });
+  });
+
+  it('does not match when the keyword is absent from the description', () => {
+    const input = createCategorizationInput('AMAZON PURCHASE');
+    const res = resolveCategoryFromRules(input, [keywordRule('swiggy', 'food')]);
+    expect(res).toEqual({ categoryId: null, categorySource: null });
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Repo-injected orchestration (fake in-memory repos)
 // ---------------------------------------------------------------------------

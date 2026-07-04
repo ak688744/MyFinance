@@ -86,7 +86,7 @@ export interface CategoryRepo {
   exists(id: string): boolean;
 }
 
-export type CategoryRuleType = 'merchant' | 'upi_note_keyword';
+export type CategoryRuleType = 'merchant' | 'upi_note_keyword' | 'keyword';
 export interface StoredCategoryRule {
   id: number;
   ruleType: CategoryRuleType;
