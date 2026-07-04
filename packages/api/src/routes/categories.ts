@@ -7,6 +7,7 @@ import {
   slugifyCategoryName,
   type CategoryRuleType,
 } from '@myfinance/core';
+import { categorizeWithAI, type LlmProvider, type CategoryForPrompt } from '@myfinance/agents';
 
 function badRequest(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -31,8 +32,13 @@ type RuleUpdateBody = { categoryId: string; ruleType: CategoryRuleType };
 type CategoryCreateBody = { name: string; icon?: string | null };
 type CategoryRenameBody = { name: string };
 
-export async function categoryRoutes(app: FastifyInstance): Promise<void> {
+export async function categoryRoutes(
+  app: FastifyInstance,
+  opts: { llmProvider: LlmProvider | null },
+): Promise<void> {
   const deps = () => ({ ruleRepo: app.repos.categoryRuleRepo, txRepo: app.repos.expenseTxRepo });
+
+  const AI_SUGGEST_CAP = 200;
 
   // GET /categories
   app.get('/categories', async () => ({ data: app.repos.categoryRepo.list() }));
@@ -110,6 +116,47 @@ export async function categoryRoutes(app: FastifyInstance): Promise<void> {
     if (!Number.isInteger(ruleId)) throw badRequest('Invalid rule id.');
     deleteRule(deps(), { ruleId });
     return { data: { ok: true } };
+  });
+
+  // POST /categories/ai-suggest — month-bounded, uncategorized-only AI categorization
+  app.post<{ Body: { from?: string; to?: string } }>('/categories/ai-suggest', async (req) => {
+    const { from, to } = req.body ?? {};
+    if (!from || !to) throw badRequest('from and to are required.');
+    if (!opts.llmProvider) throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
+
+    const all = app.repos.expenseTxRepo.listUncategorizedInRange({ from, to, limit: AI_SUGGEST_CAP + 1 });
+    const warnings: string[] = [];
+    let candidates = all;
+    if (all.length > AI_SUGGEST_CAP) {
+      candidates = all.slice(0, AI_SUGGEST_CAP);
+      warnings.push(`Only the first ${AI_SUGGEST_CAP} uncategorized transactions were processed; run again for the rest.`);
+    }
+
+    if (candidates.length === 0) {
+      return { data: { suggestions: [], counts: { suggested: 0, skipped: 0, total: 0 }, usage: { inputTokens: 0, outputTokens: 0 }, warnings } };
+    }
+
+    const categories: CategoryForPrompt[] = app.repos.categoryRepo.list().map((c) => ({ id: c.id, name: c.name }));
+
+    const result = await categorizeWithAI(
+      candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
+      { provider: opts.llmProvider, categories },
+    );
+
+    // Apply each suggestion as ai_suggested (keyword stays transient — returned only).
+    for (const s of result.suggestions) {
+      app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested');
+    }
+    if (result.skipped > 0) warnings.push(`AI could not categorize ${result.skipped} transaction(s) — try again.`);
+
+    return {
+      data: {
+        suggestions: result.suggestions,
+        counts: { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length },
+        usage: result.usage,
+        warnings,
+      },
+    };
   });
 
   // POST /recategorize
