@@ -1,6 +1,7 @@
 import { LlmError, type LlmConfig, type LlmProvider } from './types';
 import { makeOpenAiCompatProvider } from './openaiCompat';
 import { makeAnthropicProvider } from './anthropic';
+import { makeGeminiProvider } from './gemini';
 
 export function resolveProvider(config: LlmConfig): LlmProvider {
   switch (config.dialect) {
@@ -9,7 +10,7 @@ export function resolveProvider(config: LlmConfig): LlmProvider {
     case 'anthropic':
       return makeAnthropicProvider(config);
     case 'gemini':
-      throw new LlmError('provider_not_configured', 'Gemini adapter wired in Task 2.3.');
+      return makeGeminiProvider(config);
     default:
       throw new LlmError('provider_not_configured', `Unknown dialect: ${(config as LlmConfig).dialect}`);
   }
