@@ -103,7 +103,7 @@ export const categoryRules = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     ruleType: text('rule_type', {
-      enum: ['merchant', 'upi_note_keyword'],
+      enum: ['merchant', 'upi_note_keyword', 'keyword'],
     }).notNull(),
     patternValue: text('pattern_value').notNull(),
     categoryId: text('category_id')
@@ -122,7 +122,7 @@ export const categoryRules = sqliteTable(
     uniqueRuleTypePattern: unique().on(table.ruleType, table.patternValue),
     ruleTypeCheck: check(
       'category_rules_rule_type_check',
-      sql`${table.ruleType} IN ('merchant', 'upi_note_keyword')`,
+      sql`${table.ruleType} IN ('merchant', 'upi_note_keyword', 'keyword')`,
     ),
   }),
 );
