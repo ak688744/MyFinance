@@ -6,12 +6,15 @@ type CategoryChipProps = {
   categoryId: string | null;
   merchantLabel: string;
   categories: { id: string; name: string }[];
+  categorySource?: string | null;
+  aiKeyword?: string;
 };
 
-export function CategoryChip({ txId, categoryId, merchantLabel, categories }: CategoryChipProps) {
+export function CategoryChip({ txId, categoryId, merchantLabel, categories, categorySource, aiKeyword }: CategoryChipProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [showLearnPrompt, setShowLearnPrompt] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [aiConfirmed, setAiConfirmed] = useState(false);
   const updateTxCategory = useUpdateTxCategory();
 
   const currentCategory = categoryId ? categories.find((c) => c.id === categoryId) : null;
@@ -43,6 +46,46 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories }: Ca
     setShowLearnPrompt(false);
     setSelectedCategoryId(null);
   };
+
+  const handleAiConfirm = async () => {
+    if (categoryId === null) return;
+    await updateTxCategory.mutateAsync({ id: txId, categoryId });
+    if (aiKeyword && aiKeyword.trim().length >= 2) setAiConfirmed(true);
+  };
+
+  const handleAiKeywordYes = async () => {
+    if (categoryId === null) return;
+    await updateTxCategory.mutateAsync({ id: txId, categoryId, createRuleKeyword: true, keyword: aiKeyword });
+    setAiConfirmed(false);
+  };
+
+  const handleAiKeywordNo = () => setAiConfirmed(false);
+
+  const handleAiReject = async () => {
+    await updateTxCategory.mutateAsync({ id: txId, categoryId: null });
+  };
+
+  if (categorySource === 'ai_suggested' && currentCategory) {
+    if (aiConfirmed) {
+      return (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-gray-600">Always categorize transactions containing "{aiKeyword}" as {currentCategory.name}?</span>
+          <button onClick={handleAiKeywordYes} disabled={updateTxCategory.isPending} className="text-violet-700 font-medium px-1">Yes</button>
+          <span className="text-gray-400">/</span>
+          <button onClick={handleAiKeywordNo} disabled={updateTxCategory.isPending} className="text-gray-600 px-1">No</button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded px-2 py-0.5">
+          AI · {currentCategory.name}
+        </span>
+        <button aria-label="Confirm AI suggestion" onClick={handleAiConfirm} disabled={updateTxCategory.isPending} className="text-green-600 px-1">✓</button>
+        <button aria-label="Reject AI suggestion" onClick={handleAiReject} disabled={updateTxCategory.isPending} className="text-red-600 px-1">✗</button>
+      </div>
+    );
+  }
 
   if (showLearnPrompt && selectedCategory) {
     return (

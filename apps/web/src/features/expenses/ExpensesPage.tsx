@@ -44,6 +44,9 @@ export function ExpensesPage() {
     return (id: number | null) => (id != null ? m.get(id) ?? `#${id}` : '—');
   }, [accounts.data]);
 
+  // Placeholder — replaced with real AI-suggest state in Task 4.3.
+  const aiKeywordById: Record<number, string> = {};
+
   const byCategory = summary.data
     ? summaryByCategoryWithNames(summary.data.byCategory, categories.data ?? [])
     : [];
@@ -181,7 +184,7 @@ export function ExpensesPage() {
                 <tr key={t.id} className="border-t border-gray-50">
                   <td className="py-2.5 pr-3 max-w-[280px] truncate">{t.description}</td>
                   <td className="py-2.5 pr-3">
-                    <CategoryChip txId={t.id} categoryId={t.categoryId} merchantLabel={t.description} categories={categories.data ?? []} />
+                    <CategoryChip txId={t.id} categoryId={t.categoryId} categorySource={t.categorySource} aiKeyword={aiKeywordById[t.id]} merchantLabel={t.description} categories={categories.data ?? []} />
                   </td>
                   <td className="py-2.5 pr-3 text-gray-500 whitespace-nowrap">{accountLabel(t.accountId)}</td>
                   <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(t.transactionDate)}</td>
