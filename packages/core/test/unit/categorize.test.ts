@@ -137,6 +137,25 @@ describe('keyword (substring) rule type', () => {
     const res = resolveCategoryFromRules(input, [keywordRule('swiggy', 'food')]);
     expect(res).toEqual({ categoryId: null, categorySource: null });
   });
+
+  it('builtin_rule beats a keyword rule (keyword is below builtins)', () => {
+    // "zepto" is a builtin groceries match; a keyword rule mapping "zepto"→food must NOT win.
+    const input = createCategorizationInput('UPI PAYMENT ZEPTO STORE');
+    const res = resolveCategoryFromRules(input, [
+      { id: 1, ruleType: 'keyword', patternValue: 'zepto', categoryId: 'food', priority: 50 },
+    ]);
+    expect(res).toEqual({ categoryId: 'groceries', categorySource: 'builtin_rule' });
+  });
+
+  it('an exact merchant rule beats a keyword rule', () => {
+    const input = createCategorizationInput('UPI-SWIGGY-payment');
+    const res = resolveCategoryFromRules(input, [
+      { id: 1, ruleType: 'merchant', patternValue: 'swiggy', categoryId: 'food', priority: 200 },
+      { id: 2, ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'shopping', priority: 50 },
+    ]);
+    expect(res.categorySource).toBe('merchant_rule');
+    expect(res.categoryId).toBe('food');
+  });
 });
 
 // ---------------------------------------------------------------------------
