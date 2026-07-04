@@ -14,6 +14,8 @@ type TransactionsQuery = {
 type UpdateCategoryBody = {
   categoryId: string | null;
   createRuleMerchant?: boolean;
+  createRuleKeyword?: boolean;
+  keyword?: string;
 };
 
 function notFound(message: string): Error & { statusCode?: number } {
@@ -68,6 +70,26 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
             createdFromTransactionId: id,
           });
           // Recategorize non-manual transactions with the new rule
+          recategorizeNonManualTransactions(deps());
+        }
+      }
+
+      // If createRuleKeyword flag is set and categoryId is not null, create a keyword rule
+      const { createRuleKeyword, keyword } = req.body ?? ({} as UpdateCategoryBody);
+      if (createRuleKeyword && categoryId !== null) {
+        const pattern = (keyword ?? '').trim();
+        if (pattern.length >= 2) {
+          try {
+            saveCategoryMemoryRule(deps(), {
+              ruleType: 'keyword',
+              patternValue: pattern,
+              categoryId,
+              createdFromTransactionId: id,
+            });
+          } catch (e) {
+            // Ignore unique-constraint (rule already exists); rethrow anything else.
+            if (!/unique/i.test((e as Error).message)) throw e;
+          }
           recategorizeNonManualTransactions(deps());
         }
       }
