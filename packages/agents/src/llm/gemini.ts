@@ -13,12 +13,12 @@ export function makeGeminiProvider(
   return {
     async complete({ prompt, jsonSchema }) {
       const base = config.baseURL ?? DEFAULT_BASE;
-      const url = `${base}/models/${config.model}:generateContent?key=${config.apiKey}`;
+      const url = `${base}/models/${encodeURIComponent(config.model)}:generateContent`;
       let res: Response;
       try {
         res = await fetchFn(url, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', 'x-goog-api-key': config.apiKey },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: { responseMimeType: 'application/json', responseSchema: jsonSchema },

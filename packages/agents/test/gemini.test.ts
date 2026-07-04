@@ -41,4 +41,23 @@ describe('gemini adapter', () => {
     );
     await expect(p.complete({ prompt: 'x', jsonSchema: {} })).rejects.toMatchObject({ kind: 'auth' });
   });
+
+  it('sends the api key as x-goog-api-key header, not in the URL', async () => {
+    let capturedUrl = '';
+    let capturedInit: any = null;
+    const fetchFn = (async (url: string, init: any) => {
+      capturedUrl = url;
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }),
+        text: async () => '{}',
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+    const p = makeGeminiProvider({ dialect: 'gemini', model: 'gemini-1.5-flash', apiKey: 'secret-key' }, { fetchFn });
+    await p.complete({ prompt: 'x', jsonSchema: {} });
+    expect(capturedUrl).not.toContain('key=');
+    expect(capturedInit.headers['x-goog-api-key']).toBe('secret-key');
+  });
 });
