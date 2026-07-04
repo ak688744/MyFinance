@@ -1,0 +1,17 @@
+export const qk = {
+  networth: () => ['networth'] as const,
+  networthHistory: (dates: string) => ['networth', 'history', dates] as const,
+  investmentSummary: () => ['investments', 'summary'] as const,
+  returns: (period: string) => ['investments', 'returns', period] as const,
+  holdings: (account?: string) => ['investments', 'holdings', account ?? 'all'] as const,
+  allocation: (account?: string) => ['investments', 'allocation', account ?? 'all'] as const,
+  investmentAccounts: () => ['investments', 'accounts'] as const,
+  assets: (account?: string, assetClass?: string) => ['assets', account ?? 'all', assetClass ?? 'all'] as const,
+  liabilities: (status?: string) => ['liabilities', status ?? 'all'] as const,
+  liability: (id: string) => ['liabilities', id] as const,
+  expenses: (params: Record<string, unknown>) => ['expenses', params] as const,
+  expenseSummary: (params: Record<string, unknown>) => ['expenses', 'summary', params] as const,
+  categories: () => ['categories'] as const,
+  rules: () => ['categories', 'rules'] as const,
+  accounts: (domain?: string) => ['accounts', domain ?? 'all'] as const,
+};

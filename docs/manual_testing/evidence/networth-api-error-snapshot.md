@@ -1,0 +1,19 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer]:
+      - /url: /assistant
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - heading "Net Worth" [level=1] [ref=e13]
+      - generic [ref=e14]:
+        - text: Internal Server Error
+        - button "Retry" [ref=e15] [cursor=pointer]

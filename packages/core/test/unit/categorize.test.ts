@@ -208,10 +208,20 @@ function makeFakeTxRepo(
         t.categorySource = categorySource;
       }
     },
+    getById(id) {
+      const t = txns.find((x) => x.id === id);
+      return t ? { id: t.id, description: t.description } : null;
+    },
     insertIgnore() {
       throw new Error('not used');
     },
     updateAccount() {
+      throw new Error('not used');
+    },
+    query() {
+      throw new Error('not used');
+    },
+    summary() {
       throw new Error('not used');
     },
   };

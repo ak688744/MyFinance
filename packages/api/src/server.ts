@@ -6,6 +6,7 @@ import { registerErrorHandler } from './errors';
 import { registerDb } from './plugins/db';
 import { healthRoutes } from './routes/health';
 import { transactionRoutes } from './routes/transactions';
+import { expenseRoutes } from './routes/expenses';
 import { investmentRoutes } from './routes/investments';
 import { importRoutes, type AmfiMatch } from './routes/imports';
 import { categoryRoutes } from './routes/categories';
@@ -46,6 +47,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
 
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
+  await app.register(expenseRoutes);
   await app.register(investmentRoutes);
   await app.register(categoryRoutes);
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });

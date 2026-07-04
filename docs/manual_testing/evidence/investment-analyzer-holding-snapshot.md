@@ -1,0 +1,38 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: MyFinance
+    - link "Net Worth" [ref=e6] [cursor=pointer]:
+      - /url: /
+    - link "Investments" [ref=e7] [cursor=pointer]:
+      - /url: /investments
+    - link "Expenses" [ref=e8] [cursor=pointer]:
+      - /url: /expenses
+    - link "Loans" [ref=e9] [cursor=pointer]:
+      - /url: /loans
+    - link "Assistant" [ref=e10] [cursor=pointer]:
+      - /url: /assistant
+  - main [ref=e11]:
+    - generic [ref=e72]:
+      - heading "Test Flexi Cap Fund" [level=1] [ref=e73]
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - generic [ref=e76]: Current Value
+          - generic [ref=e77]: ₹10,000
+        - generic [ref=e78]:
+          - generic [ref=e79]: Invested
+          - generic [ref=e80]: ₹10,000
+        - generic [ref=e81]:
+          - generic [ref=e82]: Total Returns
+          - generic [ref=e83]: ₹0
+        - generic [ref=e84]:
+          - generic [ref=e85]: XIRR
+          - generic [ref=e86]: —
+      - generic [ref=e87]:
+        - generic [ref=e88]: Performance Trend
+        - generic [ref=e89]: Per-holding history will appear once historical NAV is wired.
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - generic [ref=e92]: AI Insight
+          - generic [ref=e93]: BETA
+        - paragraph [ref=e94]: Detailed fund analytics (sector split, benchmark, news) arrive with the L4 assistant.
+        - button "Ask the assistant · Coming in L4" [disabled] [ref=e95]

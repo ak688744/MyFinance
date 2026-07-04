@@ -1,5 +1,19 @@
 import type { FastifyInstance } from 'fastify';
-import { amortizationSchedule, loanStatus, type Liability } from '@myfinance/core';
+import { amortizationSchedule, computeEmi, loanStatus, type Liability } from '@myfinance/core';
+
+/**
+ * Resolve the monthly EMI for a loan. Loans created with a tenure (and no
+ * explicit emiAmount) store emiAmount=null, so the list endpoint previously
+ * surfaced `null` and the UI rendered "EMI –". Compute it on read so every
+ * loan row carries an EMI. See BUG-005.
+ */
+function resolveEmi(loan: Liability): number | null {
+  if (loan.emiAmount != null) return loan.emiAmount;
+  if (loan.tenureMonths != null && loan.tenureMonths > 0) {
+    return computeEmi(loan.principal, loan.annualRate, loan.tenureMonths);
+  }
+  return null;
+}
 
 function httpError(message: string, statusCode: number): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -18,9 +32,10 @@ type LiabilityBody = Partial<{
 export async function liabilityRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Querystring: { status?: string } }>('/liabilities', async (req) => {
     const status = req.query.status;
-    const data = app.repos.liabilityRepo.list(
+    const rows = app.repos.liabilityRepo.list(
       status === 'active' || status === 'closed' ? { status } : undefined,
     );
+    const data = rows.map((l) => ({ ...l, emi: resolveEmi(l) }));
     return { data };
   });
 
