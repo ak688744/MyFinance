@@ -261,6 +261,9 @@ function makeFakeTxRepo(
     summary() {
       throw new Error('not used');
     },
+    listUncategorizedInRange() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }

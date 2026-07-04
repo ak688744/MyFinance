@@ -113,6 +113,7 @@ export type ExpenseTransactionRow = {
   amount: number;
   direction: 'debit' | 'credit';
   categoryId: string | null;
+  categorySource: string | null;
   accountId: number | null;
   balance: number | null;
 };
@@ -188,6 +189,13 @@ export interface ExpenseTransactionRepo {
   }): number;
   /** UPDATE transactions SET account_id = ? WHERE id = ?. */
   updateAccount(id: number, accountId: number | null): void;
+  /**
+   * Uncategorized (category_id IS NULL) transactions within an inclusive
+   * transaction_date window, ordered ASC. Feeds the AI-suggest endpoint.
+   */
+  listUncategorizedInRange(range: { from: string; to: string; limit?: number }): {
+    id: number; description: string; amount: number; direction: 'debit' | 'credit';
+  }[];
 }
 
 export type ImportRecord = {

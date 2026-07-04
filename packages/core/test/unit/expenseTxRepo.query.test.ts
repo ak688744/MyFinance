@@ -145,3 +145,46 @@ describe('ExpenseTransactionRepo.summary with excludeFromSpend/investmentCategor
     expect(s.byCategory.find((c) => c.categoryId === null)?.amount).toBe(500);
   });
 });
+
+describe('ExpenseTransactionRepo.listUncategorizedInRange', () => {
+  let repo: ReturnType<typeof makeExpenseTransactionRepo>;
+  let sqlite: ReturnType<typeof runMigrations>['sqlite'];
+
+  beforeEach(() => {
+    const { db, sqlite: s } = runMigrations(':memory:');
+    sqlite = s;
+    repo = makeExpenseTransactionRepo(db);
+  });
+
+  it('listUncategorizedInRange returns only null-category txns within the date window', () => {
+    sqlite.prepare(`INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?,?,?)`).run('food', 'Food', null);
+    const ins = sqlite.prepare(
+      `INSERT INTO transactions
+        (transaction_date, description, normalized_description, amount, direction,
+         category_id, category_source, source_type, dedupe_key)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+    );
+    ins.run('2026-03-05', 'UNCAT MARCH', 'uncat march', 100, 'debit', null, null, 'hdfc', 'uc1');
+    ins.run('2026-03-20', 'FOOD MARCH', 'food march', 200, 'debit', 'food', 'manual', 'hdfc', 'uc2');
+    ins.run('2026-02-25', 'UNCAT FEB', 'uncat feb', 150, 'debit', null, null, 'hdfc', 'uc3');
+
+    const rows = repo.listUncategorizedInRange({ from: '2026-03-01', to: '2026-03-31' });
+    expect(rows.map((r) => r.description)).toEqual(['UNCAT MARCH']);
+    expect(rows[0]).toMatchObject({ direction: 'debit', amount: 100 });
+  });
+
+  it('query() exposes categorySource', () => {
+    sqlite.prepare(`INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?,?,?)`).run('food', 'Food', null);
+    const ins = sqlite.prepare(
+      `INSERT INTO transactions
+        (transaction_date, description, normalized_description, amount, direction,
+         category_id, category_source, source_type, dedupe_key)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+    );
+    ins.run('2026-03-05', 'TEST', 'test', 100, 'debit', 'food', 'manual', 'hdfc', 'cs1');
+
+    const rows = repo.query({ from: '2026-03-01', to: '2026-03-31' });
+    expect(rows[0]).toHaveProperty('categorySource');
+    expect(rows[0].categorySource).toBe('manual');
+  });
+});

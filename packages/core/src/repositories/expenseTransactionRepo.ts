@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { transactions } from '../db/schema';
 import type { ExpenseTransactionRepo } from './types';
@@ -136,6 +136,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           amount: transactions.amount,
           direction: transactions.direction,
           categoryId: transactions.categoryId,
+          categorySource: transactions.categorySource,
           accountId: transactions.accountId,
           balance: transactions.balance,
         })
@@ -212,6 +213,26 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         byCategory,
         byMonth,
       };
+    },
+
+    listUncategorizedInRange({ from, to, limit }) {
+      const rows = db
+        .select({
+          id: transactions.id,
+          description: transactions.description,
+          amount: transactions.amount,
+          direction: transactions.direction,
+        })
+        .from(transactions)
+        .where(and(
+          isNull(transactions.categoryId),
+          gte(transactions.transactionDate, from),
+          lte(transactions.transactionDate, to),
+        ))
+        .orderBy(asc(transactions.transactionDate))
+        .limit(limit ?? 1000)
+        .all();
+      return rows as { id: number; description: string; amount: number; direction: 'debit' | 'credit' }[];
     },
   };
 }
