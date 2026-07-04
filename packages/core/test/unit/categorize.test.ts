@@ -326,6 +326,21 @@ describe('saveCategoryMemoryRule', () => {
     );
     expect(calls.createRule[0].priority).toBe(100);
   });
+
+  it('stores a keyword rule with priority 50', () => {
+    const { repo: ruleRepo, calls } = makeFakeRuleRepo();
+    saveCategoryMemoryRule(
+      { ruleRepo },
+      { ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'food', createdFromTransactionId: 7 },
+    );
+    expect(calls.createRule).toHaveLength(1);
+    expect(calls.createRule[0]).toMatchObject({
+      ruleType: 'keyword',
+      patternValue: 'swiggy',
+      categoryId: 'food',
+      priority: 50,
+    });
+  });
 });
 
 describe('createRule', () => {

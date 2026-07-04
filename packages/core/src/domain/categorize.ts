@@ -243,7 +243,7 @@ export function saveCategoryMemoryRule(
     return;
   }
 
-  const priority = input.ruleType === 'merchant' ? 200 : 100;
+  const priority = input.ruleType === 'merchant' ? 200 : input.ruleType === 'upi_note_keyword' ? 100 : 50;
 
   deps.ruleRepo.createRule({
     ruleType: input.ruleType,
