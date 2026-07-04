@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, like, ne, or, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { transactions } from '../db/schema';
 import type { ExpenseTransactionRepo } from './types';
@@ -150,20 +150,38 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
     },
 
     summary(filters = {}) {
-      const conds = [];
-      if (filters.from !== undefined) conds.push(gte(transactions.transactionDate, filters.from));
-      if (filters.to !== undefined) conds.push(lte(transactions.transactionDate, filters.to));
-      if (filters.accountId !== undefined) conds.push(eq(transactions.accountId, filters.accountId));
-      const where = conds.length ? and(...conds) : undefined;
+      const excludeFromSpend = filters.excludeFromSpend ?? [];
+      const investmentCategories = filters.investmentCategories ?? [];
 
+      // Window conditions (date + account) shared by every aggregate below.
+      const windowConds = [];
+      if (filters.from !== undefined) windowConds.push(gte(transactions.transactionDate, filters.from));
+      if (filters.to !== undefined) windowConds.push(lte(transactions.transactionDate, filters.to));
+      if (filters.accountId !== undefined) windowConds.push(eq(transactions.accountId, filters.accountId));
+
+      // Excludes only ever match non-null categories, so uncategorized (NULL)
+      // debits always remain in spend. `NULL NOT IN (...)` is NULL (not true) in
+      // SQL, so OR isNull to keep uncategorized rows.
+      const excludeCond = excludeFromSpend.length
+        ? or(isNull(transactions.categoryId), notInArray(transactions.categoryId, excludeFromSpend))
+        : undefined;
+
+      // totals: spend/income both drop excluded categories; invested sums the
+      // investment-category debits regardless of the exclude list.
       const totalsRow = db
         .select({
-          totalSpent: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'debit' THEN ${transactions.amount} ELSE 0 END), 0)`,
-          totalIncome: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'credit' THEN ${transactions.amount} ELSE 0 END), 0)`,
+          totalSpent: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'debit' AND (${transactions.categoryId} IS NULL OR ${transactions.categoryId} NOT IN ${excludeFromSpend.length ? excludeFromSpend : ['']}) THEN ${transactions.amount} ELSE 0 END), 0)`,
+          totalIncome: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'credit' AND (${transactions.categoryId} IS NULL OR ${transactions.categoryId} NOT IN ${excludeFromSpend.length ? excludeFromSpend : ['']}) THEN ${transactions.amount} ELSE 0 END), 0)`,
+          invested: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'debit' AND ${transactions.categoryId} IN ${investmentCategories.length ? investmentCategories : ['']} THEN ${transactions.amount} ELSE 0 END), 0)`,
         })
         .from(transactions)
-        .where(where)
-        .get() ?? { totalSpent: 0, totalIncome: 0 };
+        .where(windowConds.length ? and(...windowConds) : undefined)
+        .get() ?? { totalSpent: 0, totalIncome: 0, invested: 0 };
+
+      // byCategory / byMonth are the true-spend breakdowns: debit only, excluded
+      // categories removed.
+      const spendConds = [eq(transactions.direction, 'debit'), ...windowConds];
+      if (excludeCond) spendConds.push(excludeCond);
 
       const byCategory = db
         .select({
@@ -171,7 +189,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           amount: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
         })
         .from(transactions)
-        .where(conds.length ? and(...conds, eq(transactions.direction, 'debit')) : eq(transactions.direction, 'debit'))
+        .where(and(...spendConds))
         .groupBy(transactions.categoryId)
         .all();
 
@@ -181,7 +199,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           spent: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
         })
         .from(transactions)
-        .where(conds.length ? and(...conds, eq(transactions.direction, 'debit')) : eq(transactions.direction, 'debit'))
+        .where(and(...spendConds))
         .groupBy(sql`substr(${transactions.transactionDate}, 1, 7)`)
         .orderBy(sql`substr(${transactions.transactionDate}, 1, 7)`)
         .all();
@@ -190,6 +208,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         totalSpent: totalsRow.totalSpent,
         totalIncome: totalsRow.totalIncome,
         saved: totalsRow.totalIncome - totalsRow.totalSpent,
+        invested: totalsRow.invested,
         byCategory,
         byMonth,
       };

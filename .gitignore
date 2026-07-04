@@ -65,3 +65,6 @@ apps/web/test-screenshots/*.png
 
 # build artifacts
 *.apk
+
+# agent build-up transcript (kept locally for future agent-build reference; not committed)
+agent_buildup.txt
