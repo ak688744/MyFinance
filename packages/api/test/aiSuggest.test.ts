@@ -37,10 +37,12 @@ describe('POST /categories/ai-suggest', () => {
     expect(body.data.counts.total).toBe(1);
     expect(body.data.suggestions.length).toBeGreaterThan(0);
 
-    // The applied row now carries category_source = 'ai_suggested'
-    const after = app.sqlite.prepare('SELECT category_id, category_source FROM transactions WHERE id = ?').get(row.id) as any;
+    // The applied row now carries category_source = 'ai_suggested' AND the AI
+    // keyword is PERSISTED (so the pending suggestion survives a page refresh).
+    const after = app.sqlite.prepare('SELECT category_id, category_source, ai_keyword FROM transactions WHERE id = ?').get(row.id) as any;
     expect(after.category_source).toBe('ai_suggested');
     expect(after.category_id).toBe('food');
+    expect(after.ai_keyword).toBe('swiggy');
   });
 
   it('returns 400 when no provider is configured', async () => {

@@ -259,7 +259,7 @@ export function ExpensesPage() {
                 <tr key={t.id} className="border-t border-gray-50">
                   <td className="py-2.5 pr-3 max-w-[280px] truncate">{t.description}</td>
                   <td className="py-2.5 pr-3">
-                    <CategoryChip txId={t.id} categoryId={t.categoryId} categorySource={t.categorySource} aiKeyword={aiKeywordById[t.id]} merchantLabel={t.description} categories={categories.data ?? []} />
+                    <CategoryChip txId={t.id} categoryId={t.categoryId} categorySource={t.categorySource} aiKeyword={aiKeywordById[t.id] ?? t.aiKeyword ?? undefined} merchantLabel={t.description} categories={categories.data ?? []} />
                   </td>
                   <td className="py-2.5 pr-3 text-gray-500 whitespace-nowrap">{accountLabel(t.accountId)}</td>
                   <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(t.transactionDate)}</td>

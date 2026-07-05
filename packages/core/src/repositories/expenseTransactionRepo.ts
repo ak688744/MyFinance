@@ -58,13 +58,17 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .all();
     },
 
-    updateCategory(id, categoryId, categorySource) {
+    updateCategory(id, categoryId, categorySource, aiKeyword = null) {
       // UPDATE transactions SET category_id = ?, category_source = ?,
-      //   updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      //   ai_keyword = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      // ai_keyword defaults to null: any transition OUT of 'ai_suggested'
+      // (confirm → manual, recategorize sweep) clears the stale pending keyword;
+      // only the ai-suggest endpoint passes a keyword to persist it.
       db.update(transactions)
         .set({
           categoryId,
           categorySource,
+          aiKeyword,
           updatedAt: sql`CURRENT_TIMESTAMP`,
         })
         .where(eq(transactions.id, id))
@@ -140,6 +144,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           direction: transactions.direction,
           categoryId: transactions.categoryId,
           categorySource: transactions.categorySource,
+          aiKeyword: transactions.aiKeyword,
           accountId: transactions.accountId,
           balance: transactions.balance,
         })

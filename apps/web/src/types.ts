@@ -7,7 +7,7 @@ export type {
 export type ExpenseRow = {
   id: number; transactionDate: string; description: string;
   amount: number; direction: 'debit' | 'credit';
-  categoryId: string | null; categorySource: string | null; accountId: number | null; balance: number | null;
+  categoryId: string | null; categorySource: string | null; aiKeyword: string | null; accountId: number | null; balance: number | null;
 };
 
 export type ExpenseSummary = {

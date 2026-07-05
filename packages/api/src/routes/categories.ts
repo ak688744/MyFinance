@@ -164,9 +164,11 @@ export async function categoryRoutes(
       throw e;
     }
 
-    // Apply each suggestion as ai_suggested (keyword stays transient — returned only).
+    // Apply each suggestion as ai_suggested, persisting the AI keyword so the
+    // pending suggestion (and its "always do this?" prompt) survives a refresh.
+    // Empty keyword (non-substring, blanked by categorizeWithAI) → null.
     for (const s of result.suggestions) {
-      app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested');
+      app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested', s.keyword || null);
     }
     req.log.info(
       { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length, usage: result.usage },

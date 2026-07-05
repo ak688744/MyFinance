@@ -37,9 +37,9 @@ describe('PATCH /transactions/:id/category — keyword rule', () => {
     // Two UNRELATED transactions, both left in the pending 'ai_suggested' state
     // (as a fresh AI run leaves them). Confirming one must not disturb the other.
     app.sqlite.prepare(
-      `INSERT INTO transactions (transaction_date, description, normalized_description, amount, direction, category_id, category_source, source_type, dedupe_key)
-       VALUES ('2026-03-10','SWIGGY ORDER 999','swiggy order 999',250,'debit','food','ai_suggested','manual','k1'),
-              ('2026-03-12','UBER TRIP 42','uber trip 42',180,'debit','transport','ai_suggested','manual','k2')`,
+      `INSERT INTO transactions (transaction_date, description, normalized_description, amount, direction, category_id, category_source, ai_keyword, source_type, dedupe_key)
+       VALUES ('2026-03-10','SWIGGY ORDER 999','swiggy order 999',250,'debit','food','ai_suggested','swiggy','manual','k1'),
+              ('2026-03-12','UBER TRIP 42','uber trip 42',180,'debit','transport','ai_suggested','uber','manual','k2')`,
     ).run();
     const swiggy = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key='k1'").get() as { id: number };
     const uber = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key='k2'").get() as { id: number };
@@ -51,9 +51,15 @@ describe('PATCH /transactions/:id/category — keyword rule', () => {
     });
     expect(res.statusCode).toBe(200);
 
-    // The unrelated Uber row must STILL be its pending AI suggestion — untouched.
-    const u = app.sqlite.prepare('SELECT category_id, category_source FROM transactions WHERE id=?').get(uber.id) as any;
+    // The confirmed row is now manual and its pending ai_keyword is cleared.
+    const t = app.sqlite.prepare('SELECT category_source, ai_keyword FROM transactions WHERE id=?').get(swiggy.id) as any;
+    expect(t.category_source).toBe('manual');
+    expect(t.ai_keyword).toBeNull();
+
+    // The unrelated Uber row must STILL be its pending AI suggestion — keyword intact.
+    const u = app.sqlite.prepare('SELECT category_id, category_source, ai_keyword FROM transactions WHERE id=?').get(uber.id) as any;
     expect(u.category_id).toBe('transport');
     expect(u.category_source).toBe('ai_suggested');
+    expect(u.ai_keyword).toBe('uber');
   });
 });

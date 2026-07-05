@@ -114,6 +114,7 @@ export type ExpenseTransactionRow = {
   direction: 'debit' | 'credit';
   categoryId: string | null;
   categorySource: string | null;
+  aiKeyword: string | null;
   accountId: number | null;
   balance: number | null;
 };
@@ -121,7 +122,12 @@ export type ExpenseTransactionRow = {
 export interface ExpenseTransactionRepo {
   list(filters?: { limit?: number; offset?: number; categoryId?: string }): unknown[];
   getNonManualForRecategorization(): { id: number; description: string; merchantKey: string | null; upiNoteKeyword: string | null }[];
-  updateCategory(id: number, categoryId: string | null, categorySource: string | null): void;
+  /**
+   * Set category + source, and optionally an AI keyword. aiKeyword defaults to
+   * null: any transition out of 'ai_suggested' clears the pending keyword; only
+   * the ai-suggest endpoint passes a keyword to persist it across refreshes.
+   */
+  updateCategory(id: number, categoryId: string | null, categorySource: string | null, aiKeyword?: string | null): void;
   getById(id: number): { id: number; description: string } | null;
   /**
    * Filterable expense-transaction query (richer than list). All filters

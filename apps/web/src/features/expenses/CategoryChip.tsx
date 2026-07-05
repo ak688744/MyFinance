@@ -15,6 +15,10 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories, cate
   const [showLearnPrompt, setShowLearnPrompt] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [aiConfirmed, setAiConfirmed] = useState(false);
+  // Captured at confirm-click. The one-off confirm clears the persisted ai_keyword
+  // (row → 'manual'), so the `aiKeyword` prop goes null on refetch; holding it in
+  // local state keeps the "always do this?" prompt working through that flip.
+  const [capturedKeyword, setCapturedKeyword] = useState<string | null>(null);
   const updateTxCategory = useUpdateTxCategory();
 
   const currentCategory = categoryId ? categories.find((c) => c.id === categoryId) : null;
@@ -49,17 +53,21 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories, cate
 
   const handleAiConfirm = async () => {
     if (categoryId === null) return;
+    // Capture the keyword BEFORE the confirm clears it (row → manual, prop → null).
+    const kw = aiKeyword && aiKeyword.trim().length >= 2 ? aiKeyword.trim() : null;
+    setCapturedKeyword(kw);
     await updateTxCategory.mutateAsync({ id: txId, categoryId });
-    if (aiKeyword && aiKeyword.trim().length >= 2) setAiConfirmed(true);
+    if (kw) setAiConfirmed(true);
   };
 
   const handleAiKeywordYes = async () => {
-    if (categoryId === null) return;
-    await updateTxCategory.mutateAsync({ id: txId, categoryId, createRuleKeyword: true, keyword: aiKeyword });
+    if (categoryId === null || !capturedKeyword) return;
+    await updateTxCategory.mutateAsync({ id: txId, categoryId, createRuleKeyword: true, keyword: capturedKeyword });
     setAiConfirmed(false);
+    setCapturedKeyword(null);
   };
 
-  const handleAiKeywordNo = () => setAiConfirmed(false);
+  const handleAiKeywordNo = () => { setAiConfirmed(false); setCapturedKeyword(null); };
 
   const handleAiReject = async () => {
     await updateTxCategory.mutateAsync({ id: txId, categoryId: null });
@@ -70,10 +78,10 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories, cate
   // categorySource='manual'; gating this branch on local state keeps the Yes/No
   // prompt mounted so the user can actually create the keyword rule. currentCategory
   // derives from categoryId (unchanged by the one-off assign) so the label stays valid.
-  if (aiConfirmed && aiKeyword && aiKeyword.trim().length >= 2 && currentCategory) {
+  if (aiConfirmed && capturedKeyword && currentCategory) {
     return (
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-gray-600">Always categorize transactions containing "{aiKeyword}" as {currentCategory.name}?</span>
+        <span className="text-gray-600">Always categorize transactions containing "{capturedKeyword}" as {currentCategory.name}?</span>
         <button onClick={handleAiKeywordYes} disabled={updateTxCategory.isPending} className="text-violet-700 font-medium px-1">Yes</button>
         <span className="text-gray-400">/</span>
         <button onClick={handleAiKeywordNo} disabled={updateTxCategory.isPending} className="text-gray-600 px-1">No</button>
