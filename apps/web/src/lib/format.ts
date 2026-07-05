@@ -25,6 +25,22 @@ export function formatCompactINR(value: number | null | undefined): string {
   return formatINR(value);
 }
 
+/**
+ * Ultra-compact INR for chart labels/axes: ₹42K, ₹4.2L, ₹1.8Cr. Includes the
+ * thousands (K) tier that formatCompactINR omits, and drops the decimal when
+ * it is a whole number (₹5L not ₹5.0L). Use full formatINR in tooltips.
+ */
+export function formatCompactShort(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  const fmt = (n: number, suffix: string) => `${sign}₹${n.toFixed(1).replace(/\.0$/, '')}${suffix}`;
+  if (abs >= 1e7) return fmt(abs / 1e7, 'Cr');
+  if (abs >= 1e5) return fmt(abs / 1e5, 'L');
+  if (abs >= 1e3) return fmt(abs / 1e3, 'K');
+  return formatINR(value);
+}
+
 export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : value < 0 ? '-' : '';
@@ -35,4 +51,51 @@ export function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
   if (!m || m < 1 || m > 12 || !d || !y) return iso; // fallback on malformed input
   return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+// ── Month helpers (for the Expenses month selector) ─────────────────────────
+// A "month key" is 'YYYY-MM'. transaction_date is 'YYYY-MM-DD', so string
+// comparison on these keys is chronological.
+
+/** Current month as 'YYYY-MM'. */
+export function currentMonth(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Shift a 'YYYY-MM' key by `delta` months (can be negative). */
+export function addMonths(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const zero = y * 12 + (m - 1) + delta; // months since year 0
+  return `${Math.floor(zero / 12)}-${String((zero % 12) + 1).padStart(2, '0')}`;
+}
+
+/** Inclusive date bounds for a month key, usable as ?from/?to filters. */
+export function monthBounds(month: string): { from: string; to: string } {
+  return { from: `${month}-01`, to: `${month}-31` };
+}
+
+/** 'July 2026' from a 'YYYY-MM' key. */
+export function formatMonthLong(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  if (!y || !m || m < 1 || m > 12) return month;
+  const LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${LONG[m - 1]} ${y}`;
+}
+
+/**
+ * A window of up to `span*2+1` consecutive data-months centred on `selected`,
+ * for the month-on-month chart. Centres on the selection but shifts to stay
+ * within the available data — so if there are fewer than `span` months after
+ * the selection, it shows more before it (and vice versa).
+ */
+export function monthWindow(allMonths: string[], selected: string, span = 3): string[] {
+  const months = allMonths.includes(selected) ? [...allMonths] : [...allMonths, selected];
+  months.sort();
+  const idx = months.indexOf(selected);
+  let start = idx - span;
+  let end = idx + span;
+  if (start < 0) { end += -start; start = 0; }
+  if (end > months.length - 1) { start -= end - (months.length - 1); end = months.length - 1; }
+  if (start < 0) start = 0;
+  return months.slice(start, end + 1);
 }

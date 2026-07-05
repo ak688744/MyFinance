@@ -11,7 +11,7 @@ export type ExpenseRow = {
 };
 
 export type ExpenseSummary = {
-  totalSpent: number; totalIncome: number; saved: number;
+  totalSpent: number; totalIncome: number; saved: number; invested: number;
   byCategory: { categoryId: string | null; amount: number }[];
   byMonth: { month: string; spent: number }[];
 };

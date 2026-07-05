@@ -140,18 +140,25 @@ export interface ExpenseTransactionRepo {
 
   /**
    * Aggregated expense summary over the same filter window (no pagination).
-   * totalSpent = sum(debit), totalIncome = sum(credit), saved = income - spent.
-   * byCategory groups debit spend by category; byMonth groups debit spend by
-   * YYYY-MM. Pure read aggregation — no financial-logic math.
+   * totalSpent = sum(debit) excluding excludeFromSpend categories; totalIncome =
+   * sum(credit) excluding excludeFromSpend categories; saved = income - spent.
+   * invested = sum(debit) whose category is in investmentCategories.
+   * byCategory/byMonth group debit spend by category / YYYY-MM, both with
+   * excludeFromSpend categories removed. Pure read aggregation — no
+   * financial-logic math. excludeFromSpend defaults to [] (faithful legacy
+   * behaviour: every debit counts as spend); investmentCategories defaults to [].
    */
   summary(filters?: {
     from?: string;
     to?: string;
     accountId?: number;
+    excludeFromSpend?: string[];
+    investmentCategories?: string[];
   }): {
     totalSpent: number;
     totalIncome: number;
     saved: number;
+    invested: number;
     byCategory: { categoryId: string | null; amount: number }[];
     byMonth: { month: string; spent: number }[];
   };

@@ -22,6 +22,7 @@ describe('expense reads', () => {
     );
     ins.run('2025-01-10', 'SWIGGY', 'swiggy', 450, 'debit', 'food', 'manual', 'hdfc', 'd1');
     ins.run('2025-02-01', 'ACME SALARY', 'acme salary', 100000, 'credit', 'salary', 'manual', 'hdfc', 'd2');
+    ins.run('2025-01-15', 'SIP', 'sip', 5000, 'debit', 'investment', 'manual', 'hdfc', 'd3');
   });
 
   afterAll(async () => {
@@ -31,7 +32,7 @@ describe('expense reads', () => {
   it('GET /expenses returns rows', async () => {
     const res = await app.inject({ method: 'GET', url: '/expenses' });
     expect(res.statusCode).toBe(200);
-    expect(res.json().data.length).toBe(2);
+    expect(res.json().data.length).toBe(3);
   });
 
   it('GET /expenses?direction=in filters credits', async () => {
@@ -40,14 +41,23 @@ describe('expense reads', () => {
     expect(res.json().data[0].direction).toBe('credit');
   });
 
-  it('GET /expenses/summary computes totals', async () => {
+  it('GET /expenses/summary excludes investment from spend by default', async () => {
     const res = await app.inject({ method: 'GET', url: '/expenses/summary' });
     expect(res.statusCode).toBe(200);
     const d = res.json().data;
-    expect(d.totalSpent).toBe(450);
+    expect(d.totalSpent).toBe(450); // 5000 SIP excluded
     expect(d.totalIncome).toBe(100000);
     expect(d.saved).toBe(99550);
+    expect(d.invested).toBe(5000);
     expect(d.byCategory.find((c: any) => c.categoryId === 'food').amount).toBe(450);
+    expect(d.byCategory.find((c: any) => c.categoryId === 'investment')).toBeUndefined();
     expect(d.byMonth.find((m: any) => m.month === '2025-01').spent).toBe(450);
+  });
+
+  it('GET /expenses/summary?excludeFromSpend= opts out, counting all debits', async () => {
+    const res = await app.inject({ method: 'GET', url: '/expenses/summary?excludeFromSpend=&investmentCategories=' });
+    const d = res.json().data;
+    expect(d.totalSpent).toBe(5450); // SIP now counted
+    expect(d.invested).toBe(0);
   });
 });
