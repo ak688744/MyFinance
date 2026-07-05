@@ -28,9 +28,18 @@ export function makeGeminiProvider(
         throw new LlmError('network', `Gemini request failed: ${(e as Error).message}`);
       }
       if (!res.ok) {
-        if (res.status === 429) throw new LlmError('rate_limit', 'Gemini rate limit (429).');
-        if (res.status === 401 || res.status === 403) throw new LlmError('auth', `Gemini auth error (${res.status}).`);
-        throw new LlmError('network', `Gemini error (${res.status}).`);
+        // Include Gemini's own error message — it explains WHY (e.g. a 404 says the
+        // model isn't found for the API version), which is otherwise invisible.
+        let apiMessage = '';
+        try {
+          const body = (await res.json()) as { error?: { message?: string } };
+          apiMessage = body?.error?.message ? ` — ${body.error.message}` : '';
+        } catch {
+          /* non-JSON error body; status alone will have to do */
+        }
+        if (res.status === 429) throw new LlmError('rate_limit', `Gemini rate limit (429)${apiMessage}`);
+        if (res.status === 401 || res.status === 403) throw new LlmError('auth', `Gemini auth error (${res.status})${apiMessage}`);
+        throw new LlmError('network', `Gemini error (${res.status})${apiMessage}`);
       }
       const data = (await res.json()) as any;
       const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';

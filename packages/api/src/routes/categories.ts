@@ -144,13 +144,19 @@ export async function categoryRoutes(
 
     const categories: CategoryForPrompt[] = app.repos.categoryRepo.list().map((c) => ({ id: c.id, name: c.name }));
 
+    req.log.info(
+      { from, to, candidates: candidates.length, categories: categories.length },
+      'ai-suggest: invoking LLM categorization',
+    );
+
     let result;
     try {
       result = await categorizeWithAI(
         candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
-        { provider: opts.llmProvider, categories },
+        { provider: opts.llmProvider, categories, logger: req.log },
       );
     } catch (e) {
+      req.log.error({ err: e }, 'ai-suggest: categorization failed hard');
       // network/rate_limit no longer throw (they degrade to skipped inside categorizeWithAI).
       // Only hard failures reach here: auth → 502, provider misconfig → 400.
       if (e instanceof LlmError && e.kind === 'auth') throw badGateway('AI provider auth failed.');
@@ -162,6 +168,10 @@ export async function categoryRoutes(
     for (const s of result.suggestions) {
       app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested');
     }
+    req.log.info(
+      { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length, usage: result.usage },
+      'ai-suggest: categorization complete',
+    );
     if (result.skipped > 0) warnings.push(`AI could not categorize ${result.skipped} transaction(s) — try again.`);
 
     return {

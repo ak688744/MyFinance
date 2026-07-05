@@ -15,7 +15,7 @@ export function loadConfig(): ApiConfig {
   const categorization: LlmConfig | null = apiKey
     ? {
         dialect: (process.env.AI_CATEGORIZATION_DIALECT as LlmConfig['dialect']) ?? 'gemini',
-        model: process.env.AI_CATEGORIZATION_MODEL ?? 'gemini-1.5-flash',
+        model: process.env.AI_CATEGORIZATION_MODEL ?? 'gemini-2.5-flash',
         apiKey,
         ...(process.env.AI_CATEGORIZATION_BASE_URL ? { baseURL: process.env.AI_CATEGORIZATION_BASE_URL } : {}),
       }
