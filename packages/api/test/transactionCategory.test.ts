@@ -31,4 +31,29 @@ describe('PATCH /transactions/:id/category — keyword rule', () => {
     expect(s.category_id).toBe('food');             // sibling caught by the new keyword rule
     expect(s.category_source).toBe('keyword_rule');
   });
+
+  it('confirming one AI suggestion + creating its rule does NOT wipe unrelated ai_suggested rows', async () => {
+    app = await buildServer({ dbPath: ':memory:', amfiMatch: noAmfi });
+    // Two UNRELATED transactions, both left in the pending 'ai_suggested' state
+    // (as a fresh AI run leaves them). Confirming one must not disturb the other.
+    app.sqlite.prepare(
+      `INSERT INTO transactions (transaction_date, description, normalized_description, amount, direction, category_id, category_source, source_type, dedupe_key)
+       VALUES ('2026-03-10','SWIGGY ORDER 999','swiggy order 999',250,'debit','food','ai_suggested','manual','k1'),
+              ('2026-03-12','UBER TRIP 42','uber trip 42',180,'debit','transport','ai_suggested','manual','k2')`,
+    ).run();
+    const swiggy = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key='k1'").get() as { id: number };
+    const uber = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key='k2'").get() as { id: number };
+
+    // Confirm the swiggy suggestion AND create its keyword rule (the ✓ → Yes flow).
+    const res = await app.inject({
+      method: 'PATCH', url: `/transactions/${swiggy.id}/category`,
+      payload: { categoryId: 'food', createRuleKeyword: true, keyword: 'swiggy' },
+    });
+    expect(res.statusCode).toBe(200);
+
+    // The unrelated Uber row must STILL be its pending AI suggestion — untouched.
+    const u = app.sqlite.prepare('SELECT category_id, category_source FROM transactions WHERE id=?').get(uber.id) as any;
+    expect(u.category_id).toBe('transport');
+    expect(u.category_source).toBe('ai_suggested');
+  });
 });

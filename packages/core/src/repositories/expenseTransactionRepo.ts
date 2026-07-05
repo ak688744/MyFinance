@@ -36,8 +36,11 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
     },
 
     getNonManualForRecategorization() {
-      // SELECT id, description, merchant_key, upi_note_keyword FROM transactions
-      // WHERE category_source IS NULL OR category_source != 'manual'
+      // Rows whose category is safe to re-derive from rules: NULL source, or any
+      // rule-derived source. 'manual' (user-set) and 'ai_suggested' (a pending AI
+      // guess awaiting the user's confirm/cancel) are PROTECTED — the recategorize
+      // sweep must not overwrite them, or confirming one AI suggestion would wipe
+      // the sibling suggestions from the same run.
       return db
         .select({
           id: transactions.id,
@@ -49,7 +52,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .where(
           or(
             isNull(transactions.categorySource),
-            ne(transactions.categorySource, 'manual'),
+            notInArray(transactions.categorySource, ['manual', 'ai_suggested']),
           ),
         )
         .all();

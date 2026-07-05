@@ -34,7 +34,8 @@ beforeEach(() => {
         ('2024-01-01','t1 manual','t1 manual','m1',NULL,100,'debit','food','manual','pdf','d1'),
         ('2024-03-01','t2 builtin','t2 builtin','m2','rent',200,'debit','bills','builtin_rule','pdf','d2'),
         ('2024-02-01','t3 null src','t3 null src',NULL,'note3',300,'debit',NULL,NULL,'pdf','d3'),
-        ('2024-04-01','t4 merchant','t4 merchant','m4',NULL,400,'debit','food','merchant_rule','pdf','d4')`,
+        ('2024-04-01','t4 merchant','t4 merchant','m4',NULL,400,'debit','food','merchant_rule','pdf','d4'),
+        ('2023-01-01','t5 ai','t5 ai','m5',NULL,500,'debit','bills','ai_suggested','pdf','d5')`,
     )
     .run();
 });
@@ -47,6 +48,7 @@ describe('expenseTransactionRepo.list', () => {
       '2024-03-01',
       '2024-02-01',
       '2024-01-01',
+      '2023-01-01',
     ]);
   });
 
@@ -73,11 +75,13 @@ describe('expenseTransactionRepo.list', () => {
 });
 
 describe('expenseTransactionRepo.getNonManualForRecategorization', () => {
-  it('excludes manual, includes NULL and non-manual sources', () => {
+  it('excludes manual + ai_suggested, includes NULL and rule-derived sources', () => {
     const rows = repo.getNonManualForRecategorization();
     const descriptions = rows.map((r) => r.description).sort();
     expect(descriptions).toEqual(['t2 builtin', 't3 null src', 't4 merchant']);
+    // manual (user-set) and ai_suggested (pending AI guess) are protected from the sweep.
     expect(rows.some((r) => r.description === 't1 manual')).toBe(false);
+    expect(rows.some((r) => r.description === 't5 ai')).toBe(false);
   });
 
   it('returns id/description/merchantKey/upiNoteKeyword', () => {
