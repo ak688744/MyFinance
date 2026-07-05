@@ -1,4 +1,4 @@
-import type { LlmProvider } from '../llm/types';
+import { LlmError, type LlmProvider } from '../llm/types';
 import {
   AiSuggestionBatchSchema, GEMINI_RESPONSE_SCHEMA, type AiSuggestion,
 } from './schema';
@@ -43,9 +43,17 @@ export async function categorizeWithAI(txns: TxnForPrompt[], deps: CategorizeDep
 
     let batch: AiSuggestion[] | null = null;
     for (let attempt = 0; attempt < 2 && batch === null; attempt += 1) {
-      const out = await deps.provider.complete({ prompt, jsonSchema: GEMINI_RESPONSE_SCHEMA });
-      if (out.usage) { usage.inputTokens += out.usage.inputTokens; usage.outputTokens += out.usage.outputTokens; }
-      batch = parseBatch(out.text);
+      try {
+        const out = await deps.provider.complete({ prompt, jsonSchema: GEMINI_RESPONSE_SCHEMA });
+        if (out.usage) { usage.inputTokens += out.usage.inputTokens; usage.outputTokens += out.usage.outputTokens; }
+        batch = parseBatch(out.text);
+      } catch (e) {
+        // Hard failures (auth / provider misconfig) must surface to the caller.
+        if (e instanceof LlmError && (e.kind === 'auth' || e.kind === 'provider_not_configured')) throw e;
+        // Transient (network / rate_limit) and any non-LlmError throw: treat like a
+        // failed attempt — retry once, then fall through to skip the whole chunk.
+        batch = null;
+      }
     }
 
     if (batch === null) { skipped += group.length; continue; }

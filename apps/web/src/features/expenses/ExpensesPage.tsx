@@ -128,13 +128,18 @@ export function ExpensesPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={runAiSuggest}
-            disabled={aiSuggest.isPending || uncategorizedInMonthCount === 0}
-            className="text-sm bg-violet-600 text-white rounded-lg px-4 py-2 hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {aiSuggest.isPending ? 'Suggesting…' : `Suggest categories with AI · ${formatMonthLong(month)}`}
-          </button>
+          <div className="flex flex-col">
+            <button
+              onClick={runAiSuggest}
+              disabled={aiSuggest.isPending || uncategorizedInMonthCount === 0}
+              className="text-sm bg-violet-600 text-white rounded-lg px-4 py-2 hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {aiSuggest.isPending ? 'Suggesting…' : `Suggest categories with AI · ${formatMonthLong(month)}`}
+            </button>
+            {aiSuggest.error && (
+              <div className="text-xs text-loss mt-1 max-w-[240px]">{(aiSuggest.error as Error).message}</div>
+            )}
+          </div>
           <button
             onClick={() => setImportOpen(true)}
             className="text-sm border border-brand text-brand rounded-lg px-4 py-2 hover:bg-blue-50 transition-colors"

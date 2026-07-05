@@ -91,7 +91,7 @@ export function useCreateRule() {
 }
 export function useUpdateRule() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (v: { id: number; categoryId: string; ruleType: 'merchant' | 'upi_note_keyword' }) => apiSend('PATCH', `/categories/rules/${v.id}`, { categoryId: v.categoryId, ruleType: v.ruleType }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+  return useMutation({ mutationFn: (v: { id: number; categoryId: string; ruleType: 'merchant' | 'upi_note_keyword' | 'keyword' }) => apiSend('PATCH', `/categories/rules/${v.id}`, { categoryId: v.categoryId, ruleType: v.ruleType }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
 }
 export function useDeleteRule() {
   const qc = useQueryClient();

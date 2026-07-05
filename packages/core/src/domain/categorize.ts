@@ -286,7 +286,7 @@ export function updateRuleCategory(
   deps: RecategorizeDeps,
   input: { ruleId: number; categoryId: string; ruleType: CategoryRuleType }
 ): void {
-  const priority = input.ruleType === 'merchant' ? 200 : 100;
+  const priority = input.ruleType === 'merchant' ? 200 : input.ruleType === 'upi_note_keyword' ? 100 : 50;
 
   deps.ruleRepo.updateRuleCategory(
     input.ruleId,

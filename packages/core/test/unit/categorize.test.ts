@@ -393,6 +393,26 @@ describe('updateRuleCategory', () => {
     });
     expect(rules[0]).toMatchObject({ categoryId: 'travel', ruleType: 'merchant', priority: 200 });
   });
+
+  it('preserves priority 50 when editing a keyword rule', () => {
+    const { repo: ruleRepo, rules, calls } = makeFakeRuleRepo([
+      { id: 9, ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'food', priority: 50 },
+    ]);
+    const { repo: txRepo } = makeFakeTxRepo([]);
+
+    updateRuleCategory(
+      { ruleRepo, txRepo },
+      { ruleId: 9, categoryId: 'shopping', ruleType: 'keyword' },
+    );
+
+    expect(calls.updateRuleCategory[0]).toEqual({
+      ruleId: 9,
+      categoryId: 'shopping',
+      ruleType: 'keyword',
+      priority: 50,
+    });
+    expect(rules[0]).toMatchObject({ categoryId: 'shopping', ruleType: 'keyword', priority: 50 });
+  });
 });
 
 describe('deleteRule', () => {

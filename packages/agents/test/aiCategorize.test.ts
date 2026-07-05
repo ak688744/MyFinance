@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { categorizeWithAI } from '../src/categorize/aiCategorize';
-import type { LlmProvider } from '../src/llm/types';
+import { LlmError, type LlmProvider } from '../src/llm/types';
 import type { TxnForPrompt, CategoryForPrompt } from '../src/categorize/prompt';
 
 const CATS: CategoryForPrompt[] = [{ id: 'food', name: 'Food' }, { id: 'transport', name: 'Transport' }];
@@ -67,5 +67,28 @@ describe('categorizeWithAI', () => {
     const res = await categorizeWithAI(txns, { provider, categories: CATS });
     expect(res.suggestions).toHaveLength(0);
     expect(res.skipped).toBe(1);
+  });
+
+  it('retry-then-skip when provider throws a transient rate_limit twice', async () => {
+    const txns: TxnForPrompt[] = [
+      { id: 1, description: 'X', amount: 1, direction: 'debit' },
+      { id: 2, description: 'Y', amount: 2, direction: 'debit' },
+    ];
+    let calls = 0;
+    const provider: LlmProvider = {
+      async complete() { calls += 1; throw new LlmError('rate_limit', 'slow down'); },
+    };
+    const res = await categorizeWithAI(txns, { provider, categories: CATS });
+    expect(calls).toBe(2); // retried once
+    expect(res.suggestions).toHaveLength(0);
+    expect(res.skipped).toBe(txns.length);
+  });
+
+  it('rethrows when provider throws a hard auth error', async () => {
+    const txns: TxnForPrompt[] = [{ id: 1, description: 'X', amount: 1, direction: 'debit' }];
+    const provider: LlmProvider = {
+      async complete() { throw new LlmError('auth', 'bad key'); },
+    };
+    await expect(categorizeWithAI(txns, { provider, categories: CATS })).rejects.toThrow(LlmError);
   });
 });

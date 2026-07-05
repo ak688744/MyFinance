@@ -20,7 +20,7 @@ export type Category = { id: string; name: string; icon: string | null };
 
 export type CategoryRule = {
   id: number;
-  ruleType: 'merchant' | 'upi_note_keyword';
+  ruleType: 'merchant' | 'upi_note_keyword' | 'keyword';
   patternValue: string;
   categoryId: string;
   priority: number;

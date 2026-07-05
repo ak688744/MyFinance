@@ -7,7 +7,7 @@ import {
   slugifyCategoryName,
   type CategoryRuleType,
 } from '@myfinance/core';
-import { categorizeWithAI, type LlmProvider, type CategoryForPrompt } from '@myfinance/agents';
+import { categorizeWithAI, LlmError, type LlmProvider, type CategoryForPrompt } from '@myfinance/agents';
 
 function badRequest(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -24,6 +24,12 @@ function notFound(message: string): Error & { statusCode?: number } {
 function conflict(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
   err.statusCode = 409;
+  return err;
+}
+
+function badGateway(message: string): Error & { statusCode?: number } {
+  const err = new Error(message) as Error & { statusCode?: number };
+  err.statusCode = 502;
   return err;
 }
 
@@ -138,10 +144,19 @@ export async function categoryRoutes(
 
     const categories: CategoryForPrompt[] = app.repos.categoryRepo.list().map((c) => ({ id: c.id, name: c.name }));
 
-    const result = await categorizeWithAI(
-      candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
-      { provider: opts.llmProvider, categories },
-    );
+    let result;
+    try {
+      result = await categorizeWithAI(
+        candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
+        { provider: opts.llmProvider, categories },
+      );
+    } catch (e) {
+      // network/rate_limit no longer throw (they degrade to skipped inside categorizeWithAI).
+      // Only hard failures reach here: auth → 502, provider misconfig → 400.
+      if (e instanceof LlmError && e.kind === 'auth') throw badGateway('AI provider auth failed.');
+      if (e instanceof LlmError && e.kind === 'provider_not_configured') throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
+      throw e;
+    }
 
     // Apply each suggestion as ai_suggested (keyword stays transient — returned only).
     for (const s of result.suggestions) {

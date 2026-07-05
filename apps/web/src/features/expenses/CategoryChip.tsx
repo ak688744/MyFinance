@@ -65,17 +65,23 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories, cate
     await updateTxCategory.mutateAsync({ id: txId, categoryId: null });
   };
 
+  // Keyword second-prompt is gated on LOCAL aiConfirmed state, NOT categorySource.
+  // The one-off confirm assign invalidates ['expenses'], so the row refetches as
+  // categorySource='manual'; gating this branch on local state keeps the Yes/No
+  // prompt mounted so the user can actually create the keyword rule. currentCategory
+  // derives from categoryId (unchanged by the one-off assign) so the label stays valid.
+  if (aiConfirmed && aiKeyword && aiKeyword.trim().length >= 2 && currentCategory) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-gray-600">Always categorize transactions containing "{aiKeyword}" as {currentCategory.name}?</span>
+        <button onClick={handleAiKeywordYes} disabled={updateTxCategory.isPending} className="text-violet-700 font-medium px-1">Yes</button>
+        <span className="text-gray-400">/</span>
+        <button onClick={handleAiKeywordNo} disabled={updateTxCategory.isPending} className="text-gray-600 px-1">No</button>
+      </div>
+    );
+  }
+
   if (categorySource === 'ai_suggested' && currentCategory) {
-    if (aiConfirmed) {
-      return (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-gray-600">Always categorize transactions containing "{aiKeyword}" as {currentCategory.name}?</span>
-          <button onClick={handleAiKeywordYes} disabled={updateTxCategory.isPending} className="text-violet-700 font-medium px-1">Yes</button>
-          <span className="text-gray-400">/</span>
-          <button onClick={handleAiKeywordNo} disabled={updateTxCategory.isPending} className="text-gray-600 px-1">No</button>
-        </div>
-      );
-    }
     return (
       <div className="flex items-center gap-1">
         <span className="text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded px-2 py-0.5">
