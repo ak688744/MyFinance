@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useExpenses, useExpenseSummary, useCategories, useAccounts } from '../../lib/hooks';
+import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
 import { AIInsightCard } from '../../components/ui/AIInsightCard';
@@ -20,10 +20,13 @@ export function ExpensesPage() {
   const [page, setPage] = useState(0);
   const [manageModalOpen, setManageModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [aiKeywordById, setAiKeywordById] = useState<Record<number, string>>({});
+  const [aiBanner, setAiBanner] = useState<null | { suggested: number; skipped: number; total: number; usage: { inputTokens: number; outputTokens: number }; warnings: string[] }>(null);
 
   const bounds = monthBounds(month);
   const categories = useCategories();
   const accounts = useAccounts('expense');
+  const aiSuggest = useAiSuggest();
 
   // Month-scoped summary drives KPIs + donut.
   const summary = useExpenseSummary({ from: bounds.from, to: bounds.to });
@@ -31,10 +34,11 @@ export function ExpensesPage() {
   const allTimeSummary = useExpenseSummary({});
 
   // Transaction table: month-scoped, category-filtered, paginated.
+  // AI-suggested filter bypasses server-side categoryId filter; apply client-side instead.
   const txns = useExpenses({
     from: bounds.from,
     to: bounds.to,
-    ...(categoryFilter ? { categoryId: categoryFilter } : {}),
+    ...(categoryFilter && categoryFilter !== '__ai__' ? { categoryId: categoryFilter } : {}),
     limit: String(PAGE_SIZE),
     offset: String(page * PAGE_SIZE),
   });
@@ -44,8 +48,27 @@ export function ExpensesPage() {
     return (id: number | null) => (id != null ? m.get(id) ?? `#${id}` : '—');
   }, [accounts.data]);
 
-  // Placeholder — replaced with real AI-suggest state in Task 4.3.
-  const aiKeywordById: Record<number, string> = {};
+  const runAiSuggest = async () => {
+    try {
+      const res = await aiSuggest.mutateAsync({ from: bounds.from, to: bounds.to });
+      const map: Record<number, string> = {};
+      for (const s of res.suggestions) {
+        map[s.transactionId] = s.keyword;
+      }
+      setAiKeywordById(map);
+      setAiBanner({
+        suggested: res.counts.suggested,
+        skipped: res.counts.skipped,
+        total: res.counts.total,
+        usage: res.usage,
+        warnings: res.warnings,
+      });
+    } catch (err) {
+      console.error('AI suggest failed:', err);
+    }
+  };
+
+  const uncategorizedInMonthCount = (txns.data ?? []).filter((t) => t.categoryId == null).length;
 
   const byCategory = summary.data
     ? summaryByCategoryWithNames(summary.data.byCategory, categories.data ?? [])
@@ -68,7 +91,14 @@ export function ExpensesPage() {
 
   const goMonth = (delta: number) => { setMonth((m) => addMonths(m, delta)); setPage(0); };
   const isCurrent = month >= currentMonth();
-  const rowCount = txns.data?.length ?? 0;
+
+  // Client-side filter for AI-suggested transactions when that filter is active.
+  const displayedRows = useMemo(() => {
+    if (categoryFilter !== '__ai__') return txns.data ?? [];
+    return (txns.data ?? []).filter((t) => t.categorySource === 'ai_suggested');
+  }, [txns.data, categoryFilter]);
+
+  const rowCount = displayedRows.length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -99,6 +129,13 @@ export function ExpensesPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={runAiSuggest}
+            disabled={aiSuggest.isPending || uncategorizedInMonthCount === 0}
+            className="text-sm bg-violet-600 text-white rounded-lg px-4 py-2 hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {aiSuggest.isPending ? 'Suggesting…' : `Suggest categories with AI · ${formatMonthLong(month)}`}
+          </button>
+          <button
             onClick={() => setImportOpen(true)}
             className="text-sm border border-brand text-brand rounded-lg px-4 py-2 hover:bg-blue-50 transition-colors"
           >
@@ -115,6 +152,38 @@ export function ExpensesPage() {
 
       <ManageCategoriesModal open={manageModalOpen} onClose={() => setManageModalOpen(false)} />
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+
+      {/* AI Suggestion Banner */}
+      {aiBanner && (
+        <Card className="bg-violet-50 border-violet-200">
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-violet-900 mb-1">
+                AI suggested categories for {aiBanner.suggested} of {aiBanner.total} transaction(s)
+              </div>
+              <div className="text-xs text-violet-700 space-y-0.5">
+                <div>Skipped: {aiBanner.skipped}</div>
+                {aiBanner.usage.inputTokens + aiBanner.usage.outputTokens > 0 && (
+                  <div>~{aiBanner.usage.inputTokens + aiBanner.usage.outputTokens} tokens</div>
+                )}
+              </div>
+              {aiBanner.warnings.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {aiBanner.warnings.map((w, i) => (
+                    <div key={i} className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">{w}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setAiBanner(null)}
+              className="text-xs text-violet-600 hover:text-violet-800 underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </Card>
+      )}
 
       {/* KPI strip: Spent / Income / Saved(=Invested+Cash) */}
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
@@ -165,6 +234,7 @@ export function ExpensesPage() {
             className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white"
           >
             <option value="">All categories</option>
+            <option value="__ai__">AI suggested</option>
             {(categories.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
@@ -180,7 +250,7 @@ export function ExpensesPage() {
               </tr>
             </thead>
             <tbody>
-              {(txns.data ?? []).map((t) => (
+              {displayedRows.map((t) => (
                 <tr key={t.id} className="border-t border-gray-50">
                   <td className="py-2.5 pr-3 max-w-[280px] truncate">{t.description}</td>
                   <td className="py-2.5 pr-3">
