@@ -89,7 +89,7 @@ export function ExpensesPage() {
     ? (saved / summary.data.totalIncome) * 100
     : null;
 
-  const goMonth = (delta: number) => { setMonth((m) => addMonths(m, delta)); setPage(0); };
+  const goMonth = (delta: number) => { setMonth((m) => addMonths(m, delta)); setPage(0); setAiBanner(null); setAiKeywordById({}); };
   const isCurrent = month >= currentMonth();
 
   // Client-side filter for AI-suggested transactions when that filter is active.
@@ -122,7 +122,7 @@ export function ExpensesPage() {
             ›
           </button>
           {!isCurrent && (
-            <button onClick={() => { setMonth(currentMonth()); setPage(0); }} className="ml-2 text-xs text-brand hover:underline">
+            <button onClick={() => { setMonth(currentMonth()); setPage(0); setAiBanner(null); setAiKeywordById({}); }} className="ml-2 text-xs text-brand hover:underline">
               This month
             </button>
           )}
