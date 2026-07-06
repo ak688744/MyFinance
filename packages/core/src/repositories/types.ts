@@ -86,7 +86,7 @@ export interface CategoryRepo {
   exists(id: string): boolean;
 }
 
-export type CategoryRuleType = 'merchant' | 'upi_note_keyword';
+export type CategoryRuleType = 'merchant' | 'upi_note_keyword' | 'keyword';
 export interface StoredCategoryRule {
   id: number;
   ruleType: CategoryRuleType;
@@ -113,6 +113,8 @@ export type ExpenseTransactionRow = {
   amount: number;
   direction: 'debit' | 'credit';
   categoryId: string | null;
+  categorySource: string | null;
+  aiKeyword: string | null;
   accountId: number | null;
   balance: number | null;
 };
@@ -120,7 +122,12 @@ export type ExpenseTransactionRow = {
 export interface ExpenseTransactionRepo {
   list(filters?: { limit?: number; offset?: number; categoryId?: string }): unknown[];
   getNonManualForRecategorization(): { id: number; description: string; merchantKey: string | null; upiNoteKeyword: string | null }[];
-  updateCategory(id: number, categoryId: string | null, categorySource: string | null): void;
+  /**
+   * Set category + source, and optionally an AI keyword. aiKeyword defaults to
+   * null: any transition out of 'ai_suggested' clears the pending keyword; only
+   * the ai-suggest endpoint passes a keyword to persist it across refreshes.
+   */
+  updateCategory(id: number, categoryId: string | null, categorySource: string | null, aiKeyword?: string | null): void;
   getById(id: number): { id: number; description: string } | null;
   /**
    * Filterable expense-transaction query (richer than list). All filters
@@ -188,6 +195,13 @@ export interface ExpenseTransactionRepo {
   }): number;
   /** UPDATE transactions SET account_id = ? WHERE id = ?. */
   updateAccount(id: number, accountId: number | null): void;
+  /**
+   * Uncategorized (category_id IS NULL) transactions within an inclusive
+   * transaction_date window, ordered ASC. Feeds the AI-suggest endpoint.
+   */
+  listUncategorizedInRange(range: { from: string; to: string; limit?: number }): {
+    id: number; description: string; amount: number; direction: 'debit' | 'credit';
+  }[];
 }
 
 export type ImportRecord = {

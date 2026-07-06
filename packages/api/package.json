@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fastify/multipart": "^9.4.0",
+    "@myfinance/agents": "workspace:*",
     "@myfinance/core": "workspace:*",
     "fastify": "^5.0.0"
   },

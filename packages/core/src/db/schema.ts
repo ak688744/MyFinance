@@ -70,6 +70,10 @@ export const transactions = sqliteTable(
     direction: text('direction', { enum: ['debit', 'credit'] }).notNull(),
     categoryId: text('category_id').references(() => categories.id),
     categorySource: text('category_source'),
+    // Transient AI-suggested keyword awaiting the user's confirm/cancel. Persisted
+    // so a pending AI suggestion survives a page refresh; cleared whenever the row
+    // leaves the 'ai_suggested' state (confirm → manual, or a recategorize sweep).
+    aiKeyword: text('ai_keyword'),
     balance: real('balance'),
     sourceType: text('source_type').notNull(),
     importHistoryId: integer('import_history_id').references(
@@ -103,7 +107,7 @@ export const categoryRules = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     ruleType: text('rule_type', {
-      enum: ['merchant', 'upi_note_keyword'],
+      enum: ['merchant', 'upi_note_keyword', 'keyword'],
     }).notNull(),
     patternValue: text('pattern_value').notNull(),
     categoryId: text('category_id')
@@ -122,7 +126,7 @@ export const categoryRules = sqliteTable(
     uniqueRuleTypePattern: unique().on(table.ruleType, table.patternValue),
     ruleTypeCheck: check(
       'category_rules_rule_type_check',
-      sql`${table.ruleType} IN ('merchant', 'upi_note_keyword')`,
+      sql`${table.ruleType} IN ('merchant', 'upi_note_keyword', 'keyword')`,
     ),
   }),
 );

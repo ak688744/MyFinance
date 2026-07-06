@@ -63,8 +63,13 @@ export const useRules = () => useQuery({ queryKey: qk.rules(), queryFn: () => ap
 export function useUpdateTxCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { id: number; categoryId: string | null; createRuleMerchant?: boolean }) =>
-      apiSend<{ ok: boolean }>('PATCH', `/transactions/${v.id}/category`, { categoryId: v.categoryId, createRuleMerchant: v.createRuleMerchant }),
+    mutationFn: (v: { id: number; categoryId: string | null; createRuleMerchant?: boolean; createRuleKeyword?: boolean; keyword?: string }) =>
+      apiSend<{ ok: boolean }>('PATCH', `/transactions/${v.id}/category`, {
+        categoryId: v.categoryId,
+        createRuleMerchant: v.createRuleMerchant,
+        createRuleKeyword: v.createRuleKeyword,
+        keyword: v.keyword,
+      }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
   });
 }
@@ -86,7 +91,7 @@ export function useCreateRule() {
 }
 export function useUpdateRule() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (v: { id: number; categoryId: string; ruleType: 'merchant' | 'upi_note_keyword' }) => apiSend('PATCH', `/categories/rules/${v.id}`, { categoryId: v.categoryId, ruleType: v.ruleType }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
+  return useMutation({ mutationFn: (v: { id: number; categoryId: string; ruleType: 'merchant' | 'upi_note_keyword' | 'keyword' }) => apiSend('PATCH', `/categories/rules/${v.id}`, { categoryId: v.categoryId, ruleType: v.ruleType }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['expenses'] }); } });
 }
 export function useDeleteRule() {
   const qc = useQueryClient();
@@ -95,4 +100,19 @@ export function useDeleteRule() {
 export function useRecategorize() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: () => apiSend('POST', '/recategorize', {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }) });
+}
+
+export type AiSuggestResult = {
+  suggestions: { transactionId: number; categoryId: string; keyword: string; confidence: number; reason?: string }[];
+  counts: { suggested: number; skipped: number; total: number };
+  usage: { inputTokens: number; outputTokens: number };
+  warnings: string[];
+};
+
+export function useAiSuggest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { from: string; to: string }) => apiSend<AiSuggestResult>('POST', '/categories/ai-suggest', v),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
 }

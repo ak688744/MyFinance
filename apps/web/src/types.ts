@@ -7,7 +7,7 @@ export type {
 export type ExpenseRow = {
   id: number; transactionDate: string; description: string;
   amount: number; direction: 'debit' | 'credit';
-  categoryId: string | null; accountId: number | null; balance: number | null;
+  categoryId: string | null; categorySource: string | null; aiKeyword: string | null; accountId: number | null; balance: number | null;
 };
 
 export type ExpenseSummary = {
@@ -20,7 +20,7 @@ export type Category = { id: string; name: string; icon: string | null };
 
 export type CategoryRule = {
   id: number;
-  ruleType: 'merchant' | 'upi_note_keyword';
+  ruleType: 'merchant' | 'upi_note_keyword' | 'keyword';
   patternValue: string;
   categoryId: string;
   priority: number;

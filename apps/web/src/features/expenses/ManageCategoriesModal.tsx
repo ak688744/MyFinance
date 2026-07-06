@@ -79,7 +79,7 @@ export function ManageCategoriesModal({ open, onClose }: ManageCategoriesModalPr
     }
   };
 
-  const handleUpdateRule = async (id: number, ruleType: 'merchant' | 'upi_note_keyword') => {
+  const handleUpdateRule = async (id: number, ruleType: 'merchant' | 'upi_note_keyword' | 'keyword') => {
     if (!editingRuleCategoryId) return;
     try {
       await updateRule.mutateAsync({ id, categoryId: editingRuleCategoryId, ruleType });

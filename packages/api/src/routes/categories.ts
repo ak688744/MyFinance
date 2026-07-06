@@ -7,6 +7,7 @@ import {
   slugifyCategoryName,
   type CategoryRuleType,
 } from '@myfinance/core';
+import { categorizeWithAI, LlmError, type LlmProvider, type CategoryForPrompt } from '@myfinance/agents';
 
 function badRequest(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -26,13 +27,24 @@ function conflict(message: string): Error & { statusCode?: number } {
   return err;
 }
 
+function badGateway(message: string): Error & { statusCode?: number } {
+  const err = new Error(message) as Error & { statusCode?: number };
+  err.statusCode = 502;
+  return err;
+}
+
 type RuleCreateBody = { ruleType: CategoryRuleType; patternValue: string; categoryId: string };
 type RuleUpdateBody = { categoryId: string; ruleType: CategoryRuleType };
 type CategoryCreateBody = { name: string; icon?: string | null };
 type CategoryRenameBody = { name: string };
 
-export async function categoryRoutes(app: FastifyInstance): Promise<void> {
+export async function categoryRoutes(
+  app: FastifyInstance,
+  opts: { llmProvider: LlmProvider | null },
+): Promise<void> {
   const deps = () => ({ ruleRepo: app.repos.categoryRuleRepo, txRepo: app.repos.expenseTxRepo });
+
+  const AI_SUGGEST_CAP = 200;
 
   // GET /categories
   app.get('/categories', async () => ({ data: app.repos.categoryRepo.list() }));
@@ -110,6 +122,68 @@ export async function categoryRoutes(app: FastifyInstance): Promise<void> {
     if (!Number.isInteger(ruleId)) throw badRequest('Invalid rule id.');
     deleteRule(deps(), { ruleId });
     return { data: { ok: true } };
+  });
+
+  // POST /categories/ai-suggest — month-bounded, uncategorized-only AI categorization
+  app.post<{ Body: { from?: string; to?: string } }>('/categories/ai-suggest', async (req) => {
+    const { from, to } = req.body ?? {};
+    if (!from || !to) throw badRequest('from and to are required.');
+    if (!opts.llmProvider) throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
+
+    const all = app.repos.expenseTxRepo.listUncategorizedInRange({ from, to, limit: AI_SUGGEST_CAP + 1 });
+    const warnings: string[] = [];
+    let candidates = all;
+    if (all.length > AI_SUGGEST_CAP) {
+      candidates = all.slice(0, AI_SUGGEST_CAP);
+      warnings.push(`Only the first ${AI_SUGGEST_CAP} uncategorized transactions were processed; run again for the rest.`);
+    }
+
+    if (candidates.length === 0) {
+      return { data: { suggestions: [], counts: { suggested: 0, skipped: 0, total: 0 }, usage: { inputTokens: 0, outputTokens: 0 }, warnings } };
+    }
+
+    const categories: CategoryForPrompt[] = app.repos.categoryRepo.list().map((c) => ({ id: c.id, name: c.name }));
+
+    req.log.info(
+      { from, to, candidates: candidates.length, categories: categories.length },
+      'ai-suggest: invoking LLM categorization',
+    );
+
+    let result;
+    try {
+      result = await categorizeWithAI(
+        candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
+        { provider: opts.llmProvider, categories, logger: req.log },
+      );
+    } catch (e) {
+      req.log.error({ err: e }, 'ai-suggest: categorization failed hard');
+      // network/rate_limit no longer throw (they degrade to skipped inside categorizeWithAI).
+      // Only hard failures reach here: auth → 502, provider misconfig → 400.
+      if (e instanceof LlmError && e.kind === 'auth') throw badGateway('AI provider auth failed.');
+      if (e instanceof LlmError && e.kind === 'provider_not_configured') throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
+      throw e;
+    }
+
+    // Apply each suggestion as ai_suggested, persisting the AI keyword so the
+    // pending suggestion (and its "always do this?" prompt) survives a refresh.
+    // Empty keyword (non-substring, blanked by categorizeWithAI) → null.
+    for (const s of result.suggestions) {
+      app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested', s.keyword || null);
+    }
+    req.log.info(
+      { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length, usage: result.usage },
+      'ai-suggest: categorization complete',
+    );
+    if (result.skipped > 0) warnings.push(`AI could not categorize ${result.skipped} transaction(s) — try again.`);
+
+    return {
+      data: {
+        suggestions: result.suggestions,
+        counts: { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length },
+        usage: result.usage,
+        warnings,
+      },
+    };
   });
 
   // POST /recategorize

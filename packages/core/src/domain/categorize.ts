@@ -31,7 +31,13 @@ export type {
 
 export type CategoryResolution = {
   categoryId: string | null;
-  categorySource: 'merchant_rule' | 'upi_note_keyword' | 'builtin_rule' | null;
+  categorySource:
+    | 'merchant_rule'
+    | 'upi_note_keyword'
+    | 'builtin_rule'
+    | 'keyword_rule'
+    | 'ai_suggested'
+    | null;
 };
 
 export type CategorizationInput = {
@@ -171,10 +177,24 @@ export function resolveCategoryFromRules(
     rule.matches.some((pattern) => normalizedDescription.includes(pattern))
   );
 
-  return {
-    categoryId: builtinRule?.categoryId ?? null,
-    categorySource: builtinRule ? 'builtin_rule' : null,
-  };
+  if (builtinRule) {
+    return { categoryId: builtinRule.categoryId, categorySource: 'builtin_rule' };
+  }
+
+  // keyword rules: substring match against the normalized description.
+  // Deliberately LAST among user rules (below builtins) — substring matching
+  // is broader/riskier than exact merchant/UPI matching. Enforced by code order.
+  const keywordRule = storedRules.find(
+    (rule) =>
+      rule.ruleType === 'keyword' &&
+      normalizedDescription.includes(` ${normalizeRuleValue(rule.patternValue)} `.trim()),
+  );
+
+  if (keywordRule) {
+    return { categoryId: keywordRule.categoryId, categorySource: 'keyword_rule' };
+  }
+
+  return { categoryId: null, categorySource: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -223,7 +243,7 @@ export function saveCategoryMemoryRule(
     return;
   }
 
-  const priority = input.ruleType === 'merchant' ? 200 : 100;
+  const priority = input.ruleType === 'merchant' ? 200 : input.ruleType === 'upi_note_keyword' ? 100 : 50;
 
   deps.ruleRepo.createRule({
     ruleType: input.ruleType,
@@ -266,7 +286,7 @@ export function updateRuleCategory(
   deps: RecategorizeDeps,
   input: { ruleId: number; categoryId: string; ruleType: CategoryRuleType }
 ): void {
-  const priority = input.ruleType === 'merchant' ? 200 : 100;
+  const priority = input.ruleType === 'merchant' ? 200 : input.ruleType === 'upi_note_keyword' ? 100 : 50;
 
   deps.ruleRepo.updateRuleCategory(
     input.ruleId,

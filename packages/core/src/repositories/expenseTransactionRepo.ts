@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { transactions } from '../db/schema';
 import type { ExpenseTransactionRepo } from './types';
@@ -36,8 +36,11 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
     },
 
     getNonManualForRecategorization() {
-      // SELECT id, description, merchant_key, upi_note_keyword FROM transactions
-      // WHERE category_source IS NULL OR category_source != 'manual'
+      // Rows whose category is safe to re-derive from rules: NULL source, or any
+      // rule-derived source. 'manual' (user-set) and 'ai_suggested' (a pending AI
+      // guess awaiting the user's confirm/cancel) are PROTECTED — the recategorize
+      // sweep must not overwrite them, or confirming one AI suggestion would wipe
+      // the sibling suggestions from the same run.
       return db
         .select({
           id: transactions.id,
@@ -49,19 +52,23 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .where(
           or(
             isNull(transactions.categorySource),
-            ne(transactions.categorySource, 'manual'),
+            notInArray(transactions.categorySource, ['manual', 'ai_suggested']),
           ),
         )
         .all();
     },
 
-    updateCategory(id, categoryId, categorySource) {
+    updateCategory(id, categoryId, categorySource, aiKeyword = null) {
       // UPDATE transactions SET category_id = ?, category_source = ?,
-      //   updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      //   ai_keyword = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      // ai_keyword defaults to null: any transition OUT of 'ai_suggested'
+      // (confirm → manual, recategorize sweep) clears the stale pending keyword;
+      // only the ai-suggest endpoint passes a keyword to persist it.
       db.update(transactions)
         .set({
           categoryId,
           categorySource,
+          aiKeyword,
           updatedAt: sql`CURRENT_TIMESTAMP`,
         })
         .where(eq(transactions.id, id))
@@ -136,6 +143,8 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           amount: transactions.amount,
           direction: transactions.direction,
           categoryId: transactions.categoryId,
+          categorySource: transactions.categorySource,
+          aiKeyword: transactions.aiKeyword,
           accountId: transactions.accountId,
           balance: transactions.balance,
         })
@@ -212,6 +221,26 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         byCategory,
         byMonth,
       };
+    },
+
+    listUncategorizedInRange({ from, to, limit }) {
+      const rows = db
+        .select({
+          id: transactions.id,
+          description: transactions.description,
+          amount: transactions.amount,
+          direction: transactions.direction,
+        })
+        .from(transactions)
+        .where(and(
+          isNull(transactions.categoryId),
+          gte(transactions.transactionDate, from),
+          lte(transactions.transactionDate, to),
+        ))
+        .orderBy(asc(transactions.transactionDate))
+        .limit(limit ?? 1000)
+        .all();
+      return rows as { id: number; description: string; amount: number; direction: 'debit' | 'credit' }[];
     },
   };
 }

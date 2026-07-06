@@ -14,6 +14,7 @@ import { accountRoutes } from './routes/accounts';
 import { liabilityRoutes } from './routes/liabilities';
 import { assetRoutes } from './routes/assets';
 import { networthRoutes } from './routes/networth';
+import { resolveProvider, type LlmProvider } from '@myfinance/agents';
 
 export type BuildServerOpts = {
   dbPath?: string;
@@ -22,6 +23,13 @@ export type BuildServerOpts = {
    * the real network matcher (core). Tests pass a no-network stub.
    */
   amfiMatch?: AmfiMatch;
+  /** Injected categorization LLM provider (tests pass a fake). Falls back to config. */
+  llmProvider?: LlmProvider;
+  /**
+   * Fastify logger option. Defaults to `true` (request logging on) for real runs;
+   * tests pass `false` to keep output quiet.
+   */
+  logger?: boolean;
 };
 
 /**
@@ -30,9 +38,14 @@ export type BuildServerOpts = {
  * `app.inject()`; the entrypoint block below calls `listen` for real runs.
  */
 export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyInstance> {
-  const dbPath = opts.dbPath ?? loadConfig().dbPath;
+  const cfg = loadConfig();
+  const dbPath = opts.dbPath ?? cfg.dbPath;
+  const categorizationProvider: LlmProvider | null =
+    opts.llmProvider ?? (cfg.llm.categorization ? resolveProvider(cfg.llm.categorization) : null);
 
-  const app = Fastify({ logger: false });
+  // Logger on by default for real runs; quiet under Vitest so test output stays clean.
+  // Explicit opts.logger always wins.
+  const app = Fastify({ logger: opts.logger ?? !process.env.VITEST });
 
   registerErrorHandler(app);
 
@@ -49,7 +62,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   await app.register(transactionRoutes);
   await app.register(expenseRoutes);
   await app.register(investmentRoutes);
-  await app.register(categoryRoutes);
+  await app.register(categoryRoutes, { llmProvider: categorizationProvider });
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
   await app.register(accountRoutes);
   await app.register(liabilityRoutes);

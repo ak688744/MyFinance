@@ -6,12 +6,19 @@ type CategoryChipProps = {
   categoryId: string | null;
   merchantLabel: string;
   categories: { id: string; name: string }[];
+  categorySource?: string | null;
+  aiKeyword?: string;
 };
 
-export function CategoryChip({ txId, categoryId, merchantLabel, categories }: CategoryChipProps) {
+export function CategoryChip({ txId, categoryId, merchantLabel, categories, categorySource, aiKeyword }: CategoryChipProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [showLearnPrompt, setShowLearnPrompt] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [aiConfirmed, setAiConfirmed] = useState(false);
+  // Captured at confirm-click. The one-off confirm clears the persisted ai_keyword
+  // (row → 'manual'), so the `aiKeyword` prop goes null on refetch; holding it in
+  // local state keeps the "always do this?" prompt working through that flip.
+  const [capturedKeyword, setCapturedKeyword] = useState<string | null>(null);
   const updateTxCategory = useUpdateTxCategory();
 
   const currentCategory = categoryId ? categories.find((c) => c.id === categoryId) : null;
@@ -43,6 +50,56 @@ export function CategoryChip({ txId, categoryId, merchantLabel, categories }: Ca
     setShowLearnPrompt(false);
     setSelectedCategoryId(null);
   };
+
+  const handleAiConfirm = async () => {
+    if (categoryId === null) return;
+    // Capture the keyword BEFORE the confirm clears it (row → manual, prop → null).
+    const kw = aiKeyword && aiKeyword.trim().length >= 2 ? aiKeyword.trim() : null;
+    setCapturedKeyword(kw);
+    await updateTxCategory.mutateAsync({ id: txId, categoryId });
+    if (kw) setAiConfirmed(true);
+  };
+
+  const handleAiKeywordYes = async () => {
+    if (categoryId === null || !capturedKeyword) return;
+    await updateTxCategory.mutateAsync({ id: txId, categoryId, createRuleKeyword: true, keyword: capturedKeyword });
+    setAiConfirmed(false);
+    setCapturedKeyword(null);
+  };
+
+  const handleAiKeywordNo = () => { setAiConfirmed(false); setCapturedKeyword(null); };
+
+  const handleAiReject = async () => {
+    await updateTxCategory.mutateAsync({ id: txId, categoryId: null });
+  };
+
+  // Keyword second-prompt is gated on LOCAL aiConfirmed state, NOT categorySource.
+  // The one-off confirm assign invalidates ['expenses'], so the row refetches as
+  // categorySource='manual'; gating this branch on local state keeps the Yes/No
+  // prompt mounted so the user can actually create the keyword rule. currentCategory
+  // derives from categoryId (unchanged by the one-off assign) so the label stays valid.
+  if (aiConfirmed && capturedKeyword && currentCategory) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-gray-600">Always categorize transactions containing "{capturedKeyword}" as {currentCategory.name}?</span>
+        <button onClick={handleAiKeywordYes} disabled={updateTxCategory.isPending} className="text-violet-700 font-medium px-1">Yes</button>
+        <span className="text-gray-400">/</span>
+        <button onClick={handleAiKeywordNo} disabled={updateTxCategory.isPending} className="text-gray-600 px-1">No</button>
+      </div>
+    );
+  }
+
+  if (categorySource === 'ai_suggested' && currentCategory) {
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded px-2 py-0.5">
+          AI · {currentCategory.name}
+        </span>
+        <button aria-label="Confirm AI suggestion" onClick={handleAiConfirm} disabled={updateTxCategory.isPending} className="text-green-600 px-1">✓</button>
+        <button aria-label="Reject AI suggestion" onClick={handleAiReject} disabled={updateTxCategory.isPending} className="text-red-600 px-1">✗</button>
+      </div>
+    );
+  }
 
   if (showLearnPrompt && selectedCategory) {
     return (

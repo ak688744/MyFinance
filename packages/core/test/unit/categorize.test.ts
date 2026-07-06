@@ -121,6 +121,43 @@ describe('resolveCategoryFromRules — precedence', () => {
   });
 });
 
+describe('keyword (substring) rule type', () => {
+  const keywordRule = (patternValue: string, categoryId: string): StoredCategoryRule => ({
+    id: 1, ruleType: 'keyword', patternValue, categoryId, priority: 50,
+  });
+
+  it('matches when the normalized description CONTAINS the keyword (plain description)', () => {
+    const input = createCategorizationInput('SWIGGY ORDER 123');
+    const res = resolveCategoryFromRules(input, [keywordRule('swiggy', 'food')]);
+    expect(res).toEqual({ categoryId: 'food', categorySource: 'keyword_rule' });
+  });
+
+  it('does not match when the keyword is absent from the description', () => {
+    const input = createCategorizationInput('AMAZON PURCHASE');
+    const res = resolveCategoryFromRules(input, [keywordRule('swiggy', 'food')]);
+    expect(res).toEqual({ categoryId: null, categorySource: null });
+  });
+
+  it('builtin_rule beats a keyword rule (keyword is below builtins)', () => {
+    // "zepto" is a builtin groceries match; a keyword rule mapping "zepto"→food must NOT win.
+    const input = createCategorizationInput('UPI PAYMENT ZEPTO STORE');
+    const res = resolveCategoryFromRules(input, [
+      { id: 1, ruleType: 'keyword', patternValue: 'zepto', categoryId: 'food', priority: 50 },
+    ]);
+    expect(res).toEqual({ categoryId: 'groceries', categorySource: 'builtin_rule' });
+  });
+
+  it('an exact merchant rule beats a keyword rule', () => {
+    const input = createCategorizationInput('UPI-SWIGGY-payment');
+    const res = resolveCategoryFromRules(input, [
+      { id: 1, ruleType: 'merchant', patternValue: 'swiggy', categoryId: 'food', priority: 200 },
+      { id: 2, ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'shopping', priority: 50 },
+    ]);
+    expect(res.categorySource).toBe('merchant_rule');
+    expect(res.categoryId).toBe('food');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Repo-injected orchestration (fake in-memory repos)
 // ---------------------------------------------------------------------------
@@ -224,6 +261,9 @@ function makeFakeTxRepo(
     summary() {
       throw new Error('not used');
     },
+    listUncategorizedInRange() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }
@@ -289,6 +329,21 @@ describe('saveCategoryMemoryRule', () => {
     );
     expect(calls.createRule[0].priority).toBe(100);
   });
+
+  it('stores a keyword rule with priority 50', () => {
+    const { repo: ruleRepo, calls } = makeFakeRuleRepo();
+    saveCategoryMemoryRule(
+      { ruleRepo },
+      { ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'food', createdFromTransactionId: 7 },
+    );
+    expect(calls.createRule).toHaveLength(1);
+    expect(calls.createRule[0]).toMatchObject({
+      ruleType: 'keyword',
+      patternValue: 'swiggy',
+      categoryId: 'food',
+      priority: 50,
+    });
+  });
 });
 
 describe('createRule', () => {
@@ -337,6 +392,26 @@ describe('updateRuleCategory', () => {
       priority: 200,
     });
     expect(rules[0]).toMatchObject({ categoryId: 'travel', ruleType: 'merchant', priority: 200 });
+  });
+
+  it('preserves priority 50 when editing a keyword rule', () => {
+    const { repo: ruleRepo, rules, calls } = makeFakeRuleRepo([
+      { id: 9, ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'food', priority: 50 },
+    ]);
+    const { repo: txRepo } = makeFakeTxRepo([]);
+
+    updateRuleCategory(
+      { ruleRepo, txRepo },
+      { ruleId: 9, categoryId: 'shopping', ruleType: 'keyword' },
+    );
+
+    expect(calls.updateRuleCategory[0]).toEqual({
+      ruleId: 9,
+      categoryId: 'shopping',
+      ruleType: 'keyword',
+      priority: 50,
+    });
+    expect(rules[0]).toMatchObject({ categoryId: 'shopping', ruleType: 'keyword', priority: 50 });
   });
 });
 
