@@ -301,3 +301,55 @@ export interface LiabilityRepo {
   }>): void;
   delete(id: number): void;
 }
+
+// ── AI settings & usage repo interfaces ─────────────────────
+
+export type AiDialect = 'gemini' | 'openai-compatible' | 'bedrock';
+
+export interface AiProviderRow {
+  id: string; dialect: AiDialect; label: string;
+  secretEnc: string | null; configJson: string | null; createdAt: string;
+}
+export interface AiModelRow {
+  id: string; providerId: string; modelString: string; label: string;
+  inputPerM: number; outputPerM: number; createdAt: string;
+}
+export interface AiTaskRouteRow { task: string; modelId: string; updatedAt: string; }
+export interface AiUsageEventRow {
+  id: number; ts: string; task: string; providerId: string; dialect: string;
+  model: string; inputTokens: number; outputTokens: number; callCount: number;
+  costUsd: number | null; ok: number;
+}
+
+export interface AiProviderRepo {
+  list(): AiProviderRow[];
+  get(id: string): AiProviderRow | null;
+  create(p: { id: string; dialect: AiDialect; label: string; secretEnc: string | null; configJson: string | null }): void;
+  update(id: string, patch: { label?: string; secretEnc?: string | null; configJson?: string | null }): void;
+  delete(id: string): void;
+  countModels(providerId: string): number;
+}
+export interface AiModelRepo {
+  list(filters?: { providerId?: string }): AiModelRow[];
+  get(id: string): AiModelRow | null;
+  create(m: { id: string; providerId: string; modelString: string; label: string; inputPerM: number; outputPerM: number }): void;
+  update(id: string, patch: { label?: string; inputPerM?: number; outputPerM?: number }): void;
+  delete(id: string): void;
+  countRoutes(modelId: string): number;
+}
+export interface AiTaskRouteRepo {
+  list(): AiTaskRouteRow[];
+  getByTask(task: string): AiTaskRouteRow | null;
+  upsert(task: string, modelId: string, updatedAt: string): void;
+  delete(task: string): void;
+}
+export interface AiUsageRepo {
+  insert(e: Omit<AiUsageEventRow, 'id'>): number;
+  listEvents(filters: { from?: string; to?: string; task?: string; limit: number; offset: number }): AiUsageEventRow[];
+  summary(filters: { from?: string; to?: string }): {
+    totalCostUsd: number; totalInput: number; totalOutput: number; callCount: number; unpricedCount: number;
+    byTask: { task: string; costUsd: number; inputTokens: number; outputTokens: number; calls: number }[];
+    byModel: { model: string; costUsd: number; inputTokens: number; outputTokens: number; calls: number }[];
+    byDay: { day: string; costUsd: number }[];
+  };
+}
