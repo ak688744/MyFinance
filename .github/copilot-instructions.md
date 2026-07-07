@@ -108,7 +108,6 @@ T1 CORE-LOGIC GATE PASSED: Groww golden-master (packages/core/test/golden/groww.
 SEAM INVARIANT VERIFIED: no drizzle/better-sqlite3 import anywhere in domain/ or import/ (only architecture comments mention them). Pure logic depends only on repo interfaces.
 
 REMAINING: Phase 6 (Task 6.1 Fastify skeleton+config+errors, 6.2 db plugin+/health, 6.3 read endpoints /transactions + /investments/summary + /investments/returns) then Phase 7 close-out (full verify, subagent final review, PR, update MASTER_PLAN, memory). Spec docs/superpowers/specs/2026-06-12-l0-foundation-design.md; plan docs/superpowers/plans/2026-06-12-l0-foundation.md. Node 20 required for all commands.
-- AI suggest tests migrated to gateway-based architecture — Task 17: Removed obsolete config.test.ts llm block (ApiConfig.llm was deleted in Task 14). Updated aiSuggest.test.ts to use gateway instead of llmProvider: makeFakeGateway wraps provider+optional usageRepo for recording; makeErrorGateway throws LlmError. Added e2e test proving ai-suggest records exactly 1 usage row via fake gateway that manually inserts into aiUsageRepo. All 67 api tests green, tsc --build clean.
 
 ## Scope
 - Insert L1.5 Unified Investment Model (all asset classes) before L2; build L1 on current MF model first with multi-platform + multi-account seams — User wants the investment section to be a single net-worth view across ALL asset classes (mutual funds, stocks, PPF, FD, cash), each with its own ingestion method (some manual, some file-import), plus multiple accounts per asset class. Decided 2026-06-13:
@@ -212,12 +211,6 @@ KEY GOTCHAS for subagents: (1) Node 20 mandatory — prefix cmds `source ~/.nvm/
 - Expense screen redesign (T2): spent excludes investment+transfer, Saved=Invested+Cash; month selector w/ prev-3/next-3 MoM window; compact bar labels — User flagged that Total Spent double-counted investments. Model locked with user: expenseTxRepo.summary() gained excludeFromSpend[] (default ['investment','transfer']) + investmentCategories[] (default ['investment']) params -> new 'invested' field; totalSpent/totalIncome/byCategory/byMonth all drop excluded categories; uncategorized(NULL) debits ALWAYS remain spend (SQL NULL NOT IN(...) is NULL not true, so exclude cond is OR(isNull, notInArray)). API /expenses/summary injects those defaults, overridable via ?excludeFromSpend=&investmentCategories= CSV (empty string = opt out). Saved = Income - TrueSpend = Invested + CashRemaining shown as sub-parts on KPI card. Frontend: month selector defaults currentMonth() with prev/next arrows (next disabled at current); KPIs+donut scoped to selected month, MoM bar chart uses SEPARATE all-time summary windowed via monthWindow(all, selected, span=3) = 3-before/selected/3-after shifting to stay in-data. Bar chart shows compact value (formatCompactShort ₹42K/₹4.2L) on TOP of bar via LabelList, exact ₹ on hover; donut labels slices >=6% on-chart with name+%. Category filter dropdown + offset pagination (PAGE_SIZE=25). Account column resolves accountId->'institution · label' via useAccounts('expense'). NO core financial logic touched (XIRR/categorize/portfolio untouched), so no Groww re-validation. Core 11 + api 4 expense tests + web 17 format tests green. KNOWN GAP: expense txns all have accountId=null (HDFC import never assigns account) + zero expense-domain accounts exist, so Account column shows '—' until import-side account linking is built (separate change). Uncategorized category-filter option dropped (API eq() cant match NULL).
 - Expenses Merchant column shows a derived merchant name (deriveMerchantName in apps/web/src/lib/format.ts) with fallback to full raw description; each merchant cell is a click-to-expand/collapse button revealing the full transaction text (MerchantCell in ExpensesPage.tsx) — T2 web-only change; deriveMerchantName is the display-oriented sibling of core extractMerchantKey (parses UPI/ACH/POS structured formats, title-cases, returns null when no useful merchant -> caller falls back to full description). No core/API change, no Groww re-validation. 7 unit tests added to format.test.ts.
 
-## Api-architecture
-- Added badRequest/notFound/conflict helpers to packages/api/src/errors.ts as exportable utilities instead of local-per-file definitions — Multiple route files were defining the same helper functions locally. Centralizing in errors.ts provides consistency, reduces duplication, and matches API house style for error handling with statusCode property.
-
-## Web-ai-hooks
-- AI settings hooks follow TanStack Query pattern with typed apiGet/apiSend, query key factory, invalidation matching existing useRules/useUpdateTxCategory — Task 18 adds AI settings hooks. Studied hooks.ts patterns: useQuery wraps apiGet, useMutation wraps apiSend with queryClient.invalidateQueries onSuccess. Query keys via qk factory (ai.providers, ai.models(providerId), ai.tasks, ai.usageSummary(range), ai.usageEvents(filters)). Mutations invalidate relevant keys (createProvider invalidates ai.providers; setTaskRoute invalidates ai.tasks). PricingHint as query helper returning nullable DTO. Matches house style exactly.
-
 ---
 
 ## How to Save Decisions (for Copilot)
@@ -232,18 +225,9 @@ grouping by category, and reproducing this exact format including this instructi
 
 ---
 
-## Research Findings Index (31 entries)
+## Research Findings Index (22 entries)
 | Topic | Tags | Staleness | Date |
 |-------|------|-----------|------|
-| ai-usage-event-row-shape | myfinance, api, types | stable | 2026-07-08 |
-| AI Settings build progress checkpoint 4 — 18 of 22 done (Phases 1-3 done, web T18 done) | ai-settings, build-progress, sdd, checkpoint | stable | 2026-07-08 |
-| web-ai-hooks-implementation | web, ai, hooks, tanstack-query, task-18 | stable | 2026-07-08 |
-| AI Settings build progress checkpoint 3 — 16 of 22 tasks done (Phase 1+2 done, Phase 3 api through T16) | ai-settings, build-progress, sdd, checkpoint | stable | 2026-07-08 |
-| ai-settings-api-task-15 | myfinance, api, ai-settings, routes, rest | stable | 2026-07-08 |
-| Task 13: Export agents surface | agents-exports, phase-2, api-phase-3-bug | stable | 2026-07-08 |
-| AI Settings build progress checkpoint 2 — 11 of 22 tasks done (Phase 1 + agents to T11) | ai-settings, build-progress, sdd, checkpoint | stable | 2026-07-08 |
-| Task 9 Bedrock adapter review | agents, bedrock, review, llm | stable | 2026-07-08 |
-| AI Settings & Usage build progress — Phase 1 core tasks 1-4 done on feat/ai-settings-usage | ai-settings, build-progress, sdd, feat-ai-settings-usage, core | volatile | 2026-07-07 |
 | BUG: confirming one AI suggestion wiped sibling ai_suggested rows (recategorize sweep) | ai-categorization, bug, recategorize, fixed | stable | 2026-07-05 |
 | Gemini AI-categorization 404 — stale default model gemini-1.5-flash | ai-categorization, gemini, bug, config, logging | stable | 2026-07-05 |
 | AI-categorization review fixes | ai-categorize, bugfix, react, llm-error | stable | 2026-07-05 |
