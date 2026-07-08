@@ -4,6 +4,7 @@ import multipart from '@fastify/multipart';
 import { loadConfig } from './config';
 import { registerErrorHandler } from './errors';
 import { registerDb } from './plugins/db';
+import { makeGateway, type Gateway } from './plugins/gateway';
 import { healthRoutes } from './routes/health';
 import { transactionRoutes } from './routes/transactions';
 import { expenseRoutes } from './routes/expenses';
@@ -14,7 +15,6 @@ import { accountRoutes } from './routes/accounts';
 import { liabilityRoutes } from './routes/liabilities';
 import { assetRoutes } from './routes/assets';
 import { networthRoutes } from './routes/networth';
-import { resolveProvider, type LlmProvider } from '@myfinance/agents';
 
 export type BuildServerOpts = {
   dbPath?: string;
@@ -23,8 +23,8 @@ export type BuildServerOpts = {
    * the real network matcher (core). Tests pass a no-network stub.
    */
   amfiMatch?: AmfiMatch;
-  /** Injected categorization LLM provider (tests pass a fake). Falls back to config. */
-  llmProvider?: LlmProvider;
+  /** Injected LLM gateway (tests pass a fake). Falls back to real gateway. */
+  gateway?: Gateway;
   /**
    * Fastify logger option. Defaults to `true` (request logging on) for real runs;
    * tests pass `false` to keep output quiet.
@@ -40,8 +40,6 @@ export type BuildServerOpts = {
 export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyInstance> {
   const cfg = loadConfig();
   const dbPath = opts.dbPath ?? cfg.dbPath;
-  const categorizationProvider: LlmProvider | null =
-    opts.llmProvider ?? (cfg.llm.categorization ? resolveProvider(cfg.llm.categorization) : null);
 
   // Logger on by default for real runs; quiet under Vitest so test output stays clean.
   // Explicit opts.logger always wins.
@@ -58,16 +56,21 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   // encapsulated child scope.
   await registerDb(app, dbPath);
 
+  const gateway: Gateway = opts.gateway ?? makeGateway(app.repos);
+
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
   await app.register(expenseRoutes);
   await app.register(investmentRoutes);
-  await app.register(categoryRoutes, { llmProvider: categorizationProvider });
+  await app.register(categoryRoutes, { gateway });
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
   await app.register(accountRoutes);
   await app.register(liabilityRoutes);
   await app.register(assetRoutes);
   await app.register(networthRoutes);
+  // AI routes (Tasks 15/16):
+  // await app.register(aiSettingsRoutes, { gateway });
+  // await app.register(aiUsageRoutes, { gateway });
 
   return app;
 }
