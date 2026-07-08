@@ -185,3 +185,47 @@ lsof -ti:5173 | xargs kill 2>/dev/null   # stop web
 rm -f /Users/vkhandelwal/Documents/MyFinance/packages/api/demo.db*   # drop demo DB (gitignored anyway)
 ```
 Screenshots and Browser snapshots should stay in `docs/manual_testing/evidence/`.
+
+---
+
+# AI Settings & Usage (feat/ai-settings-usage)
+
+> Covers the new **AI** sidebar surface: register providers/models with pricing,
+> route the `categorization` task to a provider+model, run "Suggest with AI" on
+> Expenses, and see token/dollar usage recorded. Automated coverage already lives
+> in core/agents/api/web unit + inject tests; the ONE thing only a human can verify
+> is the **live Bedrock (AWS SSO)** path — CI stubs it.
+
+**Extra setup — the encryption master key (required before adding a key-based provider):**
+```bash
+# 64 hex chars (32 bytes). Any stable value; losing it makes stored keys undecryptable.
+export MYFINANCE_SECRET_KEY=$(python3 -c "import secrets;print(secrets.token_hex(32))")
+```
+Restart the API server (Setup Step 1) in the SAME shell so it inherits the key.
+
+## A. Gemini provider (key-based) end-to-end
+- [ ] Sidebar shows an **AI** item; click it → **AI Settings** page with two tabs (Providers & Routing / Usage & Cost).
+- [ ] Tab 1 → **Add provider** → dialect **gemini**, label "Gemini", paste a real `GEMINI_API_KEY` → save. Card shows "key set ✓". `GET /api/ai/providers` must show `hasSecret:true` and **must NOT contain the raw key** anywhere in the JSON.
+- [ ] **Add model** → provider Gemini, modelString `gemini-2.5-flash` → prices **prefill** to 0.30 / 2.50 (editable) → save.
+- [ ] **Task routing**: the `categorization` row shows an amber **"Not configured"** chip; pick the Gemini model → Save → chip clears (configured).
+- [ ] Go to **Expenses** (seed the expense txns from the L2 plan first if empty), pick a month with uncategorized rows → **Suggest with AI** → rows get violet `ai_suggested` chips.
+- [ ] Back to **AI → Usage & Cost**: KPI strip shows Call count ≥ 1, Total tokens > 0, Total spend as a $ value (sub-cent shows 4dp, e.g. `$0.0031`). The spend bar chart + by-task/by-model tables reflect the run. Before any run, this tab shows an honest **empty state** (no fake numbers).
+
+## B. Bedrock provider (AWS SSO) — LIVE, human-only
+> This is the only path CI cannot exercise (SSO creds + real Bedrock call).
+- [ ] Ensure an AWS SSO session: `aws sso login --profile dev` (same flow as `~/bin/claude_aws`).
+- [ ] AI → Add provider → dialect **bedrock**: the API-key field is **hidden**; region (`us-east-1`) + profile (`dev`) inputs + an SSO hint are shown. Save. Card shows "Bedrock: SSO".
+- [ ] Add model → provider Bedrock, modelString = a Bedrock Claude id (e.g. `us.anthropic.claude-haiku-4-5-...`), enter its input/output $/M prices → save.
+- [ ] Route `categorization` to the Bedrock model → Expenses → Suggest with AI → rows categorize (proves the forced-tool-use JSON path + `providerChainResolver`/`fromSSO` wiring works against real Bedrock).
+- [ ] Usage & Cost records a new row with the Bedrock model + its cost.
+- [ ] **Expired-SSO check:** let the SSO session lapse (or `unset` the creds) and run Suggest with AI → expect a graceful **502** + a message telling you to re-run `aws sso login` (NOT a 500 / silent failure).
+
+## C. Guards & hygiene
+- [ ] With NO route configured for `categorization`, Suggest with AI → **400** ("No AI model is assigned…").
+- [ ] Try to delete a provider that still has models → blocked (**409**). Delete a model still assigned to a task → blocked (**409**). Unassign/delete in the right order works.
+- [ ] `GET /api/ai/providers` never returns `secret_enc` or any decrypted key (only `hasSecret`).
+
+## Cross-check (AI)
+- [ ] `GET /api/ai/tasks` → the `categorization` row's `assignedModelId`/`configured` match the UI.
+- [ ] `GET /api/ai/usage/summary` `data` totals == the Usage & Cost KPI strip.
+- [ ] `GET /api/ai/usage/events?limit=10` rows == the recent-usage table.
