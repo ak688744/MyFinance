@@ -15,6 +15,7 @@ import { accountRoutes } from './routes/accounts';
 import { liabilityRoutes } from './routes/liabilities';
 import { assetRoutes } from './routes/assets';
 import { networthRoutes } from './routes/networth';
+import { aiSettingsRoutes } from './routes/aiSettings';
 
 export type BuildServerOpts = {
   dbPath?: string;
@@ -69,7 +70,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   await app.register(assetRoutes);
   await app.register(networthRoutes);
   // AI routes (Tasks 15/16):
-  // await app.register(aiSettingsRoutes, { gateway });
+  await app.register(aiSettingsRoutes);
   // await app.register(aiUsageRoutes, { gateway });
 
   return app;
