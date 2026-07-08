@@ -18,6 +18,8 @@ export async function aiSettingsRoutes(app: FastifyInstance) {
     '/ai/providers', async (req, reply) => {
       const { id, dialect, label, apiKey, config } = req.body ?? ({} as any);
       if (!id || !label || !['gemini', 'openai-compatible', 'bedrock'].includes(dialect)) throw badRequest('id, label and a valid dialect are required.');
+      // I2: check duplicate
+      if (r().aiProviderRepo.get(id)) throw conflict(`Provider "${id}" already exists.`);
       const secretEnc = dialect === 'bedrock' ? null : (apiKey ? encryptSecret(apiKey) : null);
       r().aiProviderRepo.create({ id, dialect: dialect as any, label, secretEnc, configJson: config ? JSON.stringify(config) : null });
       reply.code(201); return { data: { id } };
@@ -50,13 +52,19 @@ export async function aiSettingsRoutes(app: FastifyInstance) {
       if (!b.id || !b.providerId || !b.modelString || !b.label) throw badRequest('id, providerId, modelString, label are required.');
       if (typeof b.inputPerM !== 'number' || typeof b.outputPerM !== 'number' || b.inputPerM < 0 || b.outputPerM < 0) throw badRequest('inputPerM and outputPerM must be numbers >= 0.');
       if (!r().aiProviderRepo.get(b.providerId)) throw badRequest('Unknown providerId.');
+      // I2: check duplicate
+      if (r().aiModelRepo.get(b.id)) throw conflict(`Model "${b.id}" already exists.`);
       r().aiModelRepo.create(b); reply.code(201); return { data: { id: b.id } };
     });
 
   app.patch<{ Params: { id: string }; Body: { label?: string; inputPerM?: number; outputPerM?: number } }>(
     '/ai/models/:id', async (req) => {
       if (!r().aiModelRepo.get(req.params.id)) throw notFound('Model not found.');
-      r().aiModelRepo.update(req.params.id, req.body ?? {});
+      const b = req.body ?? {};
+      // I1: validate prices if present
+      if (b.inputPerM != null && (typeof b.inputPerM !== 'number' || b.inputPerM < 0)) throw badRequest('inputPerM must be a number >= 0.');
+      if (b.outputPerM != null && (typeof b.outputPerM !== 'number' || b.outputPerM < 0)) throw badRequest('outputPerM must be a number >= 0.');
+      r().aiModelRepo.update(req.params.id, b);
       return { data: { ok: true } };
     });
 

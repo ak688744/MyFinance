@@ -215,6 +215,9 @@ KEY GOTCHAS for subagents: (1) Node 20 mandatory — prefix cmds `source ~/.nvm/
 ## Api-architecture
 - Added badRequest/notFound/conflict helpers to packages/api/src/errors.ts as exportable utilities instead of local-per-file definitions — Multiple route files were defining the same helper functions locally. Centralizing in errors.ts provides consistency, reduces duplication, and matches API house style for error handling with statusCode property.
 
+## Web-ai-hooks
+- AI settings hooks follow TanStack Query pattern with typed apiGet/apiSend, query key factory, invalidation matching existing useRules/useUpdateTxCategory — Task 18 adds AI settings hooks. Studied hooks.ts patterns: useQuery wraps apiGet, useMutation wraps apiSend with queryClient.invalidateQueries onSuccess. Query keys via qk factory (ai.providers, ai.models(providerId), ai.tasks, ai.usageSummary(range), ai.usageEvents(filters)). Mutations invalidate relevant keys (createProvider invalidates ai.providers; setTaskRoute invalidates ai.tasks). PricingHint as query helper returning nullable DTO. Matches house style exactly.
+
 ---
 
 ## How to Save Decisions (for Copilot)
@@ -229,9 +232,12 @@ grouping by category, and reproducing this exact format including this instructi
 
 ---
 
-## Research Findings Index (28 entries)
+## Research Findings Index (31 entries)
 | Topic | Tags | Staleness | Date |
 |-------|------|-----------|------|
+| ai-usage-event-row-shape | myfinance, api, types | stable | 2026-07-08 |
+| AI Settings build progress checkpoint 4 — 18 of 22 done (Phases 1-3 done, web T18 done) | ai-settings, build-progress, sdd, checkpoint | stable | 2026-07-08 |
+| web-ai-hooks-implementation | web, ai, hooks, tanstack-query, task-18 | stable | 2026-07-08 |
 | AI Settings build progress checkpoint 3 — 16 of 22 tasks done (Phase 1+2 done, Phase 3 api through T16) | ai-settings, build-progress, sdd, checkpoint | stable | 2026-07-08 |
 | ai-settings-api-task-15 | myfinance, api, ai-settings, routes, rest | stable | 2026-07-08 |
 | Task 13: Export agents surface | agents-exports, phase-2, api-phase-3-bug | stable | 2026-07-08 |

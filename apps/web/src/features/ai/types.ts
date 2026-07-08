@@ -54,12 +54,16 @@ export type AiUsageSummaryDTO = {
 
 export type AiUsageEventDTO = {
   id: number;
+  ts: string;
   task: string;
-  modelId: string;
+  providerId: string;
+  dialect: string;
+  model: string;
   inputTokens: number;
   outputTokens: number;
+  callCount: number;
   costUsd: number | null;
-  createdAt: string;
+  ok: number;
 };
 
 export type AiPricingHintDTO = {
