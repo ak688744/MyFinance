@@ -41,4 +41,18 @@ describe('aiUsageRepo', () => {
     expect(usage.listEvents({ limit: 10, offset: 0 })).toHaveLength(2);
     expect(usage.listEvents({ task: 'nope', limit: 10, offset: 0 })).toHaveLength(0);
   });
+
+  it('splits byDay cost per model and lists distinct models', () => {
+    const { db } = runMigrations(':memory:');
+    const usage = makeAiUsageRepo(db);
+    // Same day, two different models.
+    usage.insert({ ts: '2026-07-02T09:00:00Z', task: 'categorization', providerId: 'gemini', dialect: 'gemini', model: 'gemini-2.5-flash', inputTokens: 1000, outputTokens: 500, callCount: 1, costUsd: 0.01, ok: 1 });
+    usage.insert({ ts: '2026-07-02T15:00:00Z', task: 'categorization', providerId: 'bedrock', dialect: 'bedrock', model: 'us.anthropic.claude-haiku-4-5', inputTokens: 800, outputTokens: 200, callCount: 1, costUsd: 0.004, ok: 1 });
+    const s = usage.summary({});
+    expect(s.models).toEqual(['gemini-2.5-flash', 'us.anthropic.claude-haiku-4-5']); // sorted
+    const day = s.byDay.find((d) => d.day === '2026-07-02')!;
+    expect(day.costUsd).toBeCloseTo(0.014);
+    expect(day.byModel['gemini-2.5-flash']).toBeCloseTo(0.01);
+    expect(day.byModel['us.anthropic.claude-haiku-4-5']).toBeCloseTo(0.004);
+  });
 });

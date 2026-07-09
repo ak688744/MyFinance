@@ -42,17 +42,29 @@ export function makeAiUsageRepo(db: Db): AiUsageRepo {
         }
         return [...m.entries()].map(([k, v]) => ({ [label]: k, ...v })) as any[];
       };
-      const byDay = [...rows.reduce((m, r) => {
+      // Per-day totals PLUS a per-model split so the dashboard can render a
+      // stacked bar (one segment per model) per day.
+      const dayMap = new Map<string, { costUsd: number; byModel: Record<string, number> }>();
+      const modelSet = new Set<string>();
+      for (const r of rows) {
         const d = r.ts.slice(0, 10);
-        m.set(d, (m.get(d) ?? 0) + (r.costUsd ?? 0)); return m;
-      }, new Map<string, number>()).entries()]
+        const cost = r.costUsd ?? 0;
+        modelSet.add(r.model);
+        const g = dayMap.get(d) ?? { costUsd: 0, byModel: {} };
+        g.costUsd += cost;
+        g.byModel[r.model] = (g.byModel[r.model] ?? 0) + cost;
+        dayMap.set(d, g);
+      }
+      const byDay = [...dayMap.entries()]
         .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([day, costUsd]) => ({ day, costUsd }));
+        .map(([day, v]) => ({ day, costUsd: v.costUsd, byModel: v.byModel }));
+      const models = [...modelSet].sort();
       return {
         totalCostUsd, totalInput, totalOutput, callCount, unpricedCount,
         byTask: group((r) => r.task, 'task'),
         byModel: group((r) => r.model, 'model'),
         byDay,
+        models,
       };
     },
   };

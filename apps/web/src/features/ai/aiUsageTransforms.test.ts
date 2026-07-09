@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatUsd, toDailyBars } from './aiUsageTransforms';
+import { formatUsd, toDailyBars, toStackedDailyBars } from './aiUsageTransforms';
 
 describe('aiUsageTransforms', () => {
   it('formats USD to cents', () => {
@@ -26,5 +26,19 @@ describe('aiUsageTransforms', () => {
       { label: '2026-07-01', value: 0.02 },
       { label: '2026-07-02', value: 0.15 },
     ]);
+  });
+
+  it('toStackedDailyBars: one row per day with a numeric field per model (0-filled)', () => {
+    const { rows, models } = toStackedDailyBars({
+      models: ['gemini-2.5-flash', 'bedrock-haiku'],
+      byDay: [
+        { day: '2026-07-01', costUsd: 0.01, byModel: { 'gemini-2.5-flash': 0.01 } },
+        { day: '2026-07-02', costUsd: 0.014, byModel: { 'gemini-2.5-flash': 0.01, 'bedrock-haiku': 0.004 } },
+      ],
+    } as any);
+    expect(models).toEqual(['gemini-2.5-flash', 'bedrock-haiku']);
+    // Day 1: the model with no spend is 0-filled (so the stack renders correctly).
+    expect(rows[0]).toEqual({ day: '2026-07-01', 'gemini-2.5-flash': 0.01, 'bedrock-haiku': 0 });
+    expect(rows[1]).toEqual({ day: '2026-07-02', 'gemini-2.5-flash': 0.01, 'bedrock-haiku': 0.004 });
   });
 });

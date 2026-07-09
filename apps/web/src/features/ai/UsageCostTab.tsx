@@ -1,11 +1,20 @@
 import { Card, KPIStat } from '../../components/ui/primitives';
 import { DataState } from '../../components/ui/DataState';
-import { SpendBarChart } from '../../components/ui/charts';
-import { useAiUsageSummary } from '../../lib/hooks';
-import { formatUsd, toDailyBars } from './aiUsageTransforms';
+import { UsdStackedBarChart } from '../../components/ui/charts';
+import { formatDate } from '../../lib/format';
+import { useAiUsageSummary, useAiUsageEvents } from '../../lib/hooks';
+import { formatUsd, toStackedDailyBars } from './aiUsageTransforms';
+
+/** "2026-07-09T15:04:00Z" -> "9 Jul 2026 · 15:04" for the Recent Runs table. */
+function formatRunTime(iso: string): string {
+  const t = iso.slice(11, 16);
+  return t ? `${formatDate(iso)} · ${t}` : formatDate(iso);
+}
 
 export function UsageCostTab() {
   const summary = useAiUsageSummary();
+  // Recent runs — one row per invocation (each "Suggest with AI" click = one run).
+  const events = useAiUsageEvents({ limit: 25, offset: 0 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -36,15 +45,64 @@ export function UsageCostTab() {
         )}
       </DataState>
 
-      {/* Spend over time chart */}
+      {/* Daily spend, stacked by model */}
       {summary.data && summary.data.byDay.length > 0 && (
         <Card>
-          <div className="text-sm font-semibold mb-3">Spend Over Time</div>
-          <SpendBarChart
-            data={toDailyBars(summary.data).map((d) => ({ month: d.label, spent: d.value }))}
-          />
+          <div className="text-sm font-semibold mb-3">Daily Spend by Model</div>
+          {(() => {
+            const { rows, models } = toStackedDailyBars(summary.data);
+            return <UsdStackedBarChart rows={rows} models={models} />;
+          })()}
         </Card>
       )}
+
+      {/* Recent runs — one row per invocation */}
+      <Card>
+        <div className="text-sm font-semibold mb-3">Recent Runs</div>
+        <DataState
+          isLoading={events.isLoading}
+          error={events.error}
+          isEmpty={!events.data || events.data.length === 0}
+          emptyMessage="No AI runs yet."
+          onRetry={events.refetch}
+        >
+          {events.data && events.data.length > 0 && (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[11px] uppercase text-gray-400 text-left">
+                  <th className="font-medium py-2">When</th>
+                  <th className="font-medium py-2">Task</th>
+                  <th className="font-medium py-2">Model</th>
+                  <th className="font-medium py-2 text-right">Tokens</th>
+                  <th className="font-medium py-2 text-right">Calls</th>
+                  <th className="font-medium py-2 text-right">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.data.map((e) => (
+                  <tr key={e.id} className="border-t border-gray-50">
+                    <td className="py-2.5 pr-3 whitespace-nowrap text-gray-600">{formatRunTime(e.ts)}</td>
+                    <td className="py-2.5 pr-3">
+                      {e.task}
+                      {e.ok === 0 && (
+                        <span className="ml-2 text-[10px] text-red-600 bg-red-50 rounded px-1 py-0.5 align-middle">failed</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-3 font-mono text-xs">{e.model}</td>
+                    <td className="py-2.5 pr-3 text-right tabular text-gray-500">
+                      {(e.inputTokens + e.outputTokens).toLocaleString()}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right tabular text-gray-500">{e.callCount}</td>
+                    <td className="py-2.5 text-right tabular">
+                      {e.costUsd == null ? '—' : formatUsd(e.costUsd)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </DataState>
+      </Card>
 
       {/* By Task Breakdown */}
       {summary.data && summary.data.byTask.length > 0 && (

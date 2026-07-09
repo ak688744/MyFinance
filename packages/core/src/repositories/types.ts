@@ -350,6 +350,7 @@ export interface AiUsageRepo {
     totalCostUsd: number; totalInput: number; totalOutput: number; callCount: number; unpricedCount: number;
     byTask: { task: string; costUsd: number; inputTokens: number; outputTokens: number; calls: number }[];
     byModel: { model: string; costUsd: number; inputTokens: number; outputTokens: number; calls: number }[];
-    byDay: { day: string; costUsd: number }[];
+    byDay: { day: string; costUsd: number; byModel: Record<string, number> }[];
+    models: string[];
   };
 }

@@ -49,7 +49,9 @@ export type AiUsageSummaryDTO = {
   byDay: {
     day: string;
     costUsd: number;
+    byModel: Record<string, number>;
   }[];
+  models: string[];
 };
 
 export type AiUsageEventDTO = {
