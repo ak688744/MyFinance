@@ -1,8 +1,10 @@
-import { LlmError, type LlmProvider } from '../llm/types';
+import { LlmError, type LlmUsage } from '../llm/types';
 import {
   AiSuggestionBatchSchema, GEMINI_RESPONSE_SCHEMA, type AiSuggestion,
 } from './schema';
 import { buildCategorizationPrompt, type TxnForPrompt, type CategoryForPrompt } from './prompt';
+
+export type CompleteFn = (input: { prompt: string; jsonSchema: object }) => Promise<{ text: string; usage?: LlmUsage }>;
 
 export type CategorizeResult = {
   suggestions: AiSuggestion[];
@@ -17,7 +19,7 @@ export type CategorizeLogger = {
 };
 
 export type CategorizeDeps = {
-  provider: LlmProvider;
+  complete: CompleteFn;
   categories: CategoryForPrompt[];
   chunkSize?: number;
   logger?: CategorizeLogger;
@@ -62,7 +64,7 @@ export async function categorizeWithAI(txns: TxnForPrompt[], deps: CategorizeDep
 
     for (let attempt = 0; attempt < 2 && batch === null; attempt += 1) {
       try {
-        const out = await deps.provider.complete({ prompt, jsonSchema: GEMINI_RESPONSE_SCHEMA });
+        const out = await deps.complete({ prompt, jsonSchema: GEMINI_RESPONSE_SCHEMA });
         if (out.usage) { usage.inputTokens += out.usage.inputTokens; usage.outputTokens += out.usage.outputTokens; }
         batch = parseBatch(out.text);
         if (batch === null) {

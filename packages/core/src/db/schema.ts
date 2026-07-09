@@ -418,3 +418,56 @@ export const liabilities = sqliteTable(
     ),
   }),
 );
+
+export const aiProviders = sqliteTable(
+  'ai_providers',
+  {
+    id: text('id').primaryKey().notNull(),
+    dialect: text('dialect').notNull(),
+    label: text('label').notNull(),
+    secretEnc: text('secret_enc'),
+    configJson: text('config_json'),
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    dialectCheck: check('ai_providers_dialect_check',
+      sql`${t.dialect} IN ('gemini','openai-compatible','bedrock')`),
+  }),
+);
+
+export const aiModels = sqliteTable('ai_models', {
+  id: text('id').primaryKey().notNull(),
+  providerId: text('provider_id').notNull().references(() => aiProviders.id),
+  modelString: text('model_string').notNull(),
+  label: text('label').notNull(),
+  inputPerM: real('input_per_m').notNull(),
+  outputPerM: real('output_per_m').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const aiTaskRoutes = sqliteTable('ai_task_routes', {
+  task: text('task').primaryKey().notNull(),
+  modelId: text('model_id').notNull().references(() => aiModels.id),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const aiUsageEvents = sqliteTable(
+  'ai_usage_events',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    ts: text('ts').notNull(),
+    task: text('task').notNull(),
+    providerId: text('provider_id').notNull(),
+    dialect: text('dialect').notNull(),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens').notNull(),
+    outputTokens: integer('output_tokens').notNull(),
+    callCount: integer('call_count').notNull(),
+    costUsd: real('cost_usd'),
+    ok: integer('ok').notNull(),
+  },
+  (t) => ({
+    tsIdx: index('ai_usage_ts_idx').on(t.ts),
+    taskIdx: index('ai_usage_task_idx').on(t.task),
+  }),
+);

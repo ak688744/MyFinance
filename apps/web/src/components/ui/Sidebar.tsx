@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import type { ComponentType, SVGProps } from 'react';
 import {
   NetWorthIcon, InvestmentsIcon, ExpensesIcon, LoansIcon, AssistantIcon,
-  SettingsIcon, SupportIcon,
+  AIIcon, SettingsIcon, SupportIcon,
 } from './icons';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -13,6 +13,7 @@ const NAV: { to: string; label: string; end?: boolean; icon: Icon }[] = [
   { to: '/expenses', label: 'Expenses', icon: ExpensesIcon },
   { to: '/loans', label: 'Loans', icon: LoansIcon },
   { to: '/assistant', label: 'Assistant', icon: AssistantIcon },
+  { to: '/ai', label: 'AI', icon: AIIcon },
 ];
 
 export function Sidebar() {

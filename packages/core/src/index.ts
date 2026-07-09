@@ -8,6 +8,7 @@ export { runMigrations } from './db/migrate';
 export { seedDatabase } from './db/seed';
 export * as schema from './db/schema';
 export { starterCategories, type StarterCategory } from './data/starterCategories';
+export { encryptSecret, decryptSecret } from './db/crypto';
 
 // ---------------------------------------------------------------------------
 // Repositories — factories + interface types
@@ -25,6 +26,10 @@ export { makeAssetContributionRepo } from './repositories/assetContributionRepo'
 export { makeAssetRateRepo } from './repositories/assetRateRepo';
 export { makeAssetValuationRepo } from './repositories/assetValuationRepo';
 export { makeLiabilityRepo } from './repositories/liabilityRepo';
+export { makeAiProviderRepo } from './repositories/aiProviderRepo';
+export { makeAiModelRepo } from './repositories/aiModelRepo';
+export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo';
+export { makeAiUsageRepo } from './repositories/aiUsageRepo';
 
 export type {
   InvestmentTxRepo,
@@ -43,6 +48,15 @@ export type {
   AssetRateRepo,
   AssetValuationRepo,
   LiabilityRepo,
+  AiDialect,
+  AiProviderRow,
+  AiModelRow,
+  AiTaskRouteRow,
+  AiUsageEventRow,
+  AiProviderRepo,
+  AiModelRepo,
+  AiTaskRouteRepo,
+  AiUsageRepo,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------

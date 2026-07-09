@@ -14,4 +14,12 @@ export const qk = {
   categories: () => ['categories'] as const,
   rules: () => ['categories', 'rules'] as const,
   accounts: (domain?: string) => ['accounts', domain ?? 'all'] as const,
+  ai: {
+    providers: () => ['ai', 'providers'] as const,
+    models: (providerId?: string) => ['ai', 'models', providerId ?? 'all'] as const,
+    tasks: () => ['ai', 'tasks'] as const,
+    usageSummary: (range: { from?: string; to?: string }) => ['ai', 'usage', 'summary', range] as const,
+    usageEvents: (filters: { from?: string; to?: string; task?: string; limit?: number; offset?: number }) => ['ai', 'usage', 'events', filters] as const,
+    pricingHint: (modelString: string) => ['ai', 'pricing-hint', modelString] as const,
+  },
 };

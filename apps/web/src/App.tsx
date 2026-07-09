@@ -7,6 +7,7 @@ import { InvestmentAnalyzerPage } from './features/investments/InvestmentAnalyze
 import { ExpensesPage } from './features/expenses/ExpensesPage';
 import { LoansPage } from './features/loans/LoansPage';
 import { AssistantPage } from './features/assistant/AssistantPage';
+import { AiSettingsPage } from './features/ai/AiSettingsPage';
 
 const TITLES: { match: (p: string) => boolean; title: string; subtitle?: string }[] = [
   { match: (p) => p === '/', title: 'Net Worth' },
@@ -14,6 +15,7 @@ const TITLES: { match: (p: string) => boolean; title: string; subtitle?: string 
   { match: (p) => p.startsWith('/expenses'), title: 'Expenses' },
   { match: (p) => p.startsWith('/loans'), title: 'Loans', subtitle: 'Manage your liabilities and amortization schedules.' },
   { match: (p) => p.startsWith('/assistant'), title: 'Assistant' },
+  { match: (p) => p.startsWith('/ai'), title: 'AI Settings', subtitle: 'Configure providers, models, task routing, and monitor usage.' },
 ];
 
 function Layout() {
@@ -41,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'expenses', element: <ExpensesPage /> },
       { path: 'loans', element: <LoansPage /> },
       { path: 'assistant', element: <AssistantPage /> },
+      { path: 'ai', element: <AiSettingsPage /> },
     ],
   },
 ]);

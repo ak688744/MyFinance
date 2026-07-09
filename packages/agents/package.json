@@ -9,6 +9,8 @@
     "typecheck": "tsc --build"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.32.0",
+    "@aws-sdk/credential-providers": "^3.1081.0",
     "@myfinance/core": "workspace:*",
     "zod": "^3.23.0"
   },

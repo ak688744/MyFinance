@@ -1,7 +1,13 @@
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, BarChart, Bar, LabelList } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar, LabelList } from 'recharts';
 import { formatINR, formatCompactShort } from '../../lib/format';
 
 const PALETTE = ['#1463F3', '#0E9F6E', '#7C5CFC', '#F59E0B', '#EF4444', '#06B6D4', '#8B5CF6', '#10B981', '#6B7280'];
+
+/** USD formatter for AI-cost charts (sub-cent shows 4 dp, like the dashboard). */
+function usd(n: number): string {
+  if (!n) return '$0.00';
+  return n >= 0.01 ? `$${n.toFixed(2)}` : `$${n.toFixed(4)}`;
+}
 
 /** Shared tooltip that shows the exact ₹ amount (charts themselves render compact). */
 function ExactTooltip({ active, payload, label }: any) {
@@ -82,6 +88,52 @@ export function SpendBarChart({ data }: { data: { month: string; spent: number }
         <Bar dataKey="spent" fill="#1463F3" radius={[4, 4, 0, 0]}>
           <LabelList dataKey="spent" position="top" formatter={(v: number) => formatCompactShort(v)} style={{ fontSize: 11, fill: '#374151' }} />
         </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Tooltip for the stacked USD cost chart: lists each model's cost + the day total. */
+function UsdStackTooltip({ active, payload, label }: any) {
+  if (!active || !payload || !payload.length) return null;
+  const total = payload.reduce((s: number, p: any) => s + (p.value ?? 0), 0);
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 text-xs">
+      <div className="text-gray-500 mb-1">{label}</div>
+      {payload.filter((p: any) => p.value > 0).map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-sm" style={{ background: p.color }} />
+          <span className="font-mono text-[10px] text-gray-600 max-w-[180px] truncate">{p.dataKey}</span>
+          <span className="tabular ml-auto">{usd(p.value)}</span>
+        </div>
+      ))}
+      <div className="border-t border-gray-100 mt-1 pt-1 flex justify-between font-heading">
+        <span>Total</span><span className="tabular">{usd(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Daily AI spend, one bar per day stacked by model (each model a distinct color).
+ * `rows` are keyed by day + one numeric field per model id; `models` gives the
+ * stack order + legend. Costs are USD (not ₹).
+ */
+export function UsdStackedBarChart({ rows, models }: { rows: Array<Record<string, number | string>>; models: string[] }) {
+  if (!rows || rows.length === 0 || models.length === 0) {
+    return <div className="h-48 flex items-center justify-center text-sm text-gray-400">No data.</div>;
+  }
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={rows} margin={{ top: 12, right: 8, left: 8, bottom: 0 }}>
+        <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+        <YAxis hide />
+        <Tooltip cursor={{ fill: 'rgba(20,99,243,0.06)' }} content={<UsdStackTooltip />} />
+        <Legend wrapperStyle={{ fontSize: 11 }} iconType="square" />
+        {models.map((m, i) => (
+          <Bar key={m} dataKey={m} stackId="cost" fill={PALETTE[i % PALETTE.length]}
+            radius={i === models.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+        ))}
       </BarChart>
     </ResponsiveContainer>
   );

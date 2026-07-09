@@ -7,7 +7,8 @@ import {
   slugifyCategoryName,
   type CategoryRuleType,
 } from '@myfinance/core';
-import { categorizeWithAI, LlmError, type LlmProvider, type CategoryForPrompt } from '@myfinance/agents';
+import { categorizeWithAI, LlmError, type CategoryForPrompt } from '@myfinance/agents';
+import type { Gateway } from '../plugins/gateway';
 
 function badRequest(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -40,7 +41,7 @@ type CategoryRenameBody = { name: string };
 
 export async function categoryRoutes(
   app: FastifyInstance,
-  opts: { llmProvider: LlmProvider | null },
+  opts: { gateway: Gateway },
 ): Promise<void> {
   const deps = () => ({ ruleRepo: app.repos.categoryRuleRepo, txRepo: app.repos.expenseTxRepo });
 
@@ -128,7 +129,6 @@ export async function categoryRoutes(
   app.post<{ Body: { from?: string; to?: string } }>('/categories/ai-suggest', async (req) => {
     const { from, to } = req.body ?? {};
     if (!from || !to) throw badRequest('from and to are required.');
-    if (!opts.llmProvider) throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
 
     const all = app.repos.expenseTxRepo.listUncategorizedInRange({ from, to, limit: AI_SUGGEST_CAP + 1 });
     const warnings: string[] = [];
@@ -151,16 +151,18 @@ export async function categoryRoutes(
 
     let result;
     try {
-      result = await categorizeWithAI(
-        candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
-        { provider: opts.llmProvider, categories, logger: req.log },
+      result = await opts.gateway.runTask('categorization', (complete) =>
+        categorizeWithAI(
+          candidates.map((t) => ({ id: t.id, description: t.description, amount: t.amount, direction: t.direction })),
+          { complete, categories, logger: req.log },
+        ),
       );
     } catch (e) {
       req.log.error({ err: e }, 'ai-suggest: categorization failed hard');
       // network/rate_limit no longer throw (they degrade to skipped inside categorizeWithAI).
       // Only hard failures reach here: auth → 502, provider misconfig → 400.
       if (e instanceof LlmError && e.kind === 'auth') throw badGateway('AI provider auth failed.');
-      if (e instanceof LlmError && e.kind === 'provider_not_configured') throw badRequest('AI provider not configured. Set GEMINI_API_KEY.');
+      if (e instanceof LlmError && e.kind === 'provider_not_configured') throw badRequest('No AI model is assigned to categorization. Configure it in AI Settings.');
       throw e;
     }
 

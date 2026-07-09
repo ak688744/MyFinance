@@ -16,4 +16,5 @@ export function resolveProvider(config: LlmConfig): LlmProvider {
   }
 }
 
+export { buildProvider } from './factory';
 export * from './types';

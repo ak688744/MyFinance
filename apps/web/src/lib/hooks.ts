@@ -6,6 +6,9 @@ import type {
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
   Category, CategoryRule, LiabilityDetail, LiabilityListItem,
 } from '../types';
+import type {
+  AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
+} from '../features/ai/types';
 
 export const useNetWorth = () => useQuery({ queryKey: qk.networth(), queryFn: () => apiGet<NetWorthSummary>('/networth') });
 export const useNetWorthHistory = (dates: string) =>
@@ -114,5 +117,86 @@ export function useAiSuggest() {
   return useMutation({
     mutationFn: (v: { from: string; to: string }) => apiSend<AiSuggestResult>('POST', '/categories/ai-suggest', v),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
+}
+
+// AI Settings & Usage hooks
+export const useAiProviders = () => useQuery({ queryKey: qk.ai.providers(), queryFn: () => apiGet<AiProviderDTO[]>('/ai/providers') });
+export const useAiModels = (providerId?: string) =>
+  useQuery({ queryKey: qk.ai.models(providerId), queryFn: () => apiGet<AiModelDTO[]>('/ai/models', providerId ? { providerId } : undefined) });
+export const useAiTasks = () => useQuery({ queryKey: qk.ai.tasks(), queryFn: () => apiGet<AiTaskDTO[]>('/ai/tasks') });
+export const useAiUsageSummary = (range: { from?: string; to?: string } = {}) =>
+  useQuery({ queryKey: qk.ai.usageSummary(range), queryFn: () => apiGet<AiUsageSummaryDTO>('/ai/usage/summary', range) });
+export const useAiUsageEvents = (filters: { from?: string; to?: string; task?: string; limit?: number; offset?: number } = {}) =>
+  useQuery({ queryKey: qk.ai.usageEvents(filters), queryFn: () => apiGet<AiUsageEventDTO[]>('/ai/usage/events', filters) });
+export const useAiPricingHint = (modelString: string) =>
+  useQuery({ queryKey: qk.ai.pricingHint(modelString), queryFn: () => apiGet<AiPricingHintDTO>('/ai/pricing-hints', { modelString }), enabled: modelString.length > 0 });
+
+export function useCreateProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { id: string; dialect: string; label: string; apiKey?: string; config?: Record<string, unknown> }) =>
+      apiSend<{ id: string }>('POST', '/ai/providers', body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.providers() }); },
+  });
+}
+
+export function useUpdateProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; label?: string; apiKey?: string; config?: Record<string, unknown> }) =>
+      apiSend<{ id: string }>('PATCH', `/ai/providers/${v.id}`, { label: v.label, apiKey: v.apiKey, config: v.config }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.providers() }); qc.invalidateQueries({ queryKey: qk.ai.models() }); },
+  });
+}
+
+export function useDeleteProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiSend<{ ok: boolean }>('DELETE', `/ai/providers/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.providers() }); qc.invalidateQueries({ queryKey: qk.ai.models() }); qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
+  });
+}
+
+export function useCreateModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { id: string; providerId: string; modelString: string; label: string; inputPerM: number; outputPerM: number }) =>
+      apiSend<{ id: string }>('POST', '/ai/models', body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.models() }); },
+  });
+}
+
+export function useUpdateModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; label?: string; inputPerM?: number; outputPerM?: number }) =>
+      apiSend<{ id: string }>('PATCH', `/ai/models/${v.id}`, { label: v.label, inputPerM: v.inputPerM, outputPerM: v.outputPerM }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.models() }); },
+  });
+}
+
+export function useDeleteModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiSend<{ ok: boolean }>('DELETE', `/ai/models/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.models() }); qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
+  });
+}
+
+export function useSetTaskRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { task: string; modelId: string }) =>
+      apiSend<{ ok: boolean }>('PUT', `/ai/tasks/${v.task}/route`, { modelId: v.modelId }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
+  });
+}
+
+export function useUnsetTaskRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (task: string) => apiSend<{ ok: boolean }>('DELETE', `/ai/tasks/${task}/route`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
   });
 }

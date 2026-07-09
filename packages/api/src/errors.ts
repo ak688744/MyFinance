@@ -22,3 +22,21 @@ export function errorHandler(
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler(errorHandler);
 }
+
+export function badRequest(message: string): Error & { statusCode?: number } {
+  const e = new Error(message) as Error & { statusCode?: number };
+  e.statusCode = 400;
+  return e;
+}
+
+export function notFound(message: string): Error & { statusCode?: number } {
+  const e = new Error(message) as Error & { statusCode?: number };
+  e.statusCode = 404;
+  return e;
+}
+
+export function conflict(message: string): Error & { statusCode?: number } {
+  const e = new Error(message) as Error & { statusCode?: number };
+  e.statusCode = 409;
+  return e;
+}
