@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatINR, formatCompactINR, formatCompactShort, formatPercent, formatDate,
   currentMonth, addMonths, monthBounds, formatMonthLong, monthWindow,
+  deriveMerchantName,
 } from './format';
 
 describe('formatINR', () => {
@@ -94,5 +95,31 @@ describe('formatDate', () => {
   });
   it('falls back to the raw string on malformed input', () => {
     expect(formatDate('not-a-date')).toBe('not-a-date');
+  });
+});
+
+describe('deriveMerchantName', () => {
+  it('pulls the merchant out of a UPI description', () => {
+    expect(deriveMerchantName('UPI-SWIGGY-swiggy@axis-ICIC0001-ref123-Payment')).toBe('Swiggy');
+  });
+  it('pulls the merchant out of an ACH description', () => {
+    expect(deriveMerchantName('ACH D- NETFLIX ENTERTAINMENT-529')).toBe('Netflix Entertainment');
+  });
+  it('pulls the merchant out of a POS description', () => {
+    expect(deriveMerchantName('POS 1234 567890 05JUL26 12:30:00 AMAZON')).toBe('Amazon');
+  });
+  it('title-cases multi-word merchants', () => {
+    expect(deriveMerchantName('UPI-QUICK MART-mart@ybl-YESB-r1-Payment')).toBe('Quick Mart');
+  });
+  it('returns null for plain (non-structured) descriptions', () => {
+    expect(deriveMerchantName('SWIGGY ORDER 123')).toBeNull();
+  });
+  it('returns null when the merchant segment is not useful', () => {
+    expect(deriveMerchantName('UPI-XX1234-x@axis-ICIC-r1-Payment')).toBeNull();
+    expect(deriveMerchantName('UPI--vpa@axis-ICIC-r1-Payment')).toBeNull();
+  });
+  it('returns null for empty input', () => {
+    expect(deriveMerchantName('')).toBeNull();
+    expect(deriveMerchantName('   ')).toBeNull();
   });
 });

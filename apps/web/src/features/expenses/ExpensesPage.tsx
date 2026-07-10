@@ -6,6 +6,7 @@ import { AIInsightCard } from '../../components/ui/AIInsightCard';
 import { DonutChart, SpendBarChart } from '../../components/ui/charts';
 import {
   formatINR, formatDate, currentMonth, addMonths, monthBounds, formatMonthLong, monthWindow,
+  deriveMerchantName,
 } from '../../lib/format';
 import { summaryByCategoryWithNames } from '../../lib/transforms';
 import { CategoryChip } from './CategoryChip';
@@ -257,7 +258,7 @@ export function ExpensesPage() {
             <tbody>
               {displayedRows.map((t) => (
                 <tr key={t.id} className="border-t border-gray-50">
-                  <td className="py-2.5 pr-3 max-w-[280px] truncate">{t.description}</td>
+                  <MerchantCell description={t.description} />
                   <td className="py-2.5 pr-3">
                     <CategoryChip txId={t.id} categoryId={t.categoryId} categorySource={t.categorySource} aiKeyword={aiKeywordById[t.id] ?? t.aiKeyword ?? undefined} merchantLabel={t.description} categories={categories.data ?? []} />
                   </td>
@@ -291,5 +292,37 @@ export function ExpensesPage() {
         </DataState>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Merchant column cell. Shows the derived merchant name (or the full raw
+ * description when no merchant can be parsed out). Click to expand and reveal
+ * the full transaction description; click again to collapse.
+ */
+function MerchantCell({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const merchant = deriveMerchantName(description);
+  // When there's no distinct merchant name, the collapsed view already shows the
+  // full description, so expanding only un-truncates it (still useful for long text).
+  const collapsedText = merchant ?? description;
+
+  return (
+    <td className="py-2.5 pr-3 max-w-[280px] align-top">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        title={expanded ? 'Collapse' : 'Show full transaction'}
+        aria-expanded={expanded}
+        className="flex items-start gap-1 text-left w-full group"
+      >
+        <span className={`text-brand/60 mt-0.5 text-[10px] transition-transform ${expanded ? 'rotate-90' : ''}`}>
+          ▶
+        </span>
+        <span className={expanded ? 'break-words' : 'truncate min-w-0'}>
+          {expanded ? description : collapsedText}
+        </span>
+      </button>
+    </td>
   );
 }
