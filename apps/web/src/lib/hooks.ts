@@ -105,6 +105,32 @@ export function useRecategorize() {
   return useMutation({ mutationFn: () => apiSend('POST', '/recategorize', {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }) });
 }
 
+export function useUpdateTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: number; amount?: number; note?: string | null }) =>
+      apiSend<{ ok: boolean }>('PATCH', `/transactions/${v.id}`, { amount: v.amount, note: v.note }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
+}
+
+export function useDeleteTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiSend<{ ok: boolean }>('DELETE', `/transactions/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
+}
+
+export function useCreateTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { transactionDate: string; description: string; amount: number; direction: 'debit' | 'credit'; categoryId?: string | null; note?: string | null; accountId?: number | null }) =>
+      apiSend<{ id: number }>('POST', '/transactions', body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+  });
+}
+
 export type AiSuggestResult = {
   suggestions: { transactionId: number; categoryId: string; keyword: string; confidence: number; reason?: string }[];
   counts: { suggested: number; skipped: number; total: number };

@@ -14,7 +14,7 @@ type SummaryQuery = {
 // debits are additionally surfaced as `invested`. Overridable via query params
 // (comma-separated) for flexibility, but these single-user defaults match the
 // app's starter categories.
-const DEFAULT_EXCLUDE_FROM_SPEND = ['investment', 'transfer'];
+const DEFAULT_EXCLUDE_FROM_SPEND = ['investment', 'self_transfer'];
 const DEFAULT_INVESTMENT_CATEGORIES = ['investment'];
 
 function parseCsv(v: string | undefined, fallback: string[]): string[] {

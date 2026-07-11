@@ -145,6 +145,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           categoryId: transactions.categoryId,
           categorySource: transactions.categorySource,
           aiKeyword: transactions.aiKeyword,
+          note: transactions.note,
           accountId: transactions.accountId,
           balance: transactions.balance,
         })
@@ -241,6 +242,43 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         .limit(limit ?? 1000)
         .all();
       return rows as { id: number; description: string; amount: number; direction: 'debit' | 'credit' }[];
+    },
+
+    updateAmount(id, amount) {
+      db.update(transactions).set({ amount, updatedAt: sql`CURRENT_TIMESTAMP` }).where(eq(transactions.id, id)).run();
+    },
+
+    updateNote(id, note) {
+      db.update(transactions).set({ note, updatedAt: sql`CURRENT_TIMESTAMP` }).where(eq(transactions.id, id)).run();
+    },
+
+    deleteTransaction(id) {
+      db.delete(transactions).where(eq(transactions.id, id)).run();
+    },
+
+    insertManual(tx) {
+      const dedupeKey = `manual_${tx.transactionDate}_${tx.description}_${tx.amount}_${Date.now()}`;
+      const result = db.insert(transactions).values({
+        transactionDate: tx.transactionDate,
+        valueDate: null,
+        referenceNumber: null,
+        description: tx.description,
+        normalizedDescription: tx.description.toLowerCase().trim(),
+        merchantKey: null,
+        upiNoteKeyword: null,
+        amount: tx.amount,
+        direction: tx.direction,
+        categoryId: tx.categoryId ?? null,
+        categorySource: tx.categoryId ? 'manual' : null,
+        aiKeyword: null,
+        note: tx.note ?? null,
+        balance: null,
+        sourceType: 'manual',
+        importHistoryId: null,
+        dedupeKey,
+        accountId: tx.accountId ?? null,
+      }).run();
+      return Number(result.lastInsertRowid);
     },
   };
 }

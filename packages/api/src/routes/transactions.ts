@@ -4,6 +4,7 @@ import {
   saveCategoryMemoryRule,
   recategorizeNonManualTransactions,
 } from '@myfinance/core';
+import { badRequest, notFound } from '../errors';
 
 type TransactionsQuery = {
   limit?: string;
@@ -18,11 +19,20 @@ type UpdateCategoryBody = {
   keyword?: string;
 };
 
-function notFound(message: string): Error & { statusCode?: number } {
-  const err = new Error(message) as Error & { statusCode?: number };
-  err.statusCode = 404;
-  return err;
-}
+type UpdateTransactionBody = {
+  amount?: number;
+  note?: string | null;
+};
+
+type CreateTransactionBody = {
+  transactionDate: string;
+  description: string;
+  amount: number;
+  direction: 'debit' | 'credit';
+  categoryId?: string | null;
+  note?: string | null;
+  accountId?: number | null;
+};
 
 /**
  * GET /transactions — paginated expense transactions.
@@ -40,6 +50,47 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
     const rows = app.repos.expenseTxRepo.list({ limit, offset, categoryId });
     return { data: rows };
   });
+
+  // POST /transactions — manual transaction entry
+  app.post<{ Body: CreateTransactionBody }>('/transactions', async (req) => {
+    const { transactionDate, description, amount, direction, categoryId, note, accountId } = req.body ?? {} as any;
+    if (!transactionDate || !description || !amount || !direction) {
+      throw badRequest('transactionDate, description, amount, direction are required.');
+    }
+    if (direction !== 'debit' && direction !== 'credit') throw badRequest('direction must be debit or credit.');
+    if (typeof amount !== 'number' || amount <= 0) throw badRequest('Amount must be a positive number.');
+    const id = app.repos.expenseTxRepo.insertManual({ transactionDate, description, amount, direction, categoryId, note, accountId });
+    return { data: { id } };
+  });
+
+  // PATCH /transactions/:id — update amount and/or note
+  app.patch<{ Params: { id: string }; Body: UpdateTransactionBody }>(
+    '/transactions/:id',
+    async (req) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) throw badRequest('Invalid transaction id.');
+      const { amount, note } = req.body ?? {};
+      if (amount !== undefined) {
+        if (typeof amount !== 'number' || amount <= 0) throw badRequest('Amount must be a positive number.');
+        app.repos.expenseTxRepo.updateAmount(id, amount);
+      }
+      if (note !== undefined) {
+        app.repos.expenseTxRepo.updateNote(id, note);
+      }
+      return { data: { ok: true } };
+    },
+  );
+
+  // DELETE /transactions/:id
+  app.delete<{ Params: { id: string } }>(
+    '/transactions/:id',
+    async (req) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) throw badRequest('Invalid transaction id.');
+      app.repos.expenseTxRepo.deleteTransaction(id);
+      return { data: { ok: true } };
+    },
+  );
 
   // PATCH /transactions/:id/category
   app.patch<{ Params: { id: string }; Body: UpdateCategoryBody }>(
