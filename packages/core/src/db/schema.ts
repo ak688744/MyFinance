@@ -74,6 +74,7 @@ export const transactions = sqliteTable(
     // so a pending AI suggestion survives a page refresh; cleared whenever the row
     // leaves the 'ai_suggested' state (confirm → manual, or a recategorize sweep).
     aiKeyword: text('ai_keyword'),
+    note: text('note'),
     balance: real('balance'),
     sourceType: text('source_type').notNull(),
     importHistoryId: integer('import_history_id').references(

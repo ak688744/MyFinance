@@ -115,6 +115,7 @@ export type ExpenseTransactionRow = {
   categoryId: string | null;
   categorySource: string | null;
   aiKeyword: string | null;
+  note: string | null;
   accountId: number | null;
   balance: number | null;
 };
@@ -202,6 +203,22 @@ export interface ExpenseTransactionRepo {
   listUncategorizedInRange(range: { from: string; to: string; limit?: number }): {
     id: number; description: string; amount: number; direction: 'debit' | 'credit';
   }[];
+  /** UPDATE amount on a transaction */
+  updateAmount(id: number, amount: number): void;
+  /** UPDATE note on a transaction */
+  updateNote(id: number, note: string | null): void;
+  /** DELETE a transaction by id */
+  deleteTransaction(id: number): void;
+  /** INSERT a manual transaction (no import history, sourceType='manual') */
+  insertManual(tx: {
+    transactionDate: string;
+    description: string;
+    amount: number;
+    direction: 'debit' | 'credit';
+    categoryId?: string | null;
+    note?: string | null;
+    accountId?: number | null;
+  }): number; // returns inserted id
 }
 
 export type ImportRecord = {
