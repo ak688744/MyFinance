@@ -264,6 +264,18 @@ function makeFakeTxRepo(
     listUncategorizedInRange() {
       throw new Error('not used');
     },
+    updateAmount() {
+      throw new Error('not used');
+    },
+    updateNote() {
+      throw new Error('not used');
+    },
+    deleteTransaction() {
+      throw new Error('not used');
+    },
+    insertManual() {
+      throw new Error('not used');
+    },
   };
   return { repo, txns, updates };
 }
