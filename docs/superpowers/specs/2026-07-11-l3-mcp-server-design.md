@@ -35,8 +35,8 @@ asks*, not around the internal data model.
 | **D3** | **stdio transport** (SDK's `StdioServerTransport`). HTTP deferred. | Single-user, self-hosted, local-first (MASTER_PLAN §2). stdio is the path of least resistance for the L4 Agent SDK consumer and for manual testing (`@modelcontextprotocol/inspector`, Claude Desktop). Tool defs are transport-agnostic, so HTTP is a later one-liner. |
 | **D4** | **Task-shaped tool catalog** (~10 tools): domain-aggregate + drill + market-data. NOT a 1:1 mirror of repos. | Context window is the scarce resource, not calls. Repo-mirroring tools (~25) would leak the data model and force multi-call orchestration for one question. Task-shaped tools answer a whole question per call. |
 | **D5** | **JSON-in-text-block output** with `structuredContent` alongside; **raw numbers** (not pre-formatted strings); **explicit unit labels** in field names + tool descriptions. | Agent needs precise values to compute with; it formats for the user. Unit labels (`*Inr`, `*Percent`, `xirrFraction`) guard against the known fraction-vs-percent footgun (the UI once rendered XIRR 0.0949 as "0.1%"). |
-| **D6** | **Zod-validated inputs**; **`isError: true` result** for bad-input & external-failure; **empty-but-valid** result for no-data. | Keeps failures inside the agent's reasoning loop instead of breaking the MCP protocol. Empty is a legitimate answer, not an error. |
-| **D7** | **Injectable `navFetch`** for the two market-data tools. | Offline, deterministic tests; lets us simulate mfapi.in-down → `isError`. Mirrors the API's injectable `amfiMatch` pattern. |
+| **D6** | **Two-layer input validation.** The SDK's `registerTool({ inputSchema })` Zod check is the **protocol layer** — a shape mismatch throws `McpError(InvalidParams)` (correct: a malformed call is a protocol error). **Semantic** failures the agent should recover from (unknown liability id, an invalid-but-well-typed value, external outage) are validated *inside the handler* and returned as **`isError: true`**. **Empty data** → **empty-but-valid** result (not an error). | Keeps recoverable failures inside the agent's reasoning loop; keeps genuinely-malformed calls at the protocol layer where they belong. Empty is a legitimate answer, not an error. |
+| **D7** | **Injectable `marketData` dependency** at the mcp boundary for the two market-data tools: `{ searchSchemes, getLatestNAV, getNAVHistory }`, defaulting to the real `@myfinance/core` functions; tests inject fakes. **NOT** an injected fetch into core — core's `navService` uses global `fetch` and has no fetch parameter, and we make **no core change**. | Offline, deterministic market-data tests; lets us simulate mfapi.in-down → `isError` by injecting a throwing fake. Mirrors the API's injectable `amfiMatch` pattern at the layer boundary rather than inside core. |
 | **D8** | **Write seam pre-shaped but disabled:** tools grouped under `tools/read/*` with an empty reserved `tools/write/*`; the shared context builds a `runInTransaction` runner that is unused in L3. | When L4 wants writes, add `write/*` tools behind an explicit opt-in flag; the transaction runner is already available and the directory structure already signals intent. |
 
 ---
@@ -81,9 +81,15 @@ packages/mcp/
 analogue of the API's `registerDb` + `txRunner` plugins.
 
 ```ts
+type MarketData = {
+  searchSchemes: (query: string) => Promise<SchemeInfo[]>;
+  getLatestNAV: (amfiCode: string) => Promise<number | null>;
+  getNAVHistory: (amfiCode: string) => Promise<NAVData[]>;
+};
+
 type BuildContextOpts = {
   dbPath?: string;                 // defaults to the same env-resolved path the API uses
-  navFetch?: typeof fetch;         // injectable; defaults to global fetch (D7)
+  marketData?: MarketData;         // injectable; defaults to the real core fns (D7)
 };
 
 type Context = {
@@ -94,7 +100,8 @@ type Context = {
     asset, assetContribution, assetRate, assetValuation, liability,
     category, categoryRule, importHistory,
   };
-  nav: NavLookup;                  // getLatestNAV/getNAVForDate, built from navFetch
+  nav: NavLookup;                  // getLatestNAV/getNAVForDate, for portfolio/networth core fns
+  marketData: MarketData;          // for the two market-data tools (D7)
   runInTransaction;                // built from sqlite.transaction — RESERVED, unused in L3 (D8)
   close(): void;                   // closes sqlite on shutdown
 };
@@ -105,10 +112,18 @@ function buildContext(opts?: BuildContextOpts): Context;
 - **DB lifecycle:** the stdio server is a subprocess. `buildContext` runs
   `runMigrations(dbPath)` on boot (same as the API) so a fresh db is valid, opens the
   sqlite handle for the process lifetime, and `close()` shuts it down on exit.
+- **`nav: NavLookup`** is built from the real core `getLatestNAV`/`getNAVForDate` and
+  injected into `getPortfolioSummary`/`getHoldings`/`getNetWorth` — exactly as the API
+  does. In tests, schemes are seeded with NULL amfi_code so core never calls it (no
+  network), matching the API's fixture pattern.
+- **`marketData` injectable (D7):** defaults to the real core `searchSchemes` /
+  `getLatestNAV` / `getNAVHistory`; the two market-data tools call *through* it so tests
+  inject fakes → offline, deterministic, and able to simulate mfapi-down (throwing fake →
+  `isError`). Mirrors the API's injectable `amfiMatch` pattern at the layer boundary.
 - **Domain functions are NOT stored in the context** — they are pure and imported
   directly by the tools (`getNetWorth`, `getPortfolioSummary`, `getPeriodReturns`,
   `amortizationSchedule`, …). The context carries only the *stateful* deps
-  (repos, `nav`, `runInTransaction`) those functions need injected.
+  (repos, `nav`, `marketData`, `runInTransaction`) those functions need injected.
 - Tools receive the context, call the relevant core fn/repo, and shape the result.
   No tool touches sqlite or Drizzle directly.
 
@@ -116,8 +131,9 @@ function buildContext(opts?: BuildContextOpts): Context;
 
 ## 5. Tool Catalog (the contract L4 binds to)
 
-All tools: read-only, Zod-validated inputs, JSON-in-text-block output with explicit
-unit labels. Money = raw INR numbers. Dates = ISO `YYYY-MM-DD` strings.
+All tools: read-only, `inputSchema` = a Zod raw shape (SDK-enforced at the protocol
+layer per D6), JSON-in-text-block output with explicit unit labels. Money = raw INR
+numbers. Dates = ISO `YYYY-MM-DD` strings.
 
 ### Naming conventions (applied everywhere)
 - `*Inr` suffix → a rupee amount (number).
@@ -169,15 +185,22 @@ Every successful tool returns:
 ```
 The text block is the universal fallback; `structuredContent` is the typed echo.
 
-### Three failure modes (D6)
-1. **Bad input** (invalid period, unknown liability id, malformed date) → Zod rejects →
-   `{ isError: true, content: [{ type: 'text', text: '<clear, actionable message>' }] }`.
-   The agent sees it and can correct. Never throws to protocol level.
-2. **External failure** (mfapi.in down — only the two market-data tools) → caught →
-   `{ isError: true, content: [{ type: 'text', text: 'Market data temporarily unavailable: <detail>' }] }`
-   so the agent treats it as transient and can proceed without it.
-3. **Empty data** (no transactions in range, no holdings) → **valid non-error result**
-   (`{ holdings: [], ... }` / `{ transactions: [], total: 0 }`). Empty is an answer.
+### Failure modes (D6 — two-layer validation)
+- **Protocol layer (SDK):** the tool's `inputSchema` (Zod raw shape) is enforced by the
+  SDK. A shape mismatch (wrong type, missing required field) throws
+  `McpError(InvalidParams)` — the SDK's behavior in v1.29.0, and correct: a malformed
+  call is a protocol error, not a data answer. The plan uses this for type/required
+  checks (e.g. `period` constrained to a `z.enum`, `liabilityId` as `z.number()`).
+- **Handler layer (`isError`):** semantic failures the agent should recover from are
+  validated *inside* the handler and returned as
+  `{ isError: true, content: [{ type: 'text', text: '<clear, actionable message>' }] }`:
+  1. **Unknown reference** — e.g. `liabilityId` well-typed but not in the DB →
+     `isError` "Liability <id> not found."
+  2. **External failure** (mfapi.in down — only the two market-data tools) → caught →
+     `isError` "Market data temporarily unavailable: <detail>" so the agent treats it as
+     transient and can proceed without it.
+- **Empty data** (no transactions in range, no holdings) → **valid non-error result**
+  (`{ holdings: [], ... }` / `{ transactions: [], total: 0 }`). Empty is an answer.
 
 ### Unit safety
 The `xirrFraction` / `*Inr` / `*Percent` field naming + per-tool descriptions are the
@@ -190,9 +213,9 @@ guardrail against the fraction-vs-percent footgun.
 1. **Tool-handler unit tests (the bulk).** Seeded temp sqlite (PII-free synthetic
    fixtures, schemes with NULL amfi_code so no network — same pattern as `packages/api`).
    Invoke each tool handler and assert: correct JSON shape; unit-label fields present;
-   Zod rejects bad input → `isError`; empty-data → valid-empty (not error).
-2. **Market-data tests with injected `navFetch`.** Offline, deterministic; explicitly
-   simulate mfapi-down → `isError`.
+   semantic bad input (unknown id) → `isError`; empty-data → valid-empty (not error).
+2. **Market-data tests with injected `marketData` fakes (D7).** Offline, deterministic;
+   a throwing fake simulates mfapi-down → `isError`.
 3. **One protocol smoke test.** Wire the server through the SDK's in-memory transport,
    `listTools`, call one tool end-to-end — proves registration + transport + serialization.
 4. **No re-testing core math.** Groww golden-master + the core suite already cover
