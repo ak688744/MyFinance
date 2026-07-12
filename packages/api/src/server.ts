@@ -1,4 +1,5 @@
 // packages/api/src/server.ts
+import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import { loadConfig } from './config';
@@ -77,7 +78,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   return app;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const app = await buildServer();
   const { port } = loadConfig();
   await app.listen({ port, host: '0.0.0.0' });
