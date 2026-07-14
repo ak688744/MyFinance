@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpContext } from './context';
 import { registerNetworthTools } from './tools/read/networth';
 import { registerInvestmentTools } from './tools/read/investments';
+import { registerExpenseTools } from './tools/read/expenses';
 
 /**
  * Build the MyFinance MCP server and register all read tools.
@@ -16,6 +17,7 @@ export function buildServer(ctx: McpContext): McpServer {
 
   registerNetworthTools(server, ctx);
   registerInvestmentTools(server, ctx);
+  registerExpenseTools(server, ctx);
 
   return server;
 }
