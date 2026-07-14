@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
-import { accounts } from '../db/schema.js';
-import type { Account, AccountDomain } from '../types.js';
-import type { AccountRepo } from './types.js';
+import type { Db } from '../db/client';
+import { accounts } from '../db/schema';
+import type { Account, AccountDomain } from '../types';
+import type { AccountRepo } from './types';
 
 function toDomain(row: typeof accounts.$inferSelect): Account {
   return {

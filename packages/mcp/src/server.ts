@@ -1,11 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpContext } from './context.js';
-import { registerNetworthTools } from './tools/read/networth.js';
-import { registerInvestmentTools } from './tools/read/investments.js';
-import { registerExpenseTools } from './tools/read/expenses.js';
-import { registerLoanTools } from './tools/read/loans.js';
-import { registerAccountTools } from './tools/read/accounts.js';
-import { registerMarketTools } from './tools/read/market.js';
+import type { McpContext } from './context';
+import { registerNetworthTools } from './tools/read/networth';
+import { registerInvestmentTools } from './tools/read/investments';
+import { registerExpenseTools } from './tools/read/expenses';
+import { registerLoanTools } from './tools/read/loans';
+import { registerAccountTools } from './tools/read/accounts';
+import { registerMarketTools } from './tools/read/market';
 
 /**
  * Build the MyFinance MCP server and register all read tools.

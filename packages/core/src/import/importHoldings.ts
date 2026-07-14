@@ -1,10 +1,10 @@
-import { autoMatchAmfiCodes } from '../domain/amfiMatcher.js';
+import { autoMatchAmfiCodes } from '../domain/amfiMatcher';
 import type {
   HoldingsRepo,
   ImportHistoryRepo,
   SchemeRepo,
-} from '../repositories/types.js';
-import type { ParsedHoldingsData } from './holdingsParser.js';
+} from '../repositories/types';
+import type { ParsedHoldingsData } from './holdingsParser';
 
 /**
  * Port of src/features/import/importHoldings.ts.

@@ -3,7 +3,7 @@ import type {
   CategoryRuleType,
   ExpenseTransactionRepo,
   StoredCategoryRule,
-} from '../repositories/types.js';
+} from '../repositories/types';
 
 /**
  * Faithful port of the categorization engine from
@@ -27,7 +27,7 @@ import type {
 export type {
   CategoryRuleType,
   StoredCategoryRule,
-} from '../repositories/types.js';
+} from '../repositories/types';
 
 export type CategoryResolution = {
   categoryId: string | null;

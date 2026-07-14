@@ -1,15 +1,15 @@
-import { valueComputedAsset } from './computed.js';
-import { valueManualAsset } from './manual.js';
+import { valueComputedAsset } from './computed';
+import { valueManualAsset } from './manual';
 import type {
   Asset,
   AssetContribution,
   AssetRate,
   AssetValuation,
   ValuedAsset,
-} from '../../types.js';
+} from '../../types';
 
-export { compoundContribution, valueComputedAsset } from './computed.js';
-export { valueManualAsset } from './manual.js';
+export { compoundContribution, valueComputedAsset } from './computed';
+export { valueManualAsset } from './manual';
 
 export type AssetInputs = {
   contributions: AssetContribution[];

@@ -1,5 +1,5 @@
-import { parseDate, formatDate } from '../xirr.js';
-import type { Liability, AmortizationRow, LoanStatus } from '../../types.js';
+import { parseDate, formatDate } from '../xirr';
+import type { Liability, AmortizationRow, LoanStatus } from '../../types';
 
 /** Standard reducing-balance EMI. annualRate in %, tenure in months. */
 export function computeEmi(

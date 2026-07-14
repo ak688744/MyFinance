@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpContext } from '../../context.js';
-import { ok, type ToolResult } from '../../shared/output.js';
+import type { McpContext } from '../../context';
+import { ok, type ToolResult } from '../../shared/output';
 
 // Match the API's current defaults (packages/api/src/routes/expenses.ts)
 const EXCLUDE_FROM_SPEND = ['investment', 'self_transfer'];

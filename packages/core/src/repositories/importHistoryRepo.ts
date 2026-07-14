@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
-import { importHistory, investmentImportHistory } from '../db/schema.js';
-import type { ImportHistoryRepo, ImportRecord } from './types.js';
+import type { Db } from '../db/client';
+import { importHistory, investmentImportHistory } from '../db/schema';
+import type { ImportHistoryRepo, ImportRecord } from './types';
 
 /**
  * Faithful port of the import_history insert in

@@ -1,7 +1,11 @@
 #!/usr/bin/env node
+// Runs via tsx (see package.json "start": "tsx src/index.ts") — the same
+// run-TypeScript-directly convention the API uses (`tsx src/server.ts`). The
+// monorepo is never compiled to JS; core is consumed from source, so relative
+// imports here stay extensionless like every other file in the package.
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { buildContext } from './context.js';
-import { buildServer } from './server.js';
+import { buildContext } from './context';
+import { buildServer } from './server';
 
 async function main(): Promise<void> {
   // DB path from env (same var the API uses); falls back to a local file.

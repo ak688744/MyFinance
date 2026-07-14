@@ -1,4 +1,4 @@
-import type { CashFlow } from '../types.js';
+import type { CashFlow } from '../types';
 
 /**
  * Format a Date object to YYYY-MM-DD string

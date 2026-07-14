@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
-import { assets } from '../db/schema.js';
-import type { Asset, AssetParams } from '../types.js';
-import type { AssetRepo } from './types.js';
+import type { Db } from '../db/client';
+import { assets } from '../db/schema';
+import type { Asset, AssetParams } from '../types';
+import type { AssetRepo } from './types';
 
 function toDomain(row: typeof assets.$inferSelect): Asset {
   return {

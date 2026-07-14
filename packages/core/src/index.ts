@@ -3,33 +3,33 @@ export const CORE_VERSION = '0.0.0';
 // ---------------------------------------------------------------------------
 // Database
 // ---------------------------------------------------------------------------
-export { createDb, type Db } from './db/client.js';
-export { runMigrations } from './db/migrate.js';
-export { seedDatabase } from './db/seed.js';
-export * as schema from './db/schema.js';
-export { starterCategories, type StarterCategory } from './data/starterCategories.js';
-export { encryptSecret, decryptSecret } from './db/crypto.js';
+export { createDb, type Db } from './db/client';
+export { runMigrations } from './db/migrate';
+export { seedDatabase } from './db/seed';
+export * as schema from './db/schema';
+export { starterCategories, type StarterCategory } from './data/starterCategories';
+export { encryptSecret, decryptSecret } from './db/crypto';
 
 // ---------------------------------------------------------------------------
 // Repositories — factories + interface types
 // ---------------------------------------------------------------------------
-export { makeInvestmentTxRepo } from './repositories/investmentTxRepo.js';
-export { makeSchemeRepo } from './repositories/schemeRepo.js';
-export { makeHoldingsRepo } from './repositories/holdingsRepo.js';
-export { makeCategoryRepo } from './repositories/categoryRepo.js';
-export { makeCategoryRuleRepo } from './repositories/categoryRuleRepo.js';
-export { makeExpenseTransactionRepo } from './repositories/expenseTransactionRepo.js';
-export { makeImportHistoryRepo } from './repositories/importHistoryRepo.js';
-export { makeAccountRepo } from './repositories/accountRepo.js';
-export { makeAssetRepo } from './repositories/assetRepo.js';
-export { makeAssetContributionRepo } from './repositories/assetContributionRepo.js';
-export { makeAssetRateRepo } from './repositories/assetRateRepo.js';
-export { makeAssetValuationRepo } from './repositories/assetValuationRepo.js';
-export { makeLiabilityRepo } from './repositories/liabilityRepo.js';
-export { makeAiProviderRepo } from './repositories/aiProviderRepo.js';
-export { makeAiModelRepo } from './repositories/aiModelRepo.js';
-export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo.js';
-export { makeAiUsageRepo } from './repositories/aiUsageRepo.js';
+export { makeInvestmentTxRepo } from './repositories/investmentTxRepo';
+export { makeSchemeRepo } from './repositories/schemeRepo';
+export { makeHoldingsRepo } from './repositories/holdingsRepo';
+export { makeCategoryRepo } from './repositories/categoryRepo';
+export { makeCategoryRuleRepo } from './repositories/categoryRuleRepo';
+export { makeExpenseTransactionRepo } from './repositories/expenseTransactionRepo';
+export { makeImportHistoryRepo } from './repositories/importHistoryRepo';
+export { makeAccountRepo } from './repositories/accountRepo';
+export { makeAssetRepo } from './repositories/assetRepo';
+export { makeAssetContributionRepo } from './repositories/assetContributionRepo';
+export { makeAssetRateRepo } from './repositories/assetRateRepo';
+export { makeAssetValuationRepo } from './repositories/assetValuationRepo';
+export { makeLiabilityRepo } from './repositories/liabilityRepo';
+export { makeAiProviderRepo } from './repositories/aiProviderRepo';
+export { makeAiModelRepo } from './repositories/aiModelRepo';
+export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo';
+export { makeAiUsageRepo } from './repositories/aiUsageRepo';
 
 export type {
   InvestmentTxRepo,
@@ -57,7 +57,7 @@ export type {
   AiModelRepo,
   AiTaskRouteRepo,
   AiUsageRepo,
-} from './repositories/types.js';
+} from './repositories/types';
 
 // ---------------------------------------------------------------------------
 // Domain — xirr / returns / portfolio
@@ -67,12 +67,12 @@ export {
   parseDate,
   yearsBetween,
   formatDate,
-} from './domain/xirr.js';
+} from './domain/xirr';
 
 export {
   getPeriodReturns,
   getPeriodStartDate,
-} from './domain/returns.js';
+} from './domain/returns';
 
 export {
   getPortfolioSummary,
@@ -82,7 +82,7 @@ export {
   getPortfolioSummaryForPeriod,
   getHoldingsForPeriod,
   getRedemptionsForPeriod,
-} from './domain/portfolio.js';
+} from './domain/portfolio';
 
 // ---------------------------------------------------------------------------
 // Domain — categorization
@@ -98,13 +98,13 @@ export {
   deleteRule,
   saveCategoryMemoryRule,
   slugifyCategoryName,
-} from './domain/categorize.js';
+} from './domain/categorize';
 
 export type {
   CategoryResolution,
   CategorizationInput,
   RecategorizeDeps,
-} from './domain/categorize.js';
+} from './domain/categorize';
 
 // ---------------------------------------------------------------------------
 // Domain — NAV + AMFI
@@ -118,12 +118,12 @@ export {
   clearCache,
   type NAVData,
   type SchemeInfo,
-} from './domain/nav/navService.js';
+} from './domain/nav/navService';
 
 export {
   autoMatchAmfiCodes,
   verifySchemeNAV,
-} from './domain/amfiMatcher.js';
+} from './domain/amfiMatcher';
 
 // ---------------------------------------------------------------------------
 // Domain — valuation / loans / net-worth (L1.5)
@@ -134,13 +134,13 @@ export {
   valueManualAsset,
   compoundContribution,
   type AssetInputs,
-} from './domain/valuation/index.js';
+} from './domain/valuation';
 
 export {
   computeEmi,
   amortizationSchedule,
   loanStatus,
-} from './domain/loans/amortization.js';
+} from './domain/loans/amortization';
 
 export {
   getAllAssets,
@@ -149,7 +149,7 @@ export {
   type NetWorthDeps,
   type NetWorthHistoryDeps,
   type NetWorthFilters,
-} from './domain/networth/networth.js';
+} from './domain/networth/networth';
 
 // ---------------------------------------------------------------------------
 // Import — parsers
@@ -157,20 +157,20 @@ export {
 export {
   parseHdfcStatementXls,
   type ParsedTransaction,
-} from './import/hdfcParser.js';
+} from './import/hdfcParser';
 
 export {
   parseGrowwTransactionXls,
   type ParsedMutualFundTransaction,
   type ParsedTransactionData,
-} from './import/transactionParser.js';
+} from './import/transactionParser';
 
 export {
   parseGrowwHoldingsXls,
   type HoldingCategory,
   type ParsedHolding,
   type ParsedHoldingsData,
-} from './import/holdingsParser.js';
+} from './import/holdingsParser';
 
 // ---------------------------------------------------------------------------
 // Import — orchestration
@@ -179,20 +179,20 @@ export {
   importTransactions,
   type ImportTransactionsResult,
   type ImportTransactionsDeps,
-} from './import/importTransactions.js';
+} from './import/importTransactions';
 
 export {
   importHoldings,
   type ImportHoldingsResult,
   type ImportHoldingsDeps,
-} from './import/importHoldings.js';
+} from './import/importHoldings';
 
 export {
   importInvestmentTransactions,
   // Renamed to avoid collision with importTransactions' ImportTransactionsResult.
   type ImportTransactionsResult as ImportInvestmentTransactionsResult,
   type ImportInvestmentTransactionsDeps,
-} from './import/importInvestmentTransactions.js';
+} from './import/importInvestmentTransactions';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -229,4 +229,4 @@ export type {
   NetWorthClassBreakdown,
   NetWorthSummary,
   NetWorthPoint,
-} from './types.js';
+} from './types';

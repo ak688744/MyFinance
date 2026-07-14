@@ -1,9 +1,9 @@
-import type { Db } from './client.js';
-import { makeCategoryRepo } from '../repositories/categoryRepo.js';
-import { makeCategoryRuleRepo } from '../repositories/categoryRuleRepo.js';
-import { makeExpenseTransactionRepo } from '../repositories/expenseTransactionRepo.js';
-import { recategorizeNonManualTransactions } from '../domain/categorize.js';
-import { starterCategories } from '../data/starterCategories.js';
+import type { Db } from './client';
+import { makeCategoryRepo } from '../repositories/categoryRepo';
+import { makeCategoryRuleRepo } from '../repositories/categoryRuleRepo';
+import { makeExpenseTransactionRepo } from '../repositories/expenseTransactionRepo';
+import { recategorizeNonManualTransactions } from '../domain/categorize';
+import { starterCategories } from '../data/starterCategories';
 
 /**
  * Port of the seed portion of the RN initializeDatabase: INSERT OR IGNORE each

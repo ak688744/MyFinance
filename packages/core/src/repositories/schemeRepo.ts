@@ -1,11 +1,11 @@
 import { and, asc, eq, isNull, like, sql } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
+import type { Db } from '../db/client';
 import {
   investmentHoldings as holdings,
   investmentSchemes as schemes,
-} from '../db/schema.js';
-import type { Scheme } from '../types.js';
-import type { SchemeRepo } from './types.js';
+} from '../db/schema';
+import type { Scheme } from '../types';
+import type { SchemeRepo } from './types';
 
 /**
  * Faithful port of src/features/investment/services/schemeService.ts and the

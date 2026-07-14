@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
-import { aiModels, aiTaskRoutes } from '../db/schema.js';
-import type { AiModelRepo, AiModelRow } from './types.js';
+import type { Db } from '../db/client';
+import { aiModels, aiTaskRoutes } from '../db/schema';
+import type { AiModelRepo, AiModelRow } from './types';
 
 export function makeAiModelRepo(db: Db): AiModelRepo {
   return {

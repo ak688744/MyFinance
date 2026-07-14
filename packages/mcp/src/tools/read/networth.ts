@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getNetWorth, getAllAssets, getHoldings } from '@myfinance/core';
-import type { McpContext } from '../../context.js';
-import { ok, type ToolResult } from '../../shared/output.js';
+import type { McpContext } from '../../context';
+import { ok, type ToolResult } from '../../shared/output';
 
 function netWorthDeps(ctx: McpContext) {
   return {

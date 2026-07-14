@@ -1,17 +1,17 @@
 import { and, asc, between, desc, eq, gte, lte, min, sql } from 'drizzle-orm';
-import type { Db } from '../db/client.js';
+import type { Db } from '../db/client';
 import {
   investmentSchemes as schemes,
   investmentTransactions as tx,
-} from '../db/schema.js';
+} from '../db/schema';
 import type {
   CashFlow,
   InvestmentTransaction,
   TransactionSummary,
   TransactionType,
   TransactionWithSchemeMeta,
-} from '../types.js';
-import type { InvestmentTxRepo } from './types.js';
+} from '../types';
+import type { InvestmentTxRepo } from './types';
 
 /**
  * Faithful port of src/features/investment/services/transactionService.ts and
