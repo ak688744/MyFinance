@@ -5,6 +5,7 @@ import { registerInvestmentTools } from './tools/read/investments';
 import { registerExpenseTools } from './tools/read/expenses';
 import { registerLoanTools } from './tools/read/loans';
 import { registerAccountTools } from './tools/read/accounts';
+import { registerMarketTools } from './tools/read/market';
 
 /**
  * Build the MyFinance MCP server and register all read tools.
@@ -22,6 +23,7 @@ export function buildServer(ctx: McpContext): McpServer {
   registerExpenseTools(server, ctx);
   registerLoanTools(server, ctx);
   registerAccountTools(server, ctx);
+  registerMarketTools(server, ctx);
 
   return server;
 }
