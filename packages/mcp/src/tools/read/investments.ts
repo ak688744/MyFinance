@@ -4,6 +4,8 @@ import {
   getPortfolioSummary,
   getHoldings,
   getAssetAllocation,
+  getPortfolioSummaryForPeriod,
+  getHoldingsForPeriod,
   getPeriodReturns,
   type Period,
 } from '@myfinance/core';
@@ -18,9 +20,34 @@ export async function runInvestmentPortfolio(
 ): Promise<ToolResult> {
   const deps = { txRepo: ctx.repos.investmentTxRepo, nav: ctx.nav };
   const filters = input.account ? { account: input.account } : {};
-  const summary = await getPortfolioSummary(deps);
-  const holdings = await getHoldings(deps, filters);
-  const allocation = await getAssetAllocation(deps, input.account ? filters : undefined);
+
+  // Branch on period: undefined or 'ALL' = lifetime, otherwise use ForPeriod functions
+  const isLifetime = !input.period || input.period === 'ALL';
+
+  let summary, holdings, allocation;
+
+  if (isLifetime) {
+    // Lifetime path: apply account filter to all three calls (fixes I1)
+    summary = await getPortfolioSummary(deps, filters);
+    holdings = await getHoldings(deps, filters);
+    allocation = await getAssetAllocation(deps, input.account ? filters : undefined);
+  } else {
+    // Windowed period path: use ForPeriod functions (fixes I2)
+    // Type assertion safe: isLifetime checks input.period is truthy and not 'ALL'
+    const period = input.period as Period;
+    summary = await getPortfolioSummaryForPeriod(deps, {
+      period,
+      account: input.account,
+    });
+    holdings = await getHoldingsForPeriod(deps, {
+      period,
+      account: input.account,
+    });
+    // No ForPeriod allocation function exists; keep lifetime allocation
+    // (allocation is a current-composition view, reasonably lifetime)
+    allocation = await getAssetAllocation(deps, input.account ? filters : undefined);
+  }
+
   return ok({
     summary: {
       investedInr: summary.totalInvested,
