@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { investmentHoldings as holdings } from '../db/schema';
-import type { HoldingsRepo } from './types';
+import type { Db } from '../db/client.js';
+import { investmentHoldings as holdings } from '../db/schema.js';
+import type { HoldingsRepo } from './types.js';
 
 /**
  * Faithful port of the holdings-reading SQL (getHoldingsValue) in

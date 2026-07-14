@@ -1,10 +1,10 @@
-import { calculateXIRR, formatDate, parseDate } from './xirr';
+import { calculateXIRR, formatDate, parseDate } from './xirr.js';
 import type {
   HoldingsRepo,
   InvestmentTxRepo,
   SchemeRepo,
-} from '../repositories/types';
-import type { NavLookup, Period, PeriodReturns } from '../types';
+} from '../repositories/types.js';
+import type { NavLookup, Period, PeriodReturns } from '../types.js';
 
 /**
  * Period-returns math, ported verbatim from

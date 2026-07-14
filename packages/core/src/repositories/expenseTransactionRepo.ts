@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { transactions } from '../db/schema';
-import type { ExpenseTransactionRepo } from './types';
+import type { Db } from '../db/client.js';
+import { transactions } from '../db/schema.js';
+import type { ExpenseTransactionRepo } from './types.js';
 
 /**
  * Faithful port of the transactions-reading/updating SQL in

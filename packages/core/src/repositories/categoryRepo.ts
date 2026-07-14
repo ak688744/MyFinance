@@ -1,7 +1,7 @@
 import { asc, eq, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { categories, transactions, categoryRules } from '../db/schema';
-import type { CategoryRepo } from './types';
+import type { Db } from '../db/client.js';
+import { categories, transactions, categoryRules } from '../db/schema.js';
+import type { CategoryRepo } from './types.js';
 
 /**
  * Faithful port of the categories-reading/writing SQL in

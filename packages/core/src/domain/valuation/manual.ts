@@ -1,5 +1,5 @@
-import { parseDate, yearsBetween, formatDate } from '../xirr';
-import type { Asset, AssetValuation, ValuedAsset } from '../../types';
+import { parseDate, yearsBetween, formatDate } from '../xirr.js';
+import type { Asset, AssetValuation, ValuedAsset } from '../../types.js';
 
 /**
  * Value a `manual` asset (gold / real estate / cash): take the latest

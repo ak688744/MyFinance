@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { liabilities } from '../db/schema';
-import type { Liability } from '../types';
-import type { LiabilityRepo } from './types';
+import type { Db } from '../db/client.js';
+import { liabilities } from '../db/schema.js';
+import type { Liability } from '../types.js';
+import type { LiabilityRepo } from './types.js';
 
 function toDomain(row: typeof liabilities.$inferSelect): Liability {
   return {

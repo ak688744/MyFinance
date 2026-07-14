@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { computeEmi, loanStatus, amortizationSchedule, type Liability } from '@myfinance/core';
-import type { McpContext } from '../../context';
-import { ok, errorResult, type ToolResult } from '../../shared/output';
+import type { McpContext } from '../../context.js';
+import { ok, errorResult, type ToolResult } from '../../shared/output.js';
 
 function resolveEmi(loan: Liability): number | null {
   if (loan.emiAmount != null) return loan.emiAmount;

@@ -1,10 +1,10 @@
-import { resolveCategoryFromRules } from '../domain/categorize';
+import { resolveCategoryFromRules } from '../domain/categorize.js';
 import type {
   CategoryRuleRepo,
   ExpenseTransactionRepo,
   ImportHistoryRepo,
-} from '../repositories/types';
-import type { ParsedTransaction } from './hdfcParser';
+} from '../repositories/types.js';
+import type { ParsedTransaction } from './hdfcParser.js';
 
 /**
  * Port of src/features/import/importTransactions.ts (HDFC expense import).

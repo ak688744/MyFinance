@@ -1,11 +1,11 @@
-import { parseDate, yearsBetween, formatDate } from '../xirr';
+import { parseDate, yearsBetween, formatDate } from '../xirr.js';
 import type {
   Asset,
   AssetContribution,
   AssetRate,
   CompoundingFrequency,
   ValuedAsset,
-} from '../../types';
+} from '../../types.js';
 
 const FREQ_PER_YEAR: Record<CompoundingFrequency, number> = {
   monthly: 12,

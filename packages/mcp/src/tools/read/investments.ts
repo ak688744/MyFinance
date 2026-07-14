@@ -7,8 +7,8 @@ import {
   getPeriodReturns,
   type Period,
 } from '@myfinance/core';
-import type { McpContext } from '../../context';
-import { ok, type ToolResult } from '../../shared/output';
+import type { McpContext } from '../../context.js';
+import { ok, type ToolResult } from '../../shared/output.js';
 
 const PERIODS = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'ALL'] as const;
 

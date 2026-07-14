@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import {
   createCategorizationInput,
-} from '../domain/categorize';
+} from '../domain/categorize.js';
 
 export type ParsedTransaction = {
   transactionDate: string;

@@ -1,20 +1,20 @@
-import { parseDate as parseLocal } from '../xirr';
-import { valueAsset, valueComputedAsset, valueManualAsset } from '../valuation';
-import { loanStatus } from '../loans/amortization';
+import { parseDate as parseLocal } from '../xirr.js';
+import { valueAsset, valueComputedAsset, valueManualAsset } from '../valuation/index.js';
+import { loanStatus } from '../loans/amortization.js';
 import type {
   AssetRepo,
   AssetContributionRepo,
   AssetRateRepo,
   AssetValuationRepo,
   LiabilityRepo,
-} from '../../repositories/types';
+} from '../../repositories/types.js';
 import type {
   Holding,
   ValuedAsset,
   NetWorthSummary,
   NetWorthClassBreakdown,
   NetWorthPoint,
-} from '../../types';
+} from '../../types.js';
 
 export type NetWorthDeps = {
   assetRepo: AssetRepo;

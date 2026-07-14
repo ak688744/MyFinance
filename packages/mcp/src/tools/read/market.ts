@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpContext } from '../../context';
-import { ok, errorResult, type ToolResult } from '../../shared/output';
+import type { McpContext } from '../../context.js';
+import { ok, errorResult, type ToolResult } from '../../shared/output.js';
 
 export async function runSearchSchemes(
   ctx: McpContext,

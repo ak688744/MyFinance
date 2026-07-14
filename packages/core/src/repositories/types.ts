@@ -3,7 +3,7 @@ import type {
   TransactionWithSchemeMeta,
   Account, AccountDomain, Asset, AssetContribution, AssetRate, AssetValuation,
   Liability,
-} from '../types';
+} from '../types.js';
 
 export interface InvestmentTxRepo {
   getTransactions(filters?: {

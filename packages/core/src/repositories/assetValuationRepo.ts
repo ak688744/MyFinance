@@ -1,8 +1,8 @@
 import { asc, eq } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { assetValuations } from '../db/schema';
-import type { AssetValuation } from '../types';
-import type { AssetValuationRepo } from './types';
+import type { Db } from '../db/client.js';
+import { assetValuations } from '../db/schema.js';
+import type { AssetValuation } from '../types.js';
+import type { AssetValuationRepo } from './types.js';
 
 export function makeAssetValuationRepo(db: Db): AssetValuationRepo {
   return {

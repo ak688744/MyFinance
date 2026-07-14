@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { aiModels, aiProviders } from '../db/schema';
-import type { AiProviderRepo, AiProviderRow, AiDialect } from './types';
+import type { Db } from '../db/client.js';
+import { aiModels, aiProviders } from '../db/schema.js';
+import type { AiProviderRepo, AiProviderRow, AiDialect } from './types.js';
 
 export function makeAiProviderRepo(db: Db): AiProviderRepo {
   const rows = () => db.select().from(aiProviders);

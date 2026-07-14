@@ -1,8 +1,8 @@
 // packages/core/src/repositories/aiUsageRepo.ts
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { aiUsageEvents } from '../db/schema';
-import type { AiUsageRepo, AiUsageEventRow } from './types';
+import type { Db } from '../db/client.js';
+import { aiUsageEvents } from '../db/schema.js';
+import type { AiUsageRepo, AiUsageEventRow } from './types.js';
 
 export function makeAiUsageRepo(db: Db): AiUsageRepo {
   const rangeWhere = (from?: string, to?: string, task?: string) => {

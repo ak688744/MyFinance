@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { categoryRules } from '../db/schema';
-import type { CategoryRuleRepo, StoredCategoryRule } from './types';
+import type { Db } from '../db/client.js';
+import { categoryRules } from '../db/schema.js';
+import type { CategoryRuleRepo, StoredCategoryRule } from './types.js';
 
 /**
  * Faithful port of the category-rule SQL in

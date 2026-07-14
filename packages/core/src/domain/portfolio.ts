@@ -1,6 +1,6 @@
-import { calculateXIRR, formatDate } from './xirr';
-import { getPeriodStartDate } from './returns';
-import type { InvestmentTxRepo } from '../repositories/types';
+import { calculateXIRR, formatDate } from './xirr.js';
+import { getPeriodStartDate } from './returns.js';
+import type { InvestmentTxRepo } from '../repositories/types.js';
 import type {
   AssetAllocation,
   CashFlow,
@@ -10,7 +10,7 @@ import type {
   PeriodRedemption,
   PortfolioSummary,
   TransactionWithSchemeMeta,
-} from '../types';
+} from '../types.js';
 
 /**
  * Portfolio aggregation math, ported verbatim from

@@ -2,8 +2,8 @@ import type {
   ImportHistoryRepo,
   InvestmentTxRepo,
   SchemeRepo,
-} from '../repositories/types';
-import type { ParsedTransactionData } from './transactionParser';
+} from '../repositories/types.js';
+import type { ParsedTransactionData } from './transactionParser.js';
 
 /**
  * Port of src/features/import/importInvestmentTransactions.ts.

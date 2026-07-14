@@ -9,8 +9,8 @@
  * updateAmfiCode().
  */
 
-import { searchSchemes, getSchemeInfo } from './nav/navService';
-import type { SchemeRepo } from '../repositories/types';
+import { searchSchemes, getSchemeInfo } from './nav/navService.js';
+import type { SchemeRepo } from '../repositories/types.js';
 
 type PlanType = 'direct' | 'regular' | 'unknown';
 type DistType = 'growth' | 'dividend' | 'idcw' | 'unknown';

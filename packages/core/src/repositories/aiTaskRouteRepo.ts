@@ -1,8 +1,8 @@
 // packages/core/src/repositories/aiTaskRouteRepo.ts
 import { eq } from 'drizzle-orm';
-import type { Db } from '../db/client';
-import { aiTaskRoutes } from '../db/schema';
-import type { AiTaskRouteRepo, AiTaskRouteRow } from './types';
+import type { Db } from '../db/client.js';
+import { aiTaskRoutes } from '../db/schema.js';
+import type { AiTaskRouteRepo, AiTaskRouteRow } from './types.js';
 
 export function makeAiTaskRouteRepo(db: Db): AiTaskRouteRepo {
   return {
