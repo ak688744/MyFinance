@@ -76,6 +76,42 @@ describe('asset sub-resources (append-only)', () => {
     const r = await runAddAssetContribution(ctx, { assetId: 9999, contributionDate: '2026-01-01', amountInr: 100 });
     expect(r.isError).toBe(true);
   });
+
+  it('rejects non-positive contribution amount', async () => {
+    ctx = seedContext();
+    const accountId = makeAccount(ctx);
+    const id = (await runAddAsset(ctx, { accountId, assetClass: 'ppf', name: 'PPF', valuationStrategy: 'computed' })).structuredContent!.id as number;
+    const r = await runAddAssetContribution(ctx, { assetId: id, contributionDate: '2026-01-01', amountInr: -100 });
+    expect(r.isError).toBe(true);
+    expect(ctx.repos.assetContributionRepo.listByAsset(id).length).toBe(0);
+  });
+
+  it('rejects non-positive valuation', async () => {
+    ctx = seedContext();
+    const accountId = makeAccount(ctx);
+    const id = (await runAddAsset(ctx, { accountId, assetClass: 'gold', name: 'Gold', valuationStrategy: 'manual' })).structuredContent!.id as number;
+    const r = await runAddAssetValuation(ctx, { assetId: id, valueInr: 0, valuedAt: '2026-01-01' });
+    expect(r.isError).toBe(true);
+    expect(ctx.repos.assetValuationRepo.listByAsset(id).length).toBe(0);
+  });
+
+  it('rejects negative rate', async () => {
+    ctx = seedContext();
+    const accountId = makeAccount(ctx);
+    const id = (await runAddAsset(ctx, { accountId, assetClass: 'ppf', name: 'PPF', valuationStrategy: 'computed' })).structuredContent!.id as number;
+    const r = await runAddAssetRate(ctx, { assetId: id, effectiveFrom: '2026-01-01', ratePercent: -7 });
+    expect(r.isError).toBe(true);
+    expect(ctx.repos.assetRateRepo.listByAsset(id).length).toBe(0);
+  });
+
+  it('accepts zero rate (no interest)', async () => {
+    ctx = seedContext();
+    const accountId = makeAccount(ctx);
+    const id = (await runAddAsset(ctx, { accountId, assetClass: 'fd', name: 'FD', valuationStrategy: 'computed' })).structuredContent!.id as number;
+    const r = await runAddAssetRate(ctx, { assetId: id, effectiveFrom: '2026-01-01', ratePercent: 0 });
+    expect(r.isError).toBeUndefined();
+    expect(ctx.repos.assetRateRepo.listByAsset(id).length).toBe(1);
+  });
 });
 
 describe('delete_asset (preview-gated)', () => {

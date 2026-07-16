@@ -54,7 +54,9 @@ export async function runAddAssetContribution(
   input: { assetId: number; contributionDate: string; amountInr: number; note?: string | null },
 ): Promise<ToolResult> {
   if (!ctx.repos.assetRepo.getById(input.assetId)) return errorResult(`Asset ${input.assetId} not found.`);
-  if (!Number.isFinite(input.amountInr)) return errorResult('amountInr must be a finite number.');
+  if (!Number.isFinite(input.amountInr) || input.amountInr <= 0) {
+    return errorResult('amountInr must be a positive, finite number.');
+  }
   const id = ctx.repos.assetContributionRepo.insert({
     assetId: input.assetId, contributionDate: input.contributionDate, amount: input.amountInr, note: input.note ?? null,
   });
@@ -66,7 +68,9 @@ export async function runAddAssetValuation(
   input: { assetId: number; valueInr: number; valuedAt: string; note?: string | null },
 ): Promise<ToolResult> {
   if (!ctx.repos.assetRepo.getById(input.assetId)) return errorResult(`Asset ${input.assetId} not found.`);
-  if (!Number.isFinite(input.valueInr)) return errorResult('valueInr must be a finite number.');
+  if (!Number.isFinite(input.valueInr) || input.valueInr <= 0) {
+    return errorResult('valueInr must be a positive, finite number.');
+  }
   const id = ctx.repos.assetValuationRepo.insert({
     assetId: input.assetId, value: input.valueInr, valuedAt: input.valuedAt, note: input.note ?? null,
   });
@@ -78,7 +82,9 @@ export async function runAddAssetRate(
   input: { assetId: number; effectiveFrom: string; ratePercent: number },
 ): Promise<ToolResult> {
   if (!ctx.repos.assetRepo.getById(input.assetId)) return errorResult(`Asset ${input.assetId} not found.`);
-  if (!Number.isFinite(input.ratePercent)) return errorResult('ratePercent must be a finite number.');
+  if (!Number.isFinite(input.ratePercent) || input.ratePercent < 0) {
+    return errorResult('ratePercent must be a finite number >= 0.');
+  }
   const id = ctx.repos.assetRateRepo.insert({
     assetId: input.assetId, effectiveFrom: input.effectiveFrom, rate: input.ratePercent,
   });

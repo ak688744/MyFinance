@@ -26,6 +26,24 @@ describe('add_liability', () => {
     });
     expect(r.isError).toBe(true);
   });
+
+  it('rejects both tenureMonths and emiAmountInr', async () => {
+    ctx = seedContext();
+    const r = await runAddLiability(ctx, {
+      name: 'X', loanType: 'personal', principalInr: 100000, annualRatePercent: 10,
+      tenureMonths: 120, emiAmountInr: 10000, startDate: '2026-01-01',
+    });
+    expect(r.isError).toBe(true);
+  });
+
+  it('rejects neither tenureMonths nor emiAmountInr', async () => {
+    ctx = seedContext();
+    const r = await runAddLiability(ctx, {
+      name: 'X', loanType: 'personal', principalInr: 100000, annualRatePercent: 10,
+      startDate: '2026-01-01',
+    });
+    expect(r.isError).toBe(true);
+  });
 });
 
 describe('update_liability', () => {
@@ -46,6 +64,17 @@ describe('update_liability', () => {
     ctx = seedContext();
     const r = await runUpdateLiability(ctx, { id: 9999, annualRatePercent: 5 });
     expect(r.isError).toBe(true);
+  });
+
+  it('rejects non-positive principalInr update', async () => {
+    ctx = seedContext();
+    const id = (await runAddLiability(ctx, {
+      name: 'Car', loanType: 'car', principalInr: 500000, annualRatePercent: 8,
+      tenureMonths: 60, startDate: '2026-01-01',
+    })).structuredContent!.id as number;
+    const r = await runUpdateLiability(ctx, { id, principalInr: -1 });
+    expect(r.isError).toBe(true);
+    expect(ctx.repos.liabilityRepo.getById(id)?.principal).toBe(500000);
   });
 });
 

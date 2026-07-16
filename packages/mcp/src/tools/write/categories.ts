@@ -75,6 +75,8 @@ export async function runUpdateRule(
   ctx: McpContext,
   input: { ruleId: number; categoryId: string; ruleType: CategoryRuleType },
 ): Promise<ToolResult> {
+  const rule = ctx.repos.categoryRuleRepo.getActiveRules().find((r) => r.id === input.ruleId);
+  if (!rule) return errorResult(`Rule ${input.ruleId} not found.`);
   coreUpdateRuleCategory(rulesDeps(ctx), {
     ruleId: input.ruleId, categoryId: input.categoryId, ruleType: input.ruleType,
   });

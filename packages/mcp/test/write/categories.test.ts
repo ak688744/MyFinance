@@ -102,6 +102,12 @@ describe('rules', () => {
     expect(ctx.repos.categoryRuleRepo.getActiveRules().find((x) => x.id === ruleId)?.categoryId).toBe('shopping');
   });
 
+  it('update_rule unknown ruleId returns isError', async () => {
+    ctx = seedContext();
+    const r = await runUpdateRule(ctx, { ruleId: 9999, categoryId: 'food', ruleType: 'keyword' });
+    expect(r.isError).toBe(true);
+  });
+
   it('delete_rule (preview-gated) needs confirm', async () => {
     ctx = seedContext();
     await runCreateRule(ctx, { ruleType: 'keyword', patternValue: 'swiggy', categoryId: 'food' });

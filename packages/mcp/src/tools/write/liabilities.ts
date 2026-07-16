@@ -14,6 +14,11 @@ export async function runAddLiability(
   if (!Number.isFinite(input.principalInr) || input.principalInr <= 0) {
     return errorResult('principalInr must be a positive, finite number.');
   }
+  const hasTenure = input.tenureMonths != null;
+  const hasEmi = input.emiAmountInr != null;
+  if (hasTenure === hasEmi) {
+    return errorResult('Provide exactly one of tenureMonths or emiAmountInr.');
+  }
   const id = ctx.repos.liabilityRepo.create({
     accountId: input.accountId ?? null,
     name: input.name,
@@ -36,6 +41,11 @@ export async function runUpdateLiability(
   },
 ): Promise<ToolResult> {
   if (!ctx.repos.liabilityRepo.getById(input.id)) return errorResult(`Liability ${input.id} not found.`);
+  if (input.principalInr !== undefined) {
+    if (!Number.isFinite(input.principalInr) || input.principalInr <= 0) {
+      return errorResult('principalInr must be a positive, finite number.');
+    }
+  }
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.loanType !== undefined) patch.loanType = input.loanType;
