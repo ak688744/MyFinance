@@ -8,7 +8,7 @@ import { buildServer } from '../src/server';
 let ctx: McpContext;
 afterEach(() => ctx?.close());
 
-const EXPECTED_TOOLS = [
+const EXPECTED_READ_TOOLS = [
   'get_networth_overview',
   'get_investment_portfolio',
   'get_investment_returns',
@@ -21,6 +21,18 @@ const EXPECTED_TOOLS = [
   'get_scheme_nav',
 ];
 
+const EXPECTED_WRITE_TOOLS = [
+  'add_transaction', 'update_transaction', 'delete_transaction', 'categorize_transaction',
+  'create_category', 'rename_category', 'delete_category',
+  'create_rule', 'update_rule', 'delete_rule', 'recategorize_all',
+  'create_account',
+  'add_asset', 'update_asset', 'close_asset',
+  'add_asset_contribution', 'add_asset_valuation', 'add_asset_rate', 'delete_asset',
+  'add_liability', 'update_liability', 'delete_liability',
+];
+
+const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
+
 async function connectedClient(): Promise<Client> {
   ctx = buildContext({ dbPath: ':memory:', marketData: fakeMarketData() });
   const server = buildServer(ctx);
@@ -31,11 +43,14 @@ async function connectedClient(): Promise<Client> {
 }
 
 describe('MCP server (protocol smoke)', () => {
-  it('registers all 10 read tools', async () => {
+  it('registers all 10 read tools and 22 write tools', async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([...EXPECTED_TOOLS].sort());
+    for (const name of EXPECTED_WRITE_TOOLS) {
+      expect(names).toContain(name);
+    }
     await client.close();
   });
 
