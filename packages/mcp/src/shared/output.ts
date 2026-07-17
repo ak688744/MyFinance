@@ -19,3 +19,15 @@ export function errorResult(message: string): ToolResult {
     isError: true,
   };
 }
+
+/**
+ * Preview (dry-run) result for a gated write tool called without confirm:true.
+ * Non-error; states what WOULD change and that nothing was mutated.
+ */
+export function preview(summary: string, impact: Record<string, unknown> = {}): ToolResult {
+  const text = `${summary}\nNo changes made. Re-call with confirm: true to proceed.`;
+  return {
+    content: [{ type: 'text', text }],
+    structuredContent: { preview: true, ...impact },
+  };
+}
