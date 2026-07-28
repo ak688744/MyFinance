@@ -13,7 +13,11 @@ import type {
 export const useNetWorth = () => useQuery({ queryKey: qk.networth(), queryFn: () => apiGet<NetWorthSummary>('/networth') });
 export const useNetWorthHistory = (dates: string) =>
   useQuery({ queryKey: qk.networthHistory(dates), queryFn: () => apiGet<NetWorthPoint[]>('/networth/history', { dates }), enabled: dates.length > 0 });
-export const useInvestmentSummary = () => useQuery({ queryKey: qk.investmentSummary(), queryFn: () => apiGet<PortfolioSummary>('/investments/summary') });
+export const useInvestmentSummary = (account?: string) =>
+  useQuery({
+    queryKey: qk.investmentSummary(account),
+    queryFn: () => apiGet<PortfolioSummary>('/investments/summary', account ? { account } : undefined),
+  });
 export const useReturns = (period: string) => useQuery({ queryKey: qk.returns(period), queryFn: () => apiGet<PeriodReturns>('/investments/returns', { period }) });
 export const useHoldings = (account?: string) => useQuery({ queryKey: qk.holdings(account), queryFn: () => apiGet<Holding[]>('/investments/holdings', account ? { account } : undefined) });
 export const useAllocation = (account?: string) => useQuery({ queryKey: qk.allocation(account), queryFn: () => apiGet<AssetAllocation>('/investments/allocation', account ? { account } : undefined) });
@@ -33,7 +37,11 @@ export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: unknown) => apiSend<{ id: number }>('POST', '/assets', body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assets'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['networth'] });
+      qc.invalidateQueries({ queryKey: ['investments', 'accounts'] });
+    },
   });
 }
 
@@ -45,11 +53,27 @@ export function useCreateLiability() {
   });
 }
 
+export function useUpdateLiability() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: number; body: Record<string, unknown> }) =>
+      apiSend<{ id: number }>('PATCH', `/liabilities/${v.id}`, v.body),
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: ['liabilities'] });
+      qc.invalidateQueries({ queryKey: ['liability', String(v.id)] });
+      qc.invalidateQueries({ queryKey: ['networth'] });
+    },
+  });
+}
+
 export function useCreateAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: unknown) => apiSend<{ id: number }>('POST', '/accounts', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['investments', 'accounts'] });
+    },
   });
 }
 

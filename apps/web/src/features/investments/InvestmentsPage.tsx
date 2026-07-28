@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts } from '../../lib/hooks';
+import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat, Badge } from '../../components/ui/primitives';
 import { formatINR, formatPercent } from '../../lib/format';
@@ -15,10 +15,15 @@ export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
 
-  const summary = useInvestmentSummary();
+  const summary = useInvestmentSummary(account);
   const accounts = useInvestmentAccounts();
+  const accountRows = useAccounts('investment');
+  const selectedAccountId = useMemo(() => {
+    if (!account) return undefined;
+    return accountRows.data?.find((a) => a.label === account)?.id;
+  }, [account, accountRows.data]);
   const holdings = useHoldings(account);
-  const assets = useAssets();
+  const assets = useAssets(selectedAccountId !== undefined ? String(selectedAccountId) : undefined);
 
   const mf = holdings.data ?? [];
   // Generic (non-MF) assets grouped by class. /assets also projects MF — drop it
@@ -40,6 +45,10 @@ export function InvestmentsPage() {
   const isEmpty = mf.length === 0 && genericGroups.length === 0;
 
   const chips = ['All', ...(accounts.data ?? [])];
+  const scopeLabel = account ?? 'All accounts';
+  const xirrLabel = account
+    ? 'Portfolio XIRR'
+    : 'Portfolio XIRR (tx history)';
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,28 +61,31 @@ export function InvestmentsPage() {
               <button
                 key={c}
                 onClick={() => setAccount(c === 'All' ? undefined : c)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${active ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                className={`chip ${active ? 'chip-active' : 'chip-inactive'}`}
               >
                 {c}
               </button>
             );
           })}
         </div>
-        <button onClick={() => setAddOpen(true)} className="bg-brand text-white rounded-lg px-4 py-2 text-sm">+ Add investment</button>
+        <button type="button" onClick={() => setAddOpen(true)} className="btn-primary">+ Add investment</button>
       </div>
 
-      {/* KPI strip: MF portfolio + all-assets total */}
+      {/* KPI strip — scoped to selected account chip */}
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
         {summary.data && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPIStat label="Total Invested" value={formatINR(summary.data.totalInvested)} />
-            <KPIStat label="MF Current Value" value={formatINR(summary.data.totalCurrentValue)} delta={summary.data.totalInvested > 0 ? (summary.data.totalReturns / summary.data.totalInvested) * 100 : null} />
-            <KPIStat label="Total Returns" value={formatINR(summary.data.totalReturns)} />
-            {/* getPortfolioSummary.xirr is a raw FRACTION (e.g. 0.0949 = 9.49%),
-                the Groww-validated core convention. Per-holding returnsXirr is
-                already pre-scaled to a percentage, but this one is not — scale
-                it here for display. */}
-            <KPIStat label="Portfolio XIRR" value={formatPercent(summary.data.xirr == null ? null : summary.data.xirr * 100)} />
+          <div className="flex flex-col gap-2">
+            <div className="text-xs text-gray-500 px-1">Showing: {scopeLabel}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <KPIStat label="Total Invested" value={formatINR(summary.data.totalInvested)} />
+              <KPIStat label="MF Current Value" value={formatINR(summary.data.totalCurrentValue)} delta={summary.data.totalInvested > 0 ? (summary.data.totalReturns / summary.data.totalInvested) * 100 : null} />
+              <KPIStat label="Total Returns" value={formatINR(summary.data.totalReturns)} />
+              {/* getPortfolioSummary.xirr is a raw FRACTION (e.g. 0.0949 = 9.49%),
+                  the Groww-validated core convention. Per-holding returnsXirr is
+                  already pre-scaled to a percentage, but this one is not — scale
+                  it here for display. Null when the account has no transaction history. */}
+              <KPIStat label={xirrLabel} value={formatPercent(summary.data.xirr == null ? null : summary.data.xirr * 100)} />
+            </div>
           </div>
         )}
       </DataState>
@@ -87,7 +99,7 @@ export function InvestmentsPage() {
       >
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center text-sm text-gray-500 px-1">
-            <span>Total value across all investment assets</span>
+            <span>{account ? `Total value · ${account}` : 'Total value across all investment assets'}</span>
             <span className="tabular font-semibold text-gray-900">{formatINR(allAssetsValue)}</span>
           </div>
 
