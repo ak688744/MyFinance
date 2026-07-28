@@ -8,7 +8,7 @@ import {
   getHoldingsForPeriod,
   getRedemptionsForPeriod,
 } from '../../src/domain/portfolio';
-import type { InvestmentTxRepo } from '../../src/repositories/types';
+import type { InvestmentTxRepo, HoldingsRepo } from '../../src/repositories/types';
 import type {
   InvestmentTransaction,
   NavLookup,
@@ -140,6 +140,39 @@ describe('getHoldings', () => {
     const deps = { txRepo: makeTxRepo(rows), nav: makeNav({ '1': 15 }) };
     const h = await getHoldings(deps, undefined, new Date(2025, 0, 1));
     expect(h).toHaveLength(0);
+  });
+
+  it('falls back to imported holdings snapshot when account has no transactions', async () => {
+    const holdingsRepo: HoldingsRepo = {
+      getHoldingsValue: () => ({ currentValue: 0, investedValue: 0 }),
+      list: (filters) =>
+        filters?.account === 'Shashi'
+          ? [{
+              id: 1,
+              schemeId: 9,
+              schemeName: 'Test Fund',
+              accountName: 'Shashi',
+              investmentApp: 'Groww',
+              folioNumber: null,
+              units: 10,
+              investedValue: 1000,
+              currentValue: 1200,
+              returnsAmount: 200,
+              returnsXirr: 12,
+              asOfDate: '2025-01-01',
+              amcName: 'AMC',
+              category: 'equity',
+              subCategory: null,
+            }]
+          : [],
+      insert: () => 0,
+      deleteByAccountAppDate: () => 0,
+    };
+    const deps = { txRepo: makeTxRepo([]), holdingsRepo, nav: makeNav({}) };
+    const h = await getHoldings(deps, { account: 'Shashi' }, new Date(2025, 0, 1));
+    expect(h).toHaveLength(1);
+    expect(h[0].schemeName).toBe('Test Fund');
+    expect(h[0].currentValue).toBe(1200);
   });
 });
 

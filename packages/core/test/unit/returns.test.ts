@@ -146,6 +146,7 @@ function makeSchemeRepo(schemes: Record<number, Scheme>): SchemeRepo {
 function makeHoldingsRepo(value: { currentValue: number; investedValue: number }): HoldingsRepo {
   return {
     getHoldingsValue: () => value,
+    list: () => [],
     insert: () => 0,
     deleteByAccountAppDate: () => 0,
   };

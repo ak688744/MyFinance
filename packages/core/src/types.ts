@@ -200,6 +200,7 @@ export type Liability = {
   loanType: 'home' | 'car' | 'personal' | 'other';
   principal: number;
   annualRate: number; // annual %
+  outstandingBalance: number | null; // manual override after prepayments
   tenureMonths: number | null;
   emiAmount: number | null;
   startDate: string;

@@ -27,12 +27,21 @@ const nav: NavLookup = {
   getLatestNAV: (amfiCode) => getLatestNAV(amfiCode),
 };
 
+function portfolioDeps(app: FastifyInstance) {
+  return {
+    txRepo: app.repos.txRepo,
+    holdingsRepo: app.repos.holdingsRepo,
+    nav,
+  };
+}
+
 type ReturnsQuery = { period?: string };
 
 export async function investmentRoutes(app: FastifyInstance): Promise<void> {
-  // GET /investments/summary — lifetime portfolio summary.
-  app.get('/investments/summary', async () => {
-    const summary = await getPortfolioSummary({ txRepo: app.repos.txRepo, nav });
+  // GET /investments/summary?account= — lifetime portfolio summary (optional account filter).
+  app.get<{ Querystring: { account?: string } }>('/investments/summary', async (req) => {
+    const filters = req.query.account ? { account: req.query.account } : undefined;
+    const summary = await getPortfolioSummary(portfolioDeps(app), filters);
     return { data: summary };
   });
 
@@ -69,7 +78,7 @@ export async function investmentRoutes(app: FastifyInstance): Promise<void> {
         ...(sortBy ? { sortBy: sortBy as any } : {}),
         ...(sortOrder ? { sortOrder: sortOrder as any } : {}),
       };
-      const holdings = await getHoldings({ txRepo: app.repos.txRepo, nav }, filters);
+      const holdings = await getHoldings(portfolioDeps(app), filters);
       return { data: holdings };
     },
   );
@@ -77,12 +86,17 @@ export async function investmentRoutes(app: FastifyInstance): Promise<void> {
   // GET /investments/allocation?account
   app.get<{ Querystring: { account?: string } }>('/investments/allocation', async (req) => {
     const filters = req.query.account ? { account: req.query.account } : undefined;
-    const allocation = await getAssetAllocation({ txRepo: app.repos.txRepo, nav }, filters);
+    const allocation = await getAssetAllocation(portfolioDeps(app), filters);
     return { data: allocation };
   });
 
-  // GET /investments/accounts
+  // GET /investments/accounts — MF transaction names ∪ manual investment account labels
   app.get('/investments/accounts', async () => {
-    return { data: getAccounts({ txRepo: app.repos.txRepo }) };
+    const mf = getAccounts({ txRepo: app.repos.txRepo });
+    const manual = app.repos.accountRepo
+      .list({ domain: 'investment' })
+      .map((a) => a.label);
+    const data = [...new Set([...mf, ...manual])].sort((a, b) => a.localeCompare(b));
+    return { data };
   });
 }

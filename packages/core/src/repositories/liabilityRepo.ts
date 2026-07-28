@@ -12,6 +12,7 @@ function toDomain(row: typeof liabilities.$inferSelect): Liability {
     loanType: row.loanType as Liability['loanType'],
     principal: row.principal,
     annualRate: row.annualRate,
+    outstandingBalance: row.outstandingBalance ?? null,
     tenureMonths: row.tenureMonths,
     emiAmount: row.emiAmount,
     startDate: row.startDate,
@@ -42,6 +43,7 @@ export function makeLiabilityRepo(db: Db): LiabilityRepo {
           loanType: l.loanType,
           principal: l.principal,
           annualRate: l.annualRate,
+          outstandingBalance: l.outstandingBalance ?? null,
           tenureMonths: l.tenureMonths ?? null,
           emiAmount: l.emiAmount ?? null,
           startDate: l.startDate,
@@ -54,7 +56,7 @@ export function makeLiabilityRepo(db: Db): LiabilityRepo {
     update(id, patch) {
       const values: Record<string, unknown> = { updatedAt: new Date().toISOString() };
       for (const k of [
-        'name', 'loanType', 'principal', 'annualRate', 'tenureMonths', 'emiAmount', 'startDate', 'status',
+        'name', 'loanType', 'principal', 'annualRate', 'outstandingBalance', 'tenureMonths', 'emiAmount', 'startDate', 'status',
       ] as const) {
         if (patch[k] !== undefined) values[k] = patch[k];
       }

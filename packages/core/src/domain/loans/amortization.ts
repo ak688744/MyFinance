@@ -86,8 +86,9 @@ export function loanStatus(
   const paid = schedule.filter((r) => r.dueDate < todayStr);
   const remaining = schedule.filter((r) => r.dueDate >= todayStr);
 
-  const outstanding = paid.length > 0 ? paid[paid.length - 1].balance : loan.principal;
-  const paidPrincipal = loan.principal - outstanding;
+  const computedOutstanding = paid.length > 0 ? paid[paid.length - 1].balance : loan.principal;
+  const outstanding = loan.outstandingBalance ?? computedOutstanding;
+  const paidPrincipal = Math.max(0, loan.principal - outstanding);
   const interestPaid = paid.reduce((s, r) => s + r.interestComponent, 0);
   const interestRemaining = remaining.reduce((s, r) => s + r.interestComponent, 0);
   const nextDueDate = remaining.length > 0 ? remaining[0].dueDate : null;

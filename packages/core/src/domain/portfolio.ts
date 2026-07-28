@@ -1,6 +1,6 @@
 import { calculateXIRR, formatDate } from './xirr';
 import { getPeriodStartDate } from './returns';
-import type { InvestmentTxRepo } from '../repositories/types';
+import type { InvestmentTxRepo, HoldingsRepo, ImportedHoldingRow } from '../repositories/types';
 import type {
   AssetAllocation,
   CashFlow,
@@ -31,6 +31,8 @@ import type {
 type PortfolioDeps = {
   txRepo: InvestmentTxRepo;
   nav: NavLookup;
+  /** When set, supplements tx-derived holdings with imported snapshots for schemes with no transactions. */
+  holdingsRepo?: HoldingsRepo;
 };
 
 type PortfolioFilters = {
@@ -202,17 +204,69 @@ async function resolveCurrentValues(
   return holdings;
 }
 
+/** Map imported holdings-file rows to Holding[], skipping schemes already covered by transactions. */
+function holdingsFromImportedSnapshots(
+  rows: ImportedHoldingRow[],
+  coveredKeys: Set<GroupKey>,
+): Holding[] {
+  const byKey = new Map<GroupKey, ImportedHoldingRow[]>();
+  for (const row of rows) {
+    if (row.schemeId == null) continue;
+    const key: GroupKey = `${row.schemeId}::${row.accountName}::${row.investmentApp}`;
+    if (coveredKeys.has(key)) continue;
+    const list = byKey.get(key) ?? [];
+    list.push(row);
+    byKey.set(key, list);
+  }
+
+  const holdings: Holding[] = [];
+  for (const group of byKey.values()) {
+    const first = group[0];
+    const units = group.reduce((s, r) => s + r.units, 0);
+    const investedValue = group.reduce((s, r) => s + r.investedValue, 0);
+    const currentValue = group.reduce((s, r) => s + r.currentValue, 0);
+    const returnsAmount = currentValue - investedValue;
+    const returnsPercent = investedValue > 0 ? (returnsAmount / investedValue) * 100 : 0;
+    const weightedXirr =
+      investedValue > 0
+        ? group.reduce((s, r) => s + (r.returnsXirr ?? 0) * r.investedValue, 0) / investedValue
+        : null;
+    const asOfDate = group.reduce(
+      (max, r) => (r.asOfDate > max ? r.asOfDate : max),
+      group[0].asOfDate,
+    );
+
+    holdings.push({
+      id: first.schemeId!,
+      schemeId: first.schemeId,
+      schemeName: first.schemeName,
+      amcName: first.amcName,
+      category: first.category,
+      subCategory: first.subCategory,
+      folioNumber: group.length === 1 ? first.folioNumber : null,
+      accountName: first.accountName,
+      investmentApp: first.investmentApp,
+      units,
+      investedValue,
+      currentValue,
+      returnsAmount,
+      returnsPercent,
+      returnsXirr: weightedXirr,
+      asOfDate,
+    });
+  }
+
+  return holdings;
+}
+
 export async function getPortfolioSummary(
   deps: PortfolioDeps,
   filters?: PortfolioFilters,
   today: Date = new Date(),
 ): Promise<PortfolioSummary> {
-  const groups = aggregateHoldingsFromTransactions(deps.txRepo, {
-    account: filters?.account,
-  });
-  const holdings = await resolveCurrentValues(
-    Array.from(groups.values()),
-    deps.nav,
+  const holdings = await getHoldings(
+    deps,
+    filters?.account ? { account: filters.account } : undefined,
     today,
   );
 
@@ -222,19 +276,30 @@ export async function getPortfolioSummary(
   const totalReturnsPercent =
     totalInvested > 0 ? (totalReturns / totalInvested) * 100 : 0;
 
-  // Portfolio XIRR: union of all scheme cash flows + total current value today
+  // Portfolio XIRR: transaction cash flows only (holdings-file imports have no tx history).
+  const groups = aggregateHoldingsFromTransactions(deps.txRepo, {
+    account: filters?.account,
+  });
   let xirr: number | null = null;
-  if (holdings.length > 0 && totalCurrentValue > 0) {
+  if (groups.size > 0 && totalCurrentValue > 0) {
     const todayStr = formatDate(today);
-    const allFlows: CashFlow[] = [];
-    for (const agg of groups.values()) {
-      if (agg.units <= 0.0001) continue;
-      for (const cf of agg.cashFlows) {
-        allFlows.push(cf);
+    const txHoldings = await resolveCurrentValues(
+      Array.from(groups.values()),
+      deps.nav,
+      today,
+    );
+    const txCurrentValue = txHoldings.reduce((s, h) => s + h.currentValue, 0);
+    if (txCurrentValue > 0) {
+      const allFlows: CashFlow[] = [];
+      for (const agg of groups.values()) {
+        if (agg.units <= 0.0001) continue;
+        for (const cf of agg.cashFlows) {
+          allFlows.push(cf);
+        }
       }
+      allFlows.push({ date: todayStr, amount: txCurrentValue });
+      xirr = calculateXIRR(allFlows);
     }
-    allFlows.push({ date: todayStr, amount: totalCurrentValue });
-    xirr = calculateXIRR(allFlows);
   }
 
   return {
@@ -261,6 +326,16 @@ export async function getHoldings(
     deps.nav,
     today,
   );
+
+  if (deps.holdingsRepo) {
+    const coveredKeys = new Set<GroupKey>(
+      holdings.map((h) => `${h.schemeId}::${h.accountName}::${h.investmentApp}`),
+    );
+    const imported = deps.holdingsRepo.list(
+      filters?.account ? { account: filters.account } : undefined,
+    );
+    holdings = [...holdings, ...holdingsFromImportedSnapshots(imported, coveredKeys)];
+  }
 
   if (filters?.category) {
     holdings = holdings.filter((h) => h.category === filters.category);

@@ -395,6 +395,8 @@ export const liabilities = sqliteTable(
     }).notNull(),
     principal: real('principal').notNull(),
     annualRate: real('annual_rate').notNull(),
+    /** When set, overrides schedule-derived outstanding (e.g. after prepayments). */
+    outstandingBalance: real('outstanding_balance'),
     tenureMonths: integer('tenure_months'),
     emiAmount: real('emi_amount'),
     startDate: text('start_date').notNull(),

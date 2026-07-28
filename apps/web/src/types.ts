@@ -27,8 +27,15 @@ export type CategoryRule = {
   priority: number;
 };
 
-/** A liability row from GET /liabilities, enriched with the computed monthly EMI. */
-export type LiabilityListItem = import('@myfinance/core').Liability & { emi: number | null };
+/** A liability row from GET /liabilities, enriched with computed EMI + status summary. */
+export type LiabilityListItem = import('@myfinance/core').Liability & {
+  emi: number | null;
+  outstanding: number;
+  paidPrincipal: number;
+  progressPercent: number;
+  monthsRemaining: number;
+  nextDueDate: string | null;
+};
 
 export type LiabilityDetail = {
   liability: import('@myfinance/core').Liability;

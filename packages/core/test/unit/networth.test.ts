@@ -53,7 +53,7 @@ function deps() {
     valuationRepo: valRepo({ 11: [{ id: 1, assetId: 11, value: 200000, valuedAt: '2025-01-01', note: null }] }),
     liabilityRepo: liabRepo([
       { id: 1, accountId: null, name: 'Home', loanType: 'home', principal: 1000000,
-        annualRate: 9, tenureMonths: 120, emiAmount: null, startDate: '2024-01-01', status: 'active' },
+        annualRate: 9, outstandingBalance: null, tenureMonths: 120, emiAmount: null, startDate: '2024-01-01', status: 'active' },
     ]),
     getMfHoldings: async () => [mfHolding],
   };

@@ -11,7 +11,10 @@ function netWorthDeps(ctx: McpContext) {
     valuationRepo: ctx.repos.assetValuationRepo,
     liabilityRepo: ctx.repos.liabilityRepo,
     getMfHoldings: (filters: { account?: string }) =>
-      getHoldings({ txRepo: ctx.repos.investmentTxRepo, nav: ctx.nav }, filters),
+      getHoldings(
+        { txRepo: ctx.repos.investmentTxRepo, holdingsRepo: ctx.repos.holdingsRepo, nav: ctx.nav },
+        filters,
+      ),
   };
 }
 
