@@ -18,6 +18,8 @@ import { assetRoutes } from './routes/assets';
 import { networthRoutes } from './routes/networth';
 import { aiSettingsRoutes } from './routes/aiSettings';
 import { aiUsageRoutes } from './routes/aiUsage';
+import { agentRoutes } from './routes/agent';
+import { makeHarness, memoryUrlFor, type Harness } from './plugins/harness';
 
 export type BuildServerOpts = {
   dbPath?: string;
@@ -28,6 +30,8 @@ export type BuildServerOpts = {
   amfiMatch?: AmfiMatch;
   /** Injected LLM gateway (tests pass a fake). Falls back to real gateway. */
   gateway?: Gateway;
+  /** Injected wealth-agent harness (tests pass a fake). Falls back to real harness. */
+  harness?: Harness;
   /**
    * Fastify logger option. Defaults to `true` (request logging on) for real runs;
    * tests pass `false` to keep output quiet.
@@ -61,6 +65,8 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
 
   const gateway: Gateway = opts.gateway ?? makeGateway(app.repos);
 
+  const harness: Harness = opts.harness ?? makeHarness(app.repos, { dbPath, memoryUrl: memoryUrlFor(dbPath) });
+
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
   await app.register(expenseRoutes);
@@ -74,6 +80,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   // AI routes (Tasks 15/16):
   await app.register(aiSettingsRoutes);
   await app.register(aiUsageRoutes);
+  await app.register(agentRoutes, { harness });
 
   return app;
 }

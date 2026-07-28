@@ -68,3 +68,6 @@ apps/web/test-screenshots/*.png
 
 # agent build-up transcript (kept locally for future agent-build reference; not committed)
 agent_buildup.txt
+
+# local secrets — master key for AI-provider key encryption (never commit)
+.env

@@ -1,0 +1,27 @@
+{
+  "name": "@myfinance/agent-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@myfinance/agents": "workspace:*",
+    "@myfinance/core": "workspace:*",
+    "@mastra/core": "^1.51.0",
+    "@mastra/memory": "^1.23.0",
+    "@mastra/libsql": "^1.16.0",
+    "@mastra/mcp": "^1.14.0",
+    "@mastra/fastembed": "^1.2.0",
+    "ai": "^7.0.31",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "~5.9.2",
+    "vitest": "^2.0.0"
+  }
+}
