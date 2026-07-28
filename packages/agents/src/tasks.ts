@@ -8,6 +8,11 @@ export const AI_TASKS = {
     // from Settings. Changing this never re-routes an already-configured task.
     defaultDialect: 'gemini',
   },
+  wealth_chat: {
+    label: 'Wealth Chat Agent',
+    description: 'The conversational wealth-manager agent (multi-step, tool-using)',
+    defaultDialect: 'gemini',
+  },
 } as const;
 
 export type AiTaskId = keyof typeof AI_TASKS;

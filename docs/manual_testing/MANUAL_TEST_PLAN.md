@@ -229,3 +229,30 @@ Restart the API server (Setup Step 1) in the SAME shell so it inherits the key.
 - [ ] `GET /api/ai/tasks` → the `categorization` row's `assignedModelId`/`configured` match the UI.
 - [ ] `GET /api/ai/usage/summary` `data` totals == the Usage & Cost KPI strip.
 - [ ] `GET /api/ai/usage/events?limit=10` rows == the recent-usage table.
+
+## D. Wealth Agent Chat (L4.0) — LIVE, human-only
+> Requires a real Gemini or OpenAI-compatible API key routed to the **Wealth Chat Agent** task in AI Settings. Automated tests use mock models; only a human can verify end-to-end streaming + tool calls + memory.
+
+**Setup:**
+```bash
+source ~/.nvm/nvm.sh && nvm use 22
+export MYFINANCE_SECRET_KEY=<64-hex>   # same as §A
+export DB_PATH=./demo.db                 # or your real db
+packages/api/node_modules/.bin/tsx packages/api/src/server.ts
+# separate terminal: apps/web dev server (proxies /api → API)
+```
+
+**Steps:**
+- [ ] AI Settings → route **Wealth Chat Agent** to a Gemini (or OpenAI-compatible) model with a valid API key.
+- [ ] Sidebar → **Assistant** → ask "What is my net worth?" → tokens stream in; reply references real numbers from your DB (agent called a finance tool).
+- [ ] A `done` SSE event arrives; AI → Usage & Cost shows a new `wealth_chat` row with token counts and cost.
+- [ ] In the same conversation, say "Remember I want to retire by 55" → agent acknowledges saving to profile. Ask later "What's my retirement goal?" → agent recalls it from the thread/memory.
+- [ ] **Unconfigured guard:** clear the `wealth_chat` route → Assistant shows an error mentioning AI Settings (not a silent 500).
+
+**curl smoke (optional):**
+```bash
+curl -N -X POST http://localhost:3001/agent/chat \
+  -H 'content-type: application/json' \
+  -d '{"message":"What is my net worth?"}'
+```
+Expect `data: {"type":"token",...}` chunks then `data: {"type":"done",...}`.
