@@ -55,9 +55,30 @@ export interface SchemeRepo {
     category?: 'equity'|'debt'|'hybrid'|'other'; subCategory?: string }): number;
 }
 
+/** Row from investment_holdings joined with scheme metadata (import snapshot). */
+export type ImportedHoldingRow = {
+  id: number;
+  schemeId: number | null;
+  schemeName: string;
+  accountName: string;
+  investmentApp: string;
+  folioNumber: string | null;
+  units: number;
+  investedValue: number;
+  currentValue: number;
+  returnsAmount: number;
+  returnsXirr: number | null;
+  asOfDate: string;
+  amcName: string | null;
+  category: Scheme['category'];
+  subCategory: string | null;
+};
+
 export interface HoldingsRepo {
   getHoldingsValue(filters: { account?: string; schemeId?: number }):
     { currentValue: number; investedValue: number };
+  /** Latest imported holdings snapshot per row; optional account filter. */
+  list(filters?: { account?: string }): ImportedHoldingRow[];
   insert(h: {
     importHistoryId: number; schemeId: number | null; accountName: string;
     investmentApp: string; schemeName: string; folioNumber: string | null;
@@ -309,12 +330,14 @@ export interface LiabilityRepo {
   getById(id: number): Liability | null;
   create(l: {
     accountId?: number | null; name: string; loanType: Liability['loanType'];
-    principal: number; annualRate: number; tenureMonths?: number | null;
+    principal: number; annualRate: number; outstandingBalance?: number | null;
+    tenureMonths?: number | null;
     emiAmount?: number | null; startDate: string; status?: 'active' | 'closed';
   }): number;
   update(id: number, patch: Partial<{
     name: string; loanType: Liability['loanType']; principal: number; annualRate: number;
-    tenureMonths: number | null; emiAmount: number | null; startDate: string; status: 'active' | 'closed';
+    outstandingBalance: number | null; tenureMonths: number | null; emiAmount: number | null;
+    startDate: string; status: 'active' | 'closed';
   }>): void;
   delete(id: number): void;
 }

@@ -43,6 +43,13 @@
       "when": 1784000000000,
       "tag": "0005_expense_enhancements",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784500000000,
+      "tag": "0006_loan_outstanding_balance",
+      "breakpoints": true
     }
   ]
 }

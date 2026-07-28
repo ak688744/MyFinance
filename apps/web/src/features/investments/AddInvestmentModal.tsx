@@ -30,6 +30,22 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const fieldCls = 'w-full border rounded p-2 mt-1';
 
+type HoldingsImportResult = {
+  importedCount: number;
+  deletedCount: number;
+  importHistoryId: number;
+  amfiMatched?: number;
+  amfiTotal?: number;
+};
+
+type TxImportResult = {
+  status: 'success';
+  importedCount: number;
+  deletedCount: number;
+  importHistoryId: number;
+  schemesCreated: string[];
+};
+
 export function AddInvestmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [type, setType] = useState<TypeKey | null>(null);
 
@@ -105,26 +121,44 @@ function MutualFundForm({ onDone }: { onDone: () => void }) {
     if (!platform.trim() || !label.trim()) { setErr('Platform and account label are required.'); return; }
     if (!holdingsFile && !txFile) { setErr('Select at least a holdings or transactions file to import.'); return; }
     try {
-      // Imports ensure the (investmentApp, accountName) account exists server-side.
+      const accountName = label.trim();
+      const investmentApp = platform.trim();
+      // Holdings before transactions so schemes exist for tx pre-flight matching.
       if (holdingsFile) {
         const form = new FormData();
         form.append('file', holdingsFile);
-        form.append('accountName', label.trim());
-        form.append('investmentApp', platform.trim());
-        form.append('platform', platform.trim().toLowerCase());
-        await importFile.mutateAsync({ path: '/imports/investments/holdings', form });
+        form.append('accountName', accountName);
+        form.append('investmentApp', investmentApp);
+        form.append('platform', investmentApp.toLowerCase());
+        const holdingsResult = await importFile.mutateAsync({
+          path: '/imports/investments/holdings',
+          form,
+        }) as HoldingsImportResult;
+        console.info('[MyFinance import] holdings done', { accountName, holdingsResult });
       }
       if (txFile) {
         const form = new FormData();
         form.append('file', txFile);
-        form.append('accountName', label.trim());
-        form.append('investmentApp', platform.trim());
-        form.append('platform', platform.trim().toLowerCase());
-        await importFile.mutateAsync({ path: '/imports/investments/transactions', form });
+        form.append('accountName', accountName);
+        form.append('investmentApp', investmentApp);
+        form.append('platform', investmentApp.toLowerCase());
+        const txResult = await importFile.mutateAsync({
+          path: '/imports/investments/transactions',
+          form,
+        }) as TxImportResult;
+        console.info('[MyFinance import] transactions response', { accountName, txResult });
+        if (txResult.schemesCreated.length > 0) {
+          console.info(
+            '[MyFinance import] auto-created schemes for redeemed/historical funds:',
+            txResult.schemesCreated,
+          );
+        }
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Import failed.');
+      const message = e instanceof Error ? e.message : 'Import failed.';
+      console.error('[MyFinance import] failed', message, e);
+      setErr(message);
     }
   };
 

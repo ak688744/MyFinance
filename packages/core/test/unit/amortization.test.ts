@@ -9,7 +9,7 @@ import type { Liability } from '../../src/types';
 function loan(p: Partial<Liability> = {}): Liability {
   return {
     id: 1, accountId: null, name: 'Home', loanType: 'home',
-    principal: 1000000, annualRate: 9, tenureMonths: 120,
+    principal: 1000000, annualRate: 9, outstandingBalance: null, tenureMonths: 120,
     emiAmount: null, startDate: '2024-01-01', status: 'active', ...p,
   };
 }
@@ -47,6 +47,13 @@ describe('amortizationSchedule', () => {
     expect(rows.length).toBeGreaterThanOrEqual(119);
     expect(rows.length).toBeLessThanOrEqual(121);
   });
+
+  it('uses explicit emiAmount when both tenure and emi are set (higher voluntary EMI)', () => {
+    const customEmi = 15000;
+    const rows = amortizationSchedule(loan({ emiAmount: customEmi }));
+    expect(rows[0].emi).toBeCloseTo(customEmi, 2);
+    expect(rows[0].emi).toBeGreaterThan(computeEmi(1000000, 9, 120));
+  });
 });
 
 describe('loanStatus', () => {
@@ -67,5 +74,12 @@ describe('loanStatus', () => {
     expect(s.outstanding).toBeCloseTo(0, 0);
     expect(s.monthsRemaining).toBe(0);
     expect(s.progressPercent).toBeCloseTo(100, 1);
+  });
+
+  it('uses outstandingBalance override when set (e.g. after prepayment)', () => {
+    const s = loanStatus(loan({ outstandingBalance: 750000 }), new Date(2025, 0, 1));
+    expect(s.outstanding).toBe(750000);
+    expect(s.paidPrincipal).toBe(250000);
+    expect(s.progressPercent).toBeCloseTo(25, 1);
   });
 });

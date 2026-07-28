@@ -40,6 +40,15 @@ function requireField(fields: Record<string, string>, name: string): string {
   return v;
 }
 
+function logImport(
+  req: FastifyRequest,
+  level: 'info' | 'warn' | 'error',
+  event: string,
+  fields: Record<string, unknown>,
+): void {
+  req.log[level]({ import: event, ...fields }, `import:${event}`);
+}
+
 export async function importRoutes(
   app: FastifyInstance,
   opts: ImportRoutesOpts,
@@ -77,34 +86,72 @@ export async function importRoutes(
     const { file, fields } = await requireUpload(req);
     const accountName = requireField(fields, 'accountName');
     const investmentApp = requireField(fields, 'investmentApp');
+    const platform = fields.platform?.trim() || 'groww';
+
+    logImport(req, 'info', 'holdings_start', {
+      accountName,
+      investmentApp,
+      platform,
+      fileName: file!.filename,
+      fileBytes: file!.buffer.byteLength,
+    });
+
     // Non-financial sync: ensure an investment account exists for this
     // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
-    app.repos.accountRepo.ensureAccount({
+    const accountId = app.repos.accountRepo.ensureAccount({
       domain: 'investment',
       institution: investmentApp,
       label: accountName,
     });
-    const platform = fields.platform?.trim() || 'groww';
+
     const parse = resolveParser(platform, 'holdings');
 
     let parsedData: ParsedHoldingsData;
     try {
       parsedData = parse(file!.buffer, file!.filename) as ParsedHoldingsData;
     } catch (e) {
+      logImport(req, 'error', 'holdings_parse_failed', {
+        accountName,
+        investmentApp,
+        message: (e as Error).message,
+      });
       throw badRequest((e as Error).message);
     }
 
-    const result = await importHoldings(
-      {
-        schemeRepo: app.repos.schemeRepo,
-        holdingsRepo: app.repos.holdingsRepo,
-        importHistoryRepo: app.repos.importHistoryRepo,
-        runInTransaction,
-        amfiMatch,
-      },
-      { accountName, investmentApp, parsedData, fileName: file!.filename },
-    );
-    return reply.send({ data: result });
+    logImport(req, 'info', 'holdings_parsed', {
+      accountName,
+      investmentApp,
+      asOfDate: parsedData.asOfDate,
+      holdingCount: parsedData.holdings.length,
+      accountId,
+    });
+
+    try {
+      const result = await importHoldings(
+        {
+          schemeRepo: app.repos.schemeRepo,
+          holdingsRepo: app.repos.holdingsRepo,
+          importHistoryRepo: app.repos.importHistoryRepo,
+          runInTransaction,
+          amfiMatch,
+        },
+        { accountName, investmentApp, parsedData, fileName: file!.filename },
+      );
+      logImport(req, 'info', 'holdings_success', {
+        accountName,
+        investmentApp,
+        ...result,
+      });
+      return reply.send({ data: result });
+    } catch (e) {
+      logImport(req, 'error', 'holdings_failed', {
+        accountName,
+        investmentApp,
+        message: (e as Error).message,
+        stack: (e as Error).stack,
+      });
+      throw e;
+    }
   });
 
   // POST /imports/investments/transactions
@@ -112,22 +159,46 @@ export async function importRoutes(
     const { file, fields } = await requireUpload(req);
     const accountName = requireField(fields, 'accountName');
     const investmentApp = requireField(fields, 'investmentApp');
+    const platform = fields.platform?.trim() || 'groww';
+
+    logImport(req, 'info', 'transactions_start', {
+      accountName,
+      investmentApp,
+      platform,
+      fileName: file!.filename,
+      fileBytes: file!.buffer.byteLength,
+    });
+
     // Non-financial sync: ensure an investment account exists for this
     // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
-    app.repos.accountRepo.ensureAccount({
+    const accountId = app.repos.accountRepo.ensureAccount({
       domain: 'investment',
       institution: investmentApp,
       label: accountName,
     });
-    const platform = fields.platform?.trim() || 'groww';
+
     const parse = resolveParser(platform, 'transactions');
 
     let parsedData: ParsedTransactionData;
     try {
       parsedData = parse(file!.buffer) as ParsedTransactionData;
     } catch (e) {
+      logImport(req, 'error', 'transactions_parse_failed', {
+        accountName,
+        investmentApp,
+        message: (e as Error).message,
+      });
       throw badRequest((e as Error).message);
     }
+
+    logImport(req, 'info', 'transactions_parsed', {
+      accountName,
+      investmentApp,
+      startDate: parsedData.startDate,
+      endDate: parsedData.endDate,
+      transactionCount: parsedData.transactions.length,
+      accountId,
+    });
 
     const result = await importInvestmentTransactions(
       {
@@ -138,7 +209,19 @@ export async function importRoutes(
       },
       { accountName, investmentApp, parsedData, fileName: file!.filename },
     );
-    return reply.send({ data: result }); // success | unmatched_schemes, both 200 (D2)
+
+    if (result.status === 'success') {
+      logImport(req, 'info', 'transactions_success', {
+        accountName,
+        investmentApp,
+        importedCount: result.importedCount,
+        deletedCount: result.deletedCount,
+        importHistoryId: result.importHistoryId,
+        schemesCreated: result.schemesCreated,
+      });
+    }
+
+    return reply.send({ data: result });
   });
 
   // GET /imports

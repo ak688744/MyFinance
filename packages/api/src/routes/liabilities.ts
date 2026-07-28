@@ -15,6 +15,19 @@ function resolveEmi(loan: Liability): number | null {
   return null;
 }
 
+function enrichLoan(loan: Liability) {
+  const status = loanStatus(loan);
+  return {
+    ...loan,
+    emi: resolveEmi(loan),
+    outstanding: status.outstanding,
+    paidPrincipal: status.paidPrincipal,
+    progressPercent: status.progressPercent,
+    monthsRemaining: status.monthsRemaining,
+    nextDueDate: status.nextDueDate,
+  };
+}
+
 function httpError(message: string, statusCode: number): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
   err.statusCode = statusCode;
@@ -25,8 +38,8 @@ const LOAN_TYPES = ['home', 'car', 'personal', 'other'];
 
 type LiabilityBody = Partial<{
   accountId: number | null; name: string; loanType: string; principal: number;
-  annualRate: number; tenureMonths: number | null; emiAmount: number | null;
-  startDate: string; status: 'active' | 'closed';
+  annualRate: number; outstandingBalance: number | null; tenureMonths: number | null;
+  emiAmount: number | null; startDate: string; status: 'active' | 'closed';
 }>;
 
 export async function liabilityRoutes(app: FastifyInstance): Promise<void> {
@@ -35,8 +48,7 @@ export async function liabilityRoutes(app: FastifyInstance): Promise<void> {
     const rows = app.repos.liabilityRepo.list(
       status === 'active' || status === 'closed' ? { status } : undefined,
     );
-    const data = rows.map((l) => ({ ...l, emi: resolveEmi(l) }));
-    return { data };
+    return { data: rows.map(enrichLoan) };
   });
 
   app.get<{ Params: { id: string } }>('/liabilities/:id', async (req) => {
@@ -68,6 +80,7 @@ export async function liabilityRoutes(app: FastifyInstance): Promise<void> {
       loanType: b.loanType as Liability['loanType'],
       principal: b.principal,
       annualRate: b.annualRate,
+      outstandingBalance: b.outstandingBalance ?? null,
       tenureMonths: b.tenureMonths ?? null,
       emiAmount: b.emiAmount ?? null,
       startDate: b.startDate,
@@ -86,6 +99,7 @@ export async function liabilityRoutes(app: FastifyInstance): Promise<void> {
       ...(b.loanType !== undefined ? { loanType: b.loanType as Liability['loanType'] } : {}),
       ...(b.principal !== undefined ? { principal: b.principal } : {}),
       ...(b.annualRate !== undefined ? { annualRate: b.annualRate } : {}),
+      ...(b.outstandingBalance !== undefined ? { outstandingBalance: b.outstandingBalance } : {}),
       ...(b.tenureMonths !== undefined ? { tenureMonths: b.tenureMonths } : {}),
       ...(b.emiAmount !== undefined ? { emiAmount: b.emiAmount } : {}),
       ...(b.startDate !== undefined ? { startDate: b.startDate } : {}),

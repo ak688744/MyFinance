@@ -44,6 +44,51 @@ describe('liabilities routes', () => {
     expect(del.statusCode).toBe(200);
   });
 
+  it('PATCH annualRate and outstandingBalance updates list enrichment', async () => {
+    app = await buildTestServer();
+    const id = (await app.inject({ method: 'POST', url: '/liabilities', payload: home })).json().data.id;
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/liabilities/${id}`,
+      payload: { annualRate: 8.5, outstandingBalance: 850000 },
+    });
+    expect(patch.statusCode).toBe(200);
+    const listed = (await app.inject({ method: 'GET', url: '/liabilities' })).json().data[0];
+    expect(listed.annualRate).toBe(8.5);
+    expect(listed.outstanding).toBe(850000);
+    expect(listed.paidPrincipal).toBe(150000);
+  });
+
+  it('PATCH emiAmount overrides formula EMI on list', async () => {
+    app = await buildTestServer();
+    const id = (await app.inject({ method: 'POST', url: '/liabilities', payload: home })).json().data.id;
+    const before = (await app.inject({ method: 'GET', url: '/liabilities' })).json().data[0];
+    expect(before.emi).toBeCloseTo(12667.58, 0);
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/liabilities/${id}`,
+      payload: { emiAmount: 18000 },
+    });
+    expect(patch.statusCode).toBe(200);
+    const listed = (await app.inject({ method: 'GET', url: '/liabilities' })).json().data[0];
+    expect(listed.emi).toBe(18000);
+    expect(listed.emiAmount).toBe(18000);
+  });
+
+  it('POST with outstandingBalance sets remaining on create', async () => {
+    app = await buildTestServer();
+    const post = await app.inject({
+      method: 'POST',
+      url: '/liabilities',
+      payload: { ...home, outstandingBalance: 850000 },
+    });
+    expect(post.statusCode).toBe(201);
+    const listed = (await app.inject({ method: 'GET', url: '/liabilities' })).json().data[0];
+    expect(listed.outstanding).toBe(850000);
+    expect(listed.paidPrincipal).toBe(150000);
+  });
+
   it('POST with neither tenure nor emi -> 400', async () => {
     app = await buildTestServer();
     const res = await app.inject({

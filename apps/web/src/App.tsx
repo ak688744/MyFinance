@@ -26,7 +26,7 @@ function Layout() {
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
         <TopBar title={meta.title} subtitle={meta.subtitle} />
-        <main className="p-8 max-w-[1400px] w-full"><Outlet /></main>
+        <main className="p-6 max-w-[1440px] w-full mx-auto"><Outlet /></main>
       </div>
     </div>
   );

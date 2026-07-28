@@ -72,34 +72,28 @@ const txData = (): ParsedTransactionData => ({
 });
 
 describe('importInvestmentTransactions', () => {
-  it('pre-flight: returns unmatched_schemes (sorted) and leaves DB untouched', async () => {
+  it('auto-creates schemes missing from holdings (redeemed funds) and imports all rows', async () => {
     const result = await importInvestmentTransactions(
       { schemeRepo, txRepo: investmentTxRepo, importHistoryRepo, runInTransaction },
       { accountName: 'A', investmentApp: 'groww', parsedData: txData() },
     );
 
-    expect(result.status).toBe('unmatched_schemes');
-    if (result.status === 'unmatched_schemes') {
-      // sorted alphabetically
-      expect(result.unmatchedSchemes).toEqual([
-        'Alpha Fund Direct Growth',
-        'Zeta Fund Direct Growth',
-      ]);
-    }
+    expect(result.status).toBe('success');
+    expect(result.importedCount).toBe(2);
+    expect(result.schemesCreated.sort()).toEqual([
+      'Alpha Fund Direct Growth',
+      'Zeta Fund Direct Growth',
+    ]);
 
-    // DB untouched
-    const txCount = sqlite
-      .prepare('SELECT COUNT(*) AS c FROM investment_transactions')
-      .get() as { c: number };
-    const histCount = sqlite
-      .prepare('SELECT COUNT(*) AS c FROM investment_import_history')
-      .get() as { c: number };
-    expect(txCount.c).toBe(0);
-    expect(histCount.c).toBe(0);
+    expect(
+      (sqlite.prepare('SELECT COUNT(*) AS c FROM investment_transactions').get() as { c: number }).c,
+    ).toBe(2);
+    expect(
+      (sqlite.prepare('SELECT COUNT(*) AS c FROM investment_schemes').get() as { c: number }).c,
+    ).toBe(2);
   });
 
-  it('success: resolves schemes, inserts rows; re-import replaces (delete + reinsert)', async () => {
-    // Seed schemes so pre-flight matches
+  it('success: resolves existing schemes without recreating; re-import replaces', async () => {
     schemeRepo.matchOrCreateScheme({ schemeName: 'Zeta Fund Direct Growth' });
     schemeRepo.matchOrCreateScheme({ schemeName: 'Alpha Fund Direct Growth' });
 
@@ -108,32 +102,27 @@ describe('importInvestmentTransactions', () => {
       { accountName: 'A', investmentApp: 'groww', parsedData: txData() },
     );
     expect(first.status).toBe('success');
-    if (first.status === 'success') {
-      expect(first.importedCount).toBe(2);
-      expect(first.deletedCount).toBe(0);
-      expect(first.importHistoryId).toBeGreaterThan(0);
-    }
+    expect(first.importedCount).toBe(2);
+    expect(first.deletedCount).toBe(0);
+    expect(first.importHistoryId).toBeGreaterThan(0);
+    expect(first.schemesCreated).toEqual([]);
 
     expect(
       (sqlite.prepare('SELECT COUNT(*) AS c FROM investment_transactions').get() as { c: number }).c,
     ).toBe(2);
 
-    // scheme_id resolved (not null)
     const nullScheme = sqlite
       .prepare('SELECT COUNT(*) AS c FROM investment_transactions WHERE scheme_id IS NULL')
       .get() as { c: number };
     expect(nullScheme.c).toBe(0);
 
-    // Re-import same range -> delete prior 2, reinsert 2 (no dupes beyond expected)
     const second = await importInvestmentTransactions(
       { schemeRepo, txRepo: investmentTxRepo, importHistoryRepo, runInTransaction },
       { accountName: 'A', investmentApp: 'groww', parsedData: txData() },
     );
     expect(second.status).toBe('success');
-    if (second.status === 'success') {
-      expect(second.deletedCount).toBe(2);
-      expect(second.importedCount).toBe(2);
-    }
+    expect(second.deletedCount).toBe(2);
+    expect(second.importedCount).toBe(2);
     expect(
       (sqlite.prepare('SELECT COUNT(*) AS c FROM investment_transactions').get() as { c: number }).c,
     ).toBe(2);

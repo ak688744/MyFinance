@@ -18,7 +18,11 @@ export async function runInvestmentPortfolio(
   ctx: McpContext,
   input: { period?: Period; account?: string },
 ): Promise<ToolResult> {
-  const deps = { txRepo: ctx.repos.investmentTxRepo, nav: ctx.nav };
+  const deps = {
+    txRepo: ctx.repos.investmentTxRepo,
+    holdingsRepo: ctx.repos.holdingsRepo,
+    nav: ctx.nav,
+  };
   const filters = input.account ? { account: input.account } : {};
 
   // Branch on period: undefined or 'ALL' = lifetime, otherwise use ForPeriod functions

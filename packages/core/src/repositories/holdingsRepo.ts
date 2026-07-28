@@ -1,6 +1,7 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, asc } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { investmentHoldings as holdings } from '../db/schema';
+import { investmentSchemes as schemes } from '../db/schema';
 import type { HoldingsRepo } from './types';
 
 /**
@@ -13,6 +14,36 @@ import type { HoldingsRepo } from './types';
 
 export function makeHoldingsRepo(db: Db): HoldingsRepo {
   return {
+    list(filters) {
+      const conditions = [
+        filters?.account !== undefined ? eq(holdings.accountName, filters.account) : undefined,
+      ].filter((c): c is NonNullable<typeof c> => c !== undefined);
+
+      return db
+        .select({
+          id: holdings.id,
+          schemeId: holdings.schemeId,
+          schemeName: holdings.schemeName,
+          accountName: holdings.accountName,
+          investmentApp: holdings.investmentApp,
+          folioNumber: holdings.folioNumber,
+          units: holdings.units,
+          investedValue: holdings.investedValue,
+          currentValue: holdings.currentValue,
+          returnsAmount: holdings.returnsAmount,
+          returnsXirr: holdings.returnsXirr,
+          asOfDate: holdings.asOfDate,
+          amcName: schemes.amcName,
+          category: schemes.category,
+          subCategory: schemes.subCategory,
+        })
+        .from(holdings)
+        .leftJoin(schemes, eq(holdings.schemeId, schemes.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(asc(holdings.schemeName))
+        .all();
+    },
+
     getHoldingsValue(filters) {
       // SELECT COALESCE(SUM(current_value),0), COALESCE(SUM(invested_value),0)
       // FROM investment_holdings [WHERE account_name = ? AND scheme_id = ?]

@@ -71,6 +71,18 @@ describe('holdingsRepo.getHoldingsValue', () => {
   });
 });
 
+describe('holdingsRepo.list', () => {
+  it('returns all rows when no account filter', () => {
+    expect(repo.list()).toHaveLength(3);
+  });
+
+  it('filters by account', () => {
+    const rows = repo.list({ account: 'A' });
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.accountName === 'A')).toBe(true);
+  });
+});
+
 describe('holdingsRepo.insert', () => {
   it('inserts a holding and returns a numeric id (round-trip)', () => {
     const id = repo.insert({

@@ -57,6 +57,12 @@ export async function apiSend<T>(
 
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { method: 'POST', body: form });
-  if (!res.ok) throw await parseError(res);
-  return (await res.json()).data as T;
+  if (!res.ok) {
+    const err = await parseError(res);
+    console.error('[MyFinance import]', path, { status: err.status, message: err.message });
+    throw err;
+  }
+  const data = (await res.json()).data as T;
+  console.info('[MyFinance import]', path, data);
+  return data;
 }

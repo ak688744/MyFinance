@@ -21,7 +21,7 @@ export async function networthRoutes(app: FastifyInstance): Promise<void> {
     valuationRepo: app.repos.assetValuationRepo,
     liabilityRepo: app.repos.liabilityRepo,
     getMfHoldings: (filters: { account?: string }) =>
-      getHoldings({ txRepo: app.repos.txRepo, nav }, filters),
+      getHoldings({ txRepo: app.repos.txRepo, holdingsRepo: app.repos.holdingsRepo, nav }, filters),
   });
 
   app.get('/networth', async () => {

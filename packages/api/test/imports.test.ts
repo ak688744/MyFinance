@@ -61,7 +61,7 @@ describe('POST /imports/investments/*', () => {
     expect(rs.json().data.totalInvested).toBeGreaterThan(0);
   });
 
-  it('transactions without prior holdings -> 200 unmatched_schemes, DB untouched', async () => {
+  it('transactions import succeeds without prior holdings (auto-creates schemes)', async () => {
     app = await buildTestServer();
     const tx = multipartPayload(
       'file', 'groww-transactions-sample.xls', fixtureBuffer('groww-transactions-sample.xls'),
@@ -70,8 +70,10 @@ describe('POST /imports/investments/*', () => {
     const rt = await app.inject({ method: 'POST', url: '/imports/investments/transactions', ...tx });
     expect(rt.statusCode).toBe(200);
     const data = rt.json().data;
-    expect(data.status).toBe('unmatched_schemes');
-    expect(data.unmatchedSchemes.length).toBeGreaterThan(0);
+    expect(data.status).toBe('success');
+    expect(data.importedCount).toBeGreaterThan(0);
+    expect(Array.isArray(data.schemesCreated)).toBe(true);
+    expect(data.schemesCreated.length).toBeGreaterThan(0);
   });
 
   it('400 when accountName field is missing on holdings', async () => {
