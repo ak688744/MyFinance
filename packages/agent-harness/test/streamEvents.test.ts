@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mapChunk, toFriendlyToolLabel, type HarnessEvent } from '../src/streamEvents';
+import { ASK_USER_TOOL_NAME } from '../src/askUserTool';
 
 // Chunk shapes captured verbatim from a live Bedrock fullStream run.
 const CHUNKS = [
@@ -58,5 +59,49 @@ describe('toFriendlyToolLabel', () => {
   });
   it('falls back to a title-cased label for unknown tools', () => {
     expect(toFriendlyToolLabel('finance_get_something_new')).toBe('Something new');
+  });
+});
+
+describe('mapChunk — ask_user question events', () => {
+  it('maps an ask_user tool-call to a question event (from payload.args)', () => {
+    const chunk = {
+      type: 'tool-call',
+      payload: {
+        toolCallId: 'q1',
+        toolName: ASK_USER_TOOL_NAME,
+        args: { question: 'Prepay or invest?', options: [{ label: 'Prepay' }, { label: 'Invest' }] },
+      },
+    };
+    expect(mapChunk(chunk)).toEqual({
+      type: 'question',
+      question: 'Prepay or invest?',
+      options: [{ label: 'Prepay' }, { label: 'Invest' }],
+    });
+  });
+
+  it('a finance tool-call still maps to a step (not a question)', () => {
+    const chunk = { type: 'tool-call', payload: { toolName: 'finance_get_networth_overview', args: {} } };
+    expect(mapChunk(chunk)).toEqual({ type: 'step', label: 'Checking net worth' });
+  });
+
+  it('ask_user with no options yields a question event with options: []', () => {
+    const chunk = { type: 'tool-call', payload: { toolName: ASK_USER_TOOL_NAME, args: { question: 'How much risk?' } } };
+    expect(mapChunk(chunk)).toEqual({ type: 'question', question: 'How much risk?', options: [] });
+  });
+
+  it('ask_user with no usable question is ignored (null)', () => {
+    const chunk = { type: 'tool-call', payload: { toolName: ASK_USER_TOOL_NAME, args: {} } };
+    expect(mapChunk(chunk)).toBeNull();
+  });
+
+  it('drops malformed option entries, keeping only { label } strings', () => {
+    const chunk = {
+      type: 'tool-call',
+      payload: {
+        toolName: ASK_USER_TOOL_NAME,
+        args: { question: 'Pick one', options: [{ label: 'A' }, { nope: 1 }, { label: 42 }, 'x'] },
+      },
+    };
+    expect(mapChunk(chunk)).toEqual({ type: 'question', question: 'Pick one', options: [{ label: 'A' }] });
   });
 });
