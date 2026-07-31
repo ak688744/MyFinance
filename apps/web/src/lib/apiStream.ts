@@ -4,6 +4,7 @@ export type AgentEvent =
   | { type: 'start'; threadId: string }
   | { type: 'token'; text: string }
   | { type: 'step'; label: string }
+  | { type: 'question'; question: string; options: { label: string }[] }
   | { type: 'done'; threadId: string; usage: { inputTokens: number; outputTokens: number } }
   | { type: 'error'; message: string };
 

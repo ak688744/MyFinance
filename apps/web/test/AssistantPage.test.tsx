@@ -41,4 +41,25 @@ describe('AssistantPage', () => {
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toContain('temporarily unavailable');
   });
+
+  it('renders question chips for an assistant message carrying a question', () => {
+    const send = vi.fn();
+    hookState.value = {
+      ...hookState.value,
+      send,
+      messages: [
+        { role: 'user', text: 'should I prepay?' },
+        {
+          role: 'assistant',
+          text: '',
+          question: { question: 'Prepay or invest?', options: [{ label: 'Prepay' }, { label: 'Invest' }] },
+        },
+      ],
+    };
+    render(<AssistantPage />);
+    expect(screen.getByText('Prepay or invest?')).toBeTruthy();
+    const chip = screen.getByRole('button', { name: 'Prepay' });
+    chip.click();
+    expect(send).toHaveBeenCalledWith('Prepay');
+  });
 });

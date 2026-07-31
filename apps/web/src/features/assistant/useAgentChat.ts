@@ -1,7 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { streamAgentChat } from '../../lib/apiStream';
 
-export type ChatMessage = { role: 'user' | 'assistant'; text: string; error?: boolean; steps?: string[] };
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  text: string;
+  error?: boolean;
+  steps?: string[];
+  question?: { question: string; options: { label: string }[] };
+};
 
 export const CHAT_STORAGE_KEY = 'myfinance.assistant.chat.v1';
 
@@ -93,6 +99,15 @@ export function useAgentChat() {
             const last = next[next.length - 1];
             if (last && last.role === 'assistant') {
               next[next.length - 1] = { ...last, role: 'assistant', steps: [...(last.steps ?? []), ev.label] };
+            }
+            return next;
+          });
+        } else if (ev.type === 'question') {
+          setMessages((m) => {
+            const next = m.slice();
+            const last = next[next.length - 1];
+            if (last && last.role === 'assistant') {
+              next[next.length - 1] = { ...last, role: 'assistant', question: { question: ev.question, options: ev.options } };
             }
             return next;
           });

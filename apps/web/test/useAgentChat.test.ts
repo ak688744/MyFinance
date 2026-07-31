@@ -142,4 +142,21 @@ describe('useAgentChat', () => {
     expect(result.current.threadId).toBeNull();
     expect(localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
+
+  it('attaches a question (with options) to the assistant message', async () => {
+    setStream(async function* () {
+      yield { type: 'start', threadId: 't1' };
+      yield { type: 'question', question: 'Prepay or invest?', options: [{ label: 'Prepay' }, { label: 'Invest' }] };
+      yield { type: 'done', threadId: 't1', usage: { inputTokens: 3, outputTokens: 1 } };
+    });
+    const { result } = renderHook(() => useAgentChat());
+    await act(async () => { await result.current.send('should I prepay?'); });
+    await waitFor(() => expect(result.current.isStreaming).toBe(false));
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.role).toBe('assistant');
+    expect(last.question).toEqual({
+      question: 'Prepay or invest?',
+      options: [{ label: 'Prepay' }, { label: 'Invest' }],
+    });
+  });
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAgentChat } from './useAgentChat';
 import { Markdown } from './Markdown';
 import { StepsTrail } from './StepsTrail';
+import { QuestionChips } from './QuestionChips';
 
 const SUGGESTED_PROMPTS = [
   'What is my current net worth breakdown?',
@@ -102,6 +103,14 @@ export function AssistantPage() {
                       <span className="animate-pulse delay-75">…</span>
                     </span>
                   ) : '')
+                )}
+                {m.role === 'assistant' && !isError && m.question && (
+                  <QuestionChips
+                    question={m.question.question}
+                    options={m.question.options}
+                    onSelect={(label) => void onSend(label)}
+                    disabled={isStreaming}
+                  />
                 )}
               </div>
             </div>
