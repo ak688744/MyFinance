@@ -7,3 +7,4 @@ export type { AgentModelDeps, BedrockModelFactory, BedrockCreds } from './agentM
 export { mapChunk, toFriendlyToolLabel } from './streamEvents';
 export type { HarnessEvent } from './streamEvents';
 export { WEALTH_INSTRUCTIONS } from './wealthAgent';
+export { buildAskUserTool, ASK_USER_TOOL_NAME } from './askUserTool';

@@ -5,6 +5,7 @@ import { mapChunk, type HarnessEvent } from './streamEvents';
 import { buildFinanceMcpClient, getFinanceTools } from './mcpClient';
 import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
+import { buildAskUserTool } from './askUserTool';
 
 export type UsageInsert = {
   ts: string; task: string; providerId: string; dialect: string; model: string;
@@ -47,7 +48,8 @@ export function makeWealthHarness(deps: HarnessDeps) {
       const threadId = args.threadId ?? mintThreadId(now);
 
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
-      const tools = await getFinanceTools(mcpClient);
+      const financeTools = await getFinanceTools(mcpClient);
+      const tools = { ...financeTools, ...buildAskUserTool() };
       const memory = buildWealthMemory({ storeUrl: deps.memoryUrl });
       const model = await makeModel(route);
       const agent = buildWealthAgent({ model, memory, tools });

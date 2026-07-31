@@ -75,4 +75,39 @@ describe('makeWealthHarness.runChat', () => {
     const h = makeWealthHarness(deps(false));
     await expect(h.runChat({ message: 'hi' })).rejects.toBeInstanceOf(AgentConfigError);
   });
+
+  it('surfaces an ask_user tool-call as a question event through the events stream', async () => {
+    // A model whose fullStream contains an ask_user tool-call.
+    const askModel = new MockLanguageModelV4({
+      doGenerate: async () => ({
+        content: [{ type: 'text', text: '' }],
+        finishReason: 'tool-calls',
+        usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+        warnings: [],
+      } as any),
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: 'tool-call',
+              toolCallId: 'q1',
+              toolName: 'ask_user',
+              input: JSON.stringify({ question: 'Prepay or invest?', options: [{ label: 'Prepay' }, { label: 'Invest' }] }),
+            },
+            { type: 'finish', finishReason: 'tool-calls', usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 } },
+          ],
+        }),
+      }),
+    } as any);
+
+    const h = makeWealthHarness({ ...deps(), makeModel: () => askModel } as HarnessDeps);
+    const r = await h.runChat({ message: 'should I prepay?', threadId: 'thread-q' });
+    const collected: any[] = [];
+    for await (const ev of r.events) collected.push(ev);
+    await r.done;
+    const q = collected.find((e) => e.type === 'question');
+    expect(q).toBeTruthy();
+    expect(q.question).toBe('Prepay or invest?');
+    expect(q.options).toEqual([{ label: 'Prepay' }, { label: 'Invest' }]);
+  }, 30000);
 });
