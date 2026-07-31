@@ -25,8 +25,12 @@ export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness
     try {
       const chat = await opts.harness.runChat({ threadId: body.threadId, message });
       reply.raw.write(sse({ type: 'start', threadId: chat.threadId }));
-      for await (const token of chat.textStream) {
-        reply.raw.write(sse({ type: 'token', text: token }));
+      for await (const ev of chat.events) {
+        if (ev.type === 'text') {
+          reply.raw.write(sse({ type: 'token', text: ev.text }));
+        } else if (ev.type === 'step') {
+          reply.raw.write(sse({ type: 'step', label: ev.label }));
+        }
       }
       const fin = await chat.done;
       reply.raw.write(sse({ type: 'done', threadId: fin.threadId, usage: fin.usage }));

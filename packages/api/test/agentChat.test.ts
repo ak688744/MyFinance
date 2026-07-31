@@ -11,10 +11,16 @@ function fakeHarness(behavior: 'ok' | 'unconfigured') {
       if (behavior === 'unconfigured') {
         throw new AgentConfigError('not_configured', 'Configure a model for the wealth agent in AI Settings.');
       }
-      async function* gen() { yield 'Hello '; yield 'world'; }
+      async function* events() {
+        yield { type: 'text', text: 'Hello ' };
+        yield { type: 'step', label: 'Checking net worth' };
+        yield { type: 'text', text: 'world' };
+      }
+      async function* textOnly() { yield 'Hello '; yield 'world'; }
       return {
         threadId: 'thread-abc',
-        textStream: gen(),
+        events: events(),
+        textStream: textOnly(),
         done: Promise.resolve({ usage: { inputTokens: 5, outputTokens: 2 }, threadId: 'thread-abc' }),
       };
     },
@@ -34,6 +40,8 @@ describe('POST /agent/chat', () => {
     expect(res.body).toContain('"type":"token"');
     expect(res.body).toContain('Hello');
     expect(res.body).toContain('world');
+    expect(res.body).toContain('"type":"step"');
+    expect(res.body).toContain('Checking net worth');
     expect(res.body).toContain('"type":"done"');
     expect(res.body).toContain('thread-abc');
   });

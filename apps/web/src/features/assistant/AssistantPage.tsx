@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAgentChat } from './useAgentChat';
+import { Markdown } from './Markdown';
+import { StepsTrail } from './StepsTrail';
 
 const SUGGESTED_PROMPTS = [
   'What is my current net worth breakdown?',
@@ -9,7 +11,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export function AssistantPage() {
-  const { messages, send, isStreaming, error } = useAgentChat();
+  const { messages, send, isStreaming, clearChat } = useAgentChat();
   const [draft, setDraft] = useState('');
 
   async function onSend(text?: string) {
@@ -21,6 +23,18 @@ export function AssistantPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)] max-w-3xl mx-auto">
+      {messages.length > 0 && (
+        <div className="flex justify-end px-1 pb-2">
+          <button
+            type="button"
+            onClick={() => clearChat()}
+            disabled={isStreaming}
+            className="text-xs px-3 py-1.5 rounded-full border border-border text-ink-muted hover:bg-surface hover:text-ink transition-colors duration-200 cursor-pointer disabled:opacity-50"
+          >
+            New chat
+          </button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto space-y-4 p-1">
         {messages.length === 0 && (
           <div className="text-center py-8">
@@ -46,37 +60,54 @@ export function AssistantPage() {
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+        {messages.map((m, i) => {
+          const isError = m.role === 'assistant' && m.error;
+          const bubbleClass =
+            m.role === 'user'
+              ? 'max-w-[85%] rounded-2xl rounded-br-md bg-brand text-white px-4 py-2.5 text-sm shadow-sm'
+              : isError
+                ? 'max-w-[85%] rounded-2xl rounded-bl-md bg-red-50 border border-red-200 text-loss px-4 py-2.5 text-sm whitespace-pre-wrap shadow-card'
+                : 'max-w-[85%] rounded-2xl rounded-bl-md bg-surface border border-border px-4 py-2.5 text-sm whitespace-pre-wrap shadow-card';
+          return (
             <div
-              className={
-                m.role === 'user'
-                  ? 'max-w-[85%] rounded-2xl rounded-br-md bg-brand text-white px-4 py-2.5 text-sm shadow-sm'
-                  : 'max-w-[85%] rounded-2xl rounded-bl-md bg-surface border border-border px-4 py-2.5 text-sm whitespace-pre-wrap shadow-card'
-              }
+              key={i}
+              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {m.role === 'assistant' && (
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-ai mb-1">Assistant</div>
-              )}
-              {m.text || (isStreaming && i === messages.length - 1 ? (
-                <span className="inline-flex gap-1 text-ink-muted">
-                  <span className="animate-pulse">Thinking</span>
-                  <span className="animate-pulse delay-75">…</span>
-                </span>
-              ) : '')}
+              <div className={bubbleClass} {...(isError ? { role: 'alert' } : {})}>
+                {m.role === 'assistant' && (
+                  <div className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${isError ? 'text-loss' : 'text-ai'}`}>
+                    {isError ? 'Assistant · Error' : 'Assistant'}
+                  </div>
+                )}
+                {m.role === 'assistant' && !isError && m.steps && m.steps.length > 0 && (
+                  <StepsTrail
+                    steps={m.steps}
+                    streaming={isStreaming && i === messages.length - 1}
+                    hasText={!!m.text}
+                  />
+                )}
+                {m.role === 'assistant' && !isError ? (
+                  m.text ? (
+                    <Markdown>{m.text}</Markdown>
+                  ) : (isStreaming && i === messages.length - 1 && !(m.steps && m.steps.length > 0) ? (
+                    <span className="inline-flex gap-1 text-ink-muted">
+                      <span className="animate-pulse">Thinking</span>
+                      <span className="animate-pulse delay-75">…</span>
+                    </span>
+                  ) : '')
+                ) : (
+                  m.text || (isStreaming && i === messages.length - 1 ? (
+                    <span className="inline-flex gap-1 text-ink-muted">
+                      <span className="animate-pulse">Thinking</span>
+                      <span className="animate-pulse delay-75">…</span>
+                    </span>
+                  ) : '')
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      {error && (
-        <div className="text-loss text-sm px-2 py-2 bg-red-50 border border-red-100 rounded-lg mx-1 mb-2">
-          {error}
-        </div>
-      )}
 
       <div className="flex gap-2 p-2 border-t border-border bg-surface/80 backdrop-blur rounded-b-card">
         <input

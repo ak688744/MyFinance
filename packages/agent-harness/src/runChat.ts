@@ -1,5 +1,7 @@
 import { costUsd } from '@myfinance/agents';
 import { resolveWealthRoute, type ResolverDeps, type ResolvedRoute } from './modelResolver';
+import { buildAgentModel } from './agentModel';
+import { mapChunk, type HarnessEvent } from './streamEvents';
 import { buildFinanceMcpClient, getFinanceTools } from './mcpClient';
 import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
@@ -15,12 +17,15 @@ export type HarnessDeps = ResolverDeps & {
   now?: () => string;
   dbPath: string;
   memoryUrl: string;
-  makeModel?: (route: ResolvedRoute) => unknown;
+  makeModel?: (route: ResolvedRoute) => unknown | Promise<unknown>;
 };
 
 export type ChatResult = {
   threadId: string;
+  /** Text-only view of the reply (backward-compatible). */
   textStream: AsyncIterable<string>;
+  /** Full event stream: interleaved text deltas + step markers (tool calls). */
+  events: AsyncIterable<HarnessEvent>;
   done: Promise<{ usage: { inputTokens: number; outputTokens: number }; threadId: string }>;
 };
 
@@ -34,8 +39,7 @@ function mintThreadId(now: () => string): string {
 
 export function makeWealthHarness(deps: HarnessDeps) {
   const now = deps.now ?? (() => new Date().toISOString());
-  const makeModel =
-    deps.makeModel ?? ((route: ResolvedRoute) => ({ id: route.modelString, apiKey: route.apiKey }));
+  const makeModel = deps.makeModel ?? ((route: ResolvedRoute) => buildAgentModel(route));
 
   return {
     async runChat(args: { threadId?: string; message: string }): Promise<ChatResult> {
@@ -45,7 +49,8 @@ export function makeWealthHarness(deps: HarnessDeps) {
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const tools = await getFinanceTools(mcpClient);
       const memory = buildWealthMemory({ storeUrl: deps.memoryUrl });
-      const agent = buildWealthAgent({ model: makeModel(route), memory, tools });
+      const model = await makeModel(route);
+      const agent = buildWealthAgent({ model, memory, tools });
 
       const stream = await agent.stream(args.message, {
         memory: { resource: RESOURCE_ID, thread: threadId },
@@ -57,10 +62,21 @@ export function makeWealthHarness(deps: HarnessDeps) {
         resolveDone = res; rejectDone = rej;
       });
 
-      const textStream = (async function* () {
+      // Prefer fullStream (text + tool-call step markers). Fall back to a
+      // text-only stream when a mock model doesn't expose fullStream.
+      const events = (async function* (): AsyncGenerator<HarnessEvent> {
         try {
-          for await (const chunk of stream.textStream) {
-            yield chunk as string;
+          const full = (stream as any).fullStream;
+          if (full) {
+            for await (const chunk of full) {
+              const ev = mapChunk(chunk);
+              if (ev) yield ev;
+            }
+          } else {
+            for await (const chunk of stream.textStream) {
+              const text = chunk as string;
+              if (text) yield { type: 'text', text };
+            }
           }
           const usage = await stream.usage;
           const inputTokens = usage?.inputTokens ?? 0;
@@ -88,7 +104,14 @@ export function makeWealthHarness(deps: HarnessDeps) {
         }
       })();
 
-      return { threadId, textStream, done };
+      // Text-only view derived from the single event source (backward-compatible).
+      const textStream = (async function* () {
+        for await (const ev of events) {
+          if (ev.type === 'text') yield ev.text;
+        }
+      })();
+
+      return { threadId, textStream, events, done };
     },
   };
 }
