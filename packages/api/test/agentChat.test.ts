@@ -14,6 +14,7 @@ function fakeHarness(behavior: 'ok' | 'unconfigured') {
       async function* events() {
         yield { type: 'text', text: 'Hello ' };
         yield { type: 'step', label: 'Checking net worth' };
+        yield { type: 'question', question: 'Prepay or invest?', options: [{ label: 'Prepay' }, { label: 'Invest' }] };
         yield { type: 'text', text: 'world' };
       }
       async function* textOnly() { yield 'Hello '; yield 'world'; }
@@ -65,5 +66,19 @@ describe('POST /agent/chat', () => {
       headers: { 'content-type': 'application/json' },
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('emits a question SSE frame with option labels', async () => {
+    app = await buildServer({ dbPath: ':memory:', harness: fakeHarness('ok') as any });
+    const res = await app.inject({
+      method: 'POST', url: '/agent/chat',
+      payload: { message: 'should I prepay?' },
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('"type":"question"');
+    expect(res.body).toContain('Prepay or invest?');
+    expect(res.body).toContain('Prepay');
+    expect(res.body).toContain('Invest');
   });
 });
