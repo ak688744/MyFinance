@@ -22,10 +22,26 @@ export function Markdown({ children }: { children: string }) {
           a: ({ children, href }) => (
             <a href={href} target="_blank" rel="noreferrer" className="text-brand underline underline-offset-2">{children}</a>
           ),
-          hr: () => <hr className="my-3 border-border" />,
-          code: ({ children }) => (
-            <code className="px-1 py-0.5 rounded bg-canvas border border-border text-[0.85em] font-mono">{children}</code>
+          hr: () => <hr className="my-2 border-border" />,
+          // Block code fences render as a single scrollable monospace panel.
+          // Inline code (no surrounding <pre>) keeps the small pill styling.
+          pre: ({ children }) => (
+            <pre className="my-2 p-2.5 rounded-lg bg-canvas border border-border overflow-x-auto text-[11px] leading-snug font-mono whitespace-pre">{children}</pre>
           ),
+          code: ({ children, className }) => {
+            // Block code = has a language class OR spans multiple lines (covers
+            // language-less ``` fences, e.g. ASCII boxes). react-markdown v9
+            // dropped the `inline` prop, so we infer it.
+            const hasLang = typeof className === 'string' && className.includes('language-');
+            const isMultiline = typeof children === 'string' && children.includes('\n');
+            if (hasLang || isMultiline) {
+              // Inside <pre>: no pill borders/padding — the <pre> owns the panel.
+              return <code className={`${className ?? ''} font-mono`}>{children}</code>;
+            }
+            return (
+              <code className="px-1 py-0.5 rounded bg-canvas border border-border text-[0.85em] font-mono">{children}</code>
+            );
+          },
           blockquote: ({ children }) => (
             <blockquote className="border-l-2 border-border pl-3 my-2 text-ink-muted">{children}</blockquote>
           ),
