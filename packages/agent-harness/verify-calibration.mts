@@ -38,6 +38,7 @@ const PROMPTS = [
   { tag: 'quick/net-worth', text: 'What is my current net worth breakdown?' },
   { tag: 'open-advisory', text: 'What do you suggest for extra investments?' },
   { tag: 'fact-missing', text: 'Should I prepay my home loan or invest instead?' },
+{ tag: 'full-breakdown', text: 'Can you give with final break up of my month with where surplus money will be deployed' },
 ];
 
 for (const p of PROMPTS) {

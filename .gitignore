@@ -71,3 +71,7 @@ agent_buildup.txt
 
 # local secrets — master key for AI-provider key encryption (never commit)
 .env
+
+# local db backups + superpowers worktrees (scratch)
+*.bak-*
+.claude/worktrees/
