@@ -120,6 +120,25 @@ export {
 export type { Tag, TagSource } from './domain/tags';
 
 // ---------------------------------------------------------------------------
+// Domain — expense insights
+// ---------------------------------------------------------------------------
+export {
+  computeExpenseInsights,
+  LOOKBACK_MONTHS,
+  NEW_SPEND_MIN_INR,
+  NEW_SPEND_TOP_N,
+  ABNORMAL_RATIO,
+  ABNORMAL_MIN_JUMP_INR,
+} from './domain/insights/expenseInsights';
+
+export type {
+  Insight,
+  InsightType,
+  InsightTxn,
+  InsightInput,
+} from './domain/insights/expenseInsights';
+
+// ---------------------------------------------------------------------------
 // Domain — NAV + AMFI
 // ---------------------------------------------------------------------------
 export {
