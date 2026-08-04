@@ -35,7 +35,7 @@ describe('categorizeWithAI', () => {
       const arr = ids.map((id) => ({ transactionId: id, categoryId: 'food', keyword: 'swiggy', confidence: 0.8 }));
       return { text: JSON.stringify(arr), usage: { inputTokens: 15, outputTokens: 7 } };
     };
-    const res = await categorizeWithAI(txns, { complete, categories: CATS, chunkSize: 2 });
+    const res = await categorizeWithAI(txns, { complete, categories: CATS, chunkSize: 2, minConfidence: 0 });
     expect(calls).toBe(2);
     expect(res.suggestions).toHaveLength(3);
     expect(res.usage.inputTokens).toBe(30); // 15 * 2
@@ -54,7 +54,7 @@ describe('categorizeWithAI', () => {
     const txns: TxnForPrompt[] = [{ id: 1, description: 'AMAZON PURCHASE', amount: 1, direction: 'debit' }];
     const text = JSON.stringify([{ transactionId: 1, categoryId: 'food', keyword: 'swiggy', confidence: 0.7 }]);
     const { complete } = completeReturning([text]);
-    const res = await categorizeWithAI(txns, { complete, categories: CATS });
+    const res = await categorizeWithAI(txns, { complete, categories: CATS, minConfidence: 0 });
     expect(res.suggestions[0].categoryId).toBe('food');
     expect(res.suggestions[0].keyword).toBe('');
   });

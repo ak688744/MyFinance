@@ -23,6 +23,7 @@ export type CategorizeDeps = {
   categories: CategoryForPrompt[];
   chunkSize?: number;
   logger?: CategorizeLogger;
+  minConfidence?: number;
 };
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -40,6 +41,7 @@ function parseBatch(text: string): AiSuggestion[] | null {
 
 export async function categorizeWithAI(txns: TxnForPrompt[], deps: CategorizeDeps): Promise<CategorizeResult> {
   const chunkSize = deps.chunkSize ?? 25;
+  const minConfidence = deps.minConfidence ?? 0.9;
   const log = deps.logger;
   const validCategoryIds = new Set(deps.categories.map((c) => c.id));
   const byId = new Map(txns.map((t) => [t.id, t]));
@@ -97,6 +99,7 @@ export async function categorizeWithAI(txns: TxnForPrompt[], deps: CategorizeDep
       const txn = byId.get(s.transactionId);
       if (!txn) continue;                          // hallucinated id
       if (!validCategoryIds.has(s.categoryId)) continue; // invented category → drop
+      if (s.confidence < minConfidence) { skipped += 1; continue; } // below confidence gate → leave blank
       const kw = s.keyword.trim().toLowerCase();
       const isSubstring = kw.length >= 2 && txn.description.toLowerCase().includes(kw);
       suggestions.push({ ...s, keyword: isSubstring ? kw : '' });
