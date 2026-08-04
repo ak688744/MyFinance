@@ -19,7 +19,7 @@
 - **Money/rate/value are REAL (float).**
 - **Tags stored lowercase, trimmed, deduped within a row**, as JSON array of `{ tag: string, source: 'user' | 'agent' }`; empty array persists as `NULL`.
 - **Confidence threshold** for AI categorization = `0.9` (`AI_CATEGORIZE_MIN_CONFIDENCE`).
-- Branch: `feat/expense-ai-insights-tags` off `feat/agent-response-calibration`.
+- Branch: `feat/agent-response-calibration` (build Feature B directly on this SAME branch — no separate feature branch; user decision 2026-08-05).
 - Commit after every task. Push/PR via `gh auth switch --user ak688744`.
 - Starter tag vocabulary (suggestions only; tags are free strings): `recurring`, `one-time`, `subscription`, `reimbursable`, `work`, `personal`.
 
@@ -2052,7 +2052,7 @@ git add -A && git commit -m "test: full-suite gate green for expense insights + 
 
 ### Task D2: Subagent code review
 
-- [ ] **Step 1:** Dispatch a fresh `feature-dev:code-reviewer` (or `superpowers:requesting-code-review`) over the whole branch diff vs `feat/agent-response-calibration`, with the spec as the contract. Focus: seam invariant, no frozen-logic change (categorize.ts byte-identical, Groww 6/6), tag normalization correctness, confidence-gate behavior change is intentional + tested, memory-resource isolation for the expense agent, no secret/PII leakage.
+- [ ] **Step 1:** Dispatch a fresh `feature-dev:code-reviewer` (or `superpowers:requesting-code-review`) over the Feature-B diff (the commits added this build — diff vs the `feat/agent-response-calibration` HEAD as it was before Feature B started, i.e. commit `b02051e`), with the spec as the contract. Focus: seam invariant, no frozen-logic change (categorize.ts byte-identical, Groww 6/6), tag normalization correctness, confidence-gate behavior change is intentional + tested, memory-resource isolation for the expense agent, no secret/PII leakage.
 - [ ] **Step 2:** Triage findings via `superpowers:receiving-code-review`; fix Critical/Important with TDD; record accepted minors.
 
 ---
@@ -2070,7 +2070,7 @@ git add -A && git commit -m "test: full-suite gate green for expense insights + 
 
 - [ ] **Step 1:** Update `docs/superpowers/MASTER_PLAN.md` §4 (L4 row) + §8 (mark Feature B built; note deferred E/bulk-tag/web_search).
 - [ ] **Step 2:** Save decisions to project-memory (`mcp__project-memory__memory_save`): the tags-as-JSON decision, the confidence-gate+leave-blank change, the Expense Clarity Agent (isolated memory + focused toolset + own route), and the deferred vector-RAG framing.
-- [ ] **Step 3:** Push `feat/expense-ai-insights-tags` + open PR into `main` via `gh auth switch --user ak688744`. (Note: this branch is based on `feat/agent-response-calibration`; if that hasn't merged, target the PR base accordingly or rebase onto `main` once it lands.)
+- [ ] **Step 3:** Push `feat/agent-response-calibration` (which now carries BOTH the calibration work AND Feature B) via `gh auth switch --user ak688744`. The existing branch PR (or a to-be-opened PR into `main`) covers both features together — no separate Feature-B branch/PR.
 - [ ] **Step 4:** `mcp__project-memory__session_summary`.
 
 ---
