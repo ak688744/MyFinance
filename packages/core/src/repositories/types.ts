@@ -4,6 +4,7 @@ import type {
   Account, AccountDomain, Asset, AssetContribution, AssetRate, AssetValuation,
   Liability,
 } from '../types';
+import type { Tag } from '../domain/tags';
 
 export interface InvestmentTxRepo {
   getTransactions(filters?: {
@@ -137,6 +138,7 @@ export type ExpenseTransactionRow = {
   categorySource: string | null;
   aiKeyword: string | null;
   note: string | null;
+  tags: Tag[];
   accountId: number | null;
   balance: number | null;
 };
@@ -240,6 +242,14 @@ export interface ExpenseTransactionRepo {
     note?: string | null;
     accountId?: number | null;
   }): number; // returns inserted id
+  /** Parse the JSON tags column for one transaction. [] when null. */
+  getTags(id: number): Tag[];
+  /** Replace all tags on a transaction (normalized; empty → NULL). */
+  setTags(id: number, tags: Tag[]): void;
+  /** Merge tags into a transaction's existing set (incoming source wins on collision). */
+  addTags(id: number, tags: Tag[]): void;
+  /** Remove one tag (case-insensitive) from a transaction. */
+  removeTag(id: number, tag: string): void;
 }
 
 export type ImportRecord = {

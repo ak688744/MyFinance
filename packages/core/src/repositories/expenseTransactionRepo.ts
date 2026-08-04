@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, lte, like, ne, or, isNull, notInArray, sql } f
 import type { Db } from '../db/client';
 import { transactions } from '../db/schema';
 import type { ExpenseTransactionRepo } from './types';
+import { parseTags, serializeTags, mergeTags, removeTagFrom, type Tag } from '../domain/tags';
 
 /**
  * Faithful port of the transactions-reading/updating SQL in
@@ -146,6 +147,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           categorySource: transactions.categorySource,
           aiKeyword: transactions.aiKeyword,
           note: transactions.note,
+          tags: transactions.tags,
           accountId: transactions.accountId,
           balance: transactions.balance,
         })
@@ -156,7 +158,8 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
 
       if (filters.limit !== undefined) q = q.limit(filters.limit);
       if (filters.offset !== undefined) q = q.offset(filters.offset);
-      return q.all();
+      const rows = q.all();
+      return rows.map((r) => ({ ...r, tags: parseTags(r.tags as string | null) }));
     },
 
     summary(filters = {}) {
@@ -279,6 +282,27 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         accountId: tx.accountId ?? null,
       }).run();
       return Number(result.lastInsertRowid);
+    },
+
+    getTags(id) {
+      const row = db.select({ tags: transactions.tags }).from(transactions).where(eq(transactions.id, id)).get();
+      return parseTags((row?.tags as string | null) ?? null);
+    },
+
+    setTags(id, tags) {
+      db.update(transactions).set({ tags: serializeTags(tags), updatedAt: sql`CURRENT_TIMESTAMP` }).where(eq(transactions.id, id)).run();
+    },
+
+    addTags(id, tags) {
+      const row = db.select({ tags: transactions.tags }).from(transactions).where(eq(transactions.id, id)).get();
+      const existing = parseTags((row?.tags as string | null) ?? null);
+      db.update(transactions).set({ tags: serializeTags(mergeTags(existing, tags)), updatedAt: sql`CURRENT_TIMESTAMP` }).where(eq(transactions.id, id)).run();
+    },
+
+    removeTag(id, tag) {
+      const row = db.select({ tags: transactions.tags }).from(transactions).where(eq(transactions.id, id)).get();
+      const existing = parseTags((row?.tags as string | null) ?? null);
+      db.update(transactions).set({ tags: serializeTags(removeTagFrom(existing, tag)), updatedAt: sql`CURRENT_TIMESTAMP` }).where(eq(transactions.id, id)).run();
     },
   };
 }

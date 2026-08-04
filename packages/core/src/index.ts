@@ -107,6 +107,19 @@ export type {
 } from './domain/categorize';
 
 // ---------------------------------------------------------------------------
+// Domain — tags
+// ---------------------------------------------------------------------------
+export {
+  normalizeTags,
+  parseTags,
+  serializeTags,
+  mergeTags,
+  removeTagFrom,
+} from './domain/tags';
+
+export type { Tag, TagSource } from './domain/tags';
+
+// ---------------------------------------------------------------------------
 // Domain — NAV + AMFI
 // ---------------------------------------------------------------------------
 export {
