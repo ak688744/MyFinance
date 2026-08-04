@@ -107,6 +107,18 @@ export async function runCategorizeTransaction(
   return ok({ id: input.id, categoryId: input.categoryId });
 }
 
+export async function runTagTransaction(
+  ctx: McpContext,
+  input: { id: number; tags: string[]; mode: 'add' | 'replace' },
+): Promise<ToolResult> {
+  const existing = ctx.repos.expenseTxRepo.getById(input.id);
+  if (!existing) return errorResult(`Transaction ${input.id} not found.`);
+  const incoming = input.tags.map((t) => ({ tag: t, source: 'agent' as const }));
+  if (input.mode === 'replace') ctx.repos.expenseTxRepo.setTags(input.id, incoming);
+  else ctx.repos.expenseTxRepo.addTags(input.id, incoming);
+  return ok({ id: input.id, tags: ctx.repos.expenseTxRepo.getTags(input.id) });
+}
+
 export function registerTransactionWriteTools(server: McpServer, ctx: McpContext): void {
   server.registerTool(
     'add_transaction',
@@ -174,5 +186,23 @@ export function registerTransactionWriteTools(server: McpServer, ctx: McpContext
       },
     },
     async (input) => runCategorizeTransaction(ctx, input),
+  );
+
+  server.registerTool(
+    'tag_transaction',
+    {
+      description:
+        'Attach structured TAGS to a transaction (source recorded as "agent"). Tags capture the ' +
+        'NATURE of a spend, orthogonal to its category. Prefer this starter vocabulary when it fits: ' +
+        'subscription, recurring, one-time, reimbursable, work, personal (invent others only when ' +
+        'genuinely useful). `mode:"add"` merges with existing tags; `mode:"replace"` overwrites all. ' +
+        'Tags are lowercased/deduped. Additive and reversible — not preview-gated. Unknown id errors.',
+      inputSchema: {
+        id: z.number().int(),
+        tags: z.array(z.string()).min(1),
+        mode: z.enum(['add', 'replace']),
+      },
+    },
+    async (input) => runTagTransaction(ctx, input),
   );
 }

@@ -22,7 +22,7 @@ const EXPECTED_READ_TOOLS = [
 ];
 
 const EXPECTED_WRITE_TOOLS = [
-  'add_transaction', 'update_transaction', 'delete_transaction', 'categorize_transaction',
+  'add_transaction', 'update_transaction', 'delete_transaction', 'categorize_transaction', 'tag_transaction',
   'create_category', 'rename_category', 'delete_category',
   'create_rule', 'update_rule', 'delete_rule', 'recategorize_all',
   'create_account',
@@ -43,7 +43,7 @@ async function connectedClient(): Promise<Client> {
 }
 
 describe('MCP server (protocol smoke)', () => {
-  it('registers all 10 read tools and 22 write tools', async () => {
+  it('registers all 10 read tools and 23 write tools', async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
