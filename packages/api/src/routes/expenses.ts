@@ -64,7 +64,6 @@ export async function expenseRoutes(app: FastifyInstance): Promise<void> {
     // prior LOOKBACK_MONTHS window
     const priorStartDate = new Date(Date.UTC(y, m - 1 - LOOKBACK_MONTHS, 1));
     const priorStart = `${priorStartDate.getUTCFullYear()}-${String(priorStartDate.getUTCMonth() + 1).padStart(2, '0')}-01`;
-    const priorEnd = `${month}-01`; // exclusive-ish; prior rows are < monthStart
 
     const monthTxns = app.repos.expenseTxRepo.query({ from: monthStart, to: monthEnd });
     const priorAll = app.repos.expenseTxRepo.query({ from: priorStart, to: monthStart });

@@ -60,6 +60,14 @@ export function ExpensesPage() {
     offset: categoryFilters.length > 1 || categoryFilters.includes('__ai__') ? '0' : String(page * PAGE_SIZE),
   });
 
+  // Full-month unpaginated query for resolving insight drawer seed
+  const fullMonthTxns = useExpenses({
+    from: bounds.from,
+    to: bounds.to,
+    limit: '1000',
+    offset: '0',
+  });
+
   const accountLabel = useMemo(() => {
     const m = new Map((accounts.data ?? []).map((a) => [a.id, `${a.institution} · ${a.label}`]));
     return (id: number | null) => (id != null ? m.get(id) ?? `#${id}` : '—');
@@ -165,7 +173,7 @@ export function ExpensesPage() {
 
   // Build transaction details for the insight drawer
   const rowsForIds = (ids: number[]) => {
-    const rows = txns.data ?? [];
+    const rows = fullMonthTxns.data ?? [];
     return ids.map((id) => {
       const row = rows.find((r) => r.id === id);
       return row ? { id: row.id, description: row.description, amount: row.amount } : null;
