@@ -148,4 +148,34 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
       return { data: { ok: true } };
     },
   );
+
+  // PATCH /transactions/:id/tags
+  app.patch<{ Params: { id: string }; Body: { tags?: string[]; mode?: 'add' | 'replace' } }>(
+    '/transactions/:id/tags',
+    async (req) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) throw badRequest('Invalid transaction id.');
+      const { tags, mode } = req.body ?? {};
+      if (!Array.isArray(tags) || (mode !== 'add' && mode !== 'replace')) {
+        throw badRequest('Body must be { tags: string[], mode: "add"|"replace" }.');
+      }
+      if (!app.repos.expenseTxRepo.getById(id)) throw notFound('Transaction not found.');
+      const incoming = tags.map((t) => ({ tag: t, source: 'user' as const }));
+      if (mode === 'replace') app.repos.expenseTxRepo.setTags(id, incoming);
+      else app.repos.expenseTxRepo.addTags(id, incoming);
+      return { data: { tags: app.repos.expenseTxRepo.getTags(id) } };
+    },
+  );
+
+  // DELETE /transactions/:id/tags/:tag
+  app.delete<{ Params: { id: string; tag: string } }>(
+    '/transactions/:id/tags/:tag',
+    async (req) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) throw badRequest('Invalid transaction id.');
+      if (!app.repos.expenseTxRepo.getById(id)) throw notFound('Transaction not found.');
+      app.repos.expenseTxRepo.removeTag(id, decodeURIComponent(req.params.tag));
+      return { data: { tags: app.repos.expenseTxRepo.getTags(id) } };
+    },
+  );
 }
