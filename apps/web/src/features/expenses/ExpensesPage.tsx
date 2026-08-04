@@ -16,6 +16,7 @@ import { ImportModal } from '../imports/ImportModal';
 import { Modal } from '../../components/ui/Modal';
 import { InsightCards } from './InsightCards';
 import { useInsightDismissal } from './useInsightDismissal';
+import { ExpensesInsightDrawer } from './ExpensesInsightDrawer';
 import type { ExpenseRow, Insight } from '../../types';
 
 const PAGE_SIZE = 25;
@@ -161,6 +162,15 @@ export function ExpensesPage() {
   const rowCount = displayedRows.length;
 
   const resetFilters = () => { setCategoryFilters([]); setDirectionFilter(''); setSearchText(''); setPage(0); };
+
+  // Build transaction details for the insight drawer
+  const rowsForIds = (ids: number[]) => {
+    const rows = txns.data ?? [];
+    return ids.map((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row ? { id: row.id, description: row.description, amount: row.amount } : null;
+    }).filter((r): r is { id: number; description: string; amount: number } => r !== null);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -321,8 +331,15 @@ export function ExpensesPage() {
         onDismiss={dismiss}
         onOpen={(i) => setActiveInsight(i)}
       />
-      {/* activeInsight drawer will be wired in Task C9 */}
-      {activeInsight && null}
+
+      {/* Insight drawer */}
+      {activeInsight && (
+        <ExpensesInsightDrawer
+          insight={activeInsight}
+          txns={rowsForIds(activeInsight.transactionIds)}
+          onClose={() => setActiveInsight(null)}
+        />
+      )}
 
       {/* Filters bar */}
       <Card>
