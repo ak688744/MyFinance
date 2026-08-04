@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag } from '../../lib/hooks';
+import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag, useExpenseInsights } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
 import { AIInsightCard } from '../../components/ui/AIInsightCard';
@@ -14,7 +14,9 @@ import { TagChips } from './TagChips';
 import { ManageCategoriesModal } from './ManageCategoriesModal';
 import { ImportModal } from '../imports/ImportModal';
 import { Modal } from '../../components/ui/Modal';
-import type { ExpenseRow } from '../../types';
+import { InsightCards } from './InsightCards';
+import { useInsightDismissal } from './useInsightDismissal';
+import type { ExpenseRow, Insight } from '../../types';
 
 const PAGE_SIZE = 25;
 
@@ -33,11 +35,14 @@ export function ExpensesPage() {
   const [aiKeywordById, setAiKeywordById] = useState<Record<number, string>>({});
   const [aiBanner, setAiBanner] = useState<null | { suggested: number; skipped: number; total: number; usage: { inputTokens: number; outputTokens: number }; warnings: string[] }>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
 
   const bounds = monthBounds(month);
   const categories = useCategories();
   const accounts = useAccounts('expense');
   const aiSuggest = useAiSuggest();
+  const insights = useExpenseInsights(month);
+  const { dismiss, isDismissed } = useInsightDismissal();
 
   const summary = useExpenseSummary({ from: bounds.from, to: bounds.to });
   const allTimeSummary = useExpenseSummary({});
@@ -308,6 +313,16 @@ export function ExpensesPage() {
           <SpendBarChart data={chartMonths} />
         </Card>
       </div>
+
+      {/* Insight cards */}
+      <InsightCards
+        insights={insights.data ?? []}
+        isDismissed={isDismissed}
+        onDismiss={dismiss}
+        onOpen={(i) => setActiveInsight(i)}
+      />
+      {/* activeInsight drawer will be wired in Task C9 */}
+      {activeInsight && null}
 
       {/* Filters bar */}
       <Card>

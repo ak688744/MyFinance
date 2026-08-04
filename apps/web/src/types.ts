@@ -43,3 +43,13 @@ export type LiabilityDetail = {
   status: import('@myfinance/core').LoanStatus;
   schedule: import('@myfinance/core').AmortizationRow[];
 };
+
+export type Insight = {
+  id: string;
+  type: 'needs_clarity' | 'new_spend' | 'abnormal_spend';
+  severity: 'info' | 'warn';
+  title: string;
+  detail: string;
+  transactionIds: number[];
+  cta: { label: string };
+};
