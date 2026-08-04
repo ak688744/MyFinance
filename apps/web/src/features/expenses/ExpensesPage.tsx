@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction } from '../../lib/hooks';
+import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
 import { AIInsightCard } from '../../components/ui/AIInsightCard';
@@ -10,6 +10,7 @@ import {
 } from '../../lib/format';
 import { summaryByCategoryWithNames } from '../../lib/transforms';
 import { CategoryChip } from './CategoryChip';
+import { TagChips } from './TagChips';
 import { ManageCategoriesModal } from './ManageCategoriesModal';
 import { ImportModal } from '../imports/ImportModal';
 import { Modal } from '../../components/ui/Modal';
@@ -419,6 +420,8 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
 }) {
   const updateTx = useUpdateTransaction();
   const deleteTx = useDeleteTransaction();
+  const setTags = useSetTxTags();
+  const removeTag = useRemoveTxTag();
   const [editAmount, setEditAmount] = useState('');
   const [editNote, setEditNote] = useState('');
   const [editing, setEditing] = useState(false);
@@ -451,7 +454,10 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
       <tr className={`border-t border-gray-50 ${expanded ? 'bg-gray-50/50' : ''}`}>
         <MerchantCell description={tx.description} />
         <td className="py-2.5 pr-3">
-          <CategoryChip txId={tx.id} categoryId={tx.categoryId} categorySource={tx.categorySource} aiKeyword={aiKeyword} merchantLabel={tx.description} categories={categories} />
+          <div className="flex flex-col gap-1">
+            <CategoryChip txId={tx.id} categoryId={tx.categoryId} categorySource={tx.categorySource} aiKeyword={aiKeyword} merchantLabel={tx.description} categories={categories} />
+            <TagChips tags={tx.tags} onAdd={(t) => setTags.mutate({ id: tx.id, tags: [t], mode: 'add' })} onRemove={(t) => removeTag.mutate({ id: tx.id, tag: t })} />
+          </div>
         </td>
         <td className="py-2.5 pr-3 text-gray-500 whitespace-nowrap">{accountLabel(tx.accountId)}</td>
         <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(tx.transactionDate)}</td>

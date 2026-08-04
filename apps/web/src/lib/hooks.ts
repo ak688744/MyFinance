@@ -250,3 +250,21 @@ export function useUnsetTaskRoute() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
   });
 }
+
+export function useSetTxTags() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tags, mode }: { id: number; tags: string[]; mode: 'add' | 'replace' }) =>
+      apiSend('PATCH', `/transactions/${id}/tags`, { tags, mode }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
+  });
+}
+
+export function useRemoveTxTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tag }: { id: number; tag: string }) =>
+      apiSend('DELETE', `/transactions/${id}/tags/${encodeURIComponent(tag)}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
+  });
+}

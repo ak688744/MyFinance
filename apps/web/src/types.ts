@@ -9,6 +9,7 @@ export type ExpenseRow = {
   amount: number; direction: 'debit' | 'credit';
   categoryId: string | null; categorySource: string | null; aiKeyword: string | null;
   note: string | null; accountId: number | null; balance: number | null;
+  tags: { tag: string; source: 'user' | 'agent' }[];
 };
 
 export type ExpenseSummary = {
