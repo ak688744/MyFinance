@@ -13,9 +13,9 @@ export const CHAT_STORAGE_KEY = 'myfinance.assistant.chat.v1';
 
 type PersistedChat = { threadId: string | null; messages: ChatMessage[] };
 
-function loadPersisted(): PersistedChat {
+function loadPersisted(storageKey: string): PersistedChat {
   try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { threadId: null, messages: [] };
     const parsed = JSON.parse(raw) as PersistedChat;
     if (!Array.isArray(parsed?.messages)) return { threadId: null, messages: [] };
@@ -25,16 +25,22 @@ function loadPersisted(): PersistedChat {
   }
 }
 
-function persist(chat: PersistedChat): void {
+function persist(chat: PersistedChat, storageKey: string): void {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chat));
+    localStorage.setItem(storageKey, JSON.stringify(chat));
   } catch {
     // storage unavailable / quota — non-fatal, chat still works in-memory this session.
   }
 }
 
-export function useAgentChat() {
-  const initial = loadPersisted();
+export function useAgentChat(opts?: {
+  storageKey?: string;
+  persist?: boolean;
+  agent?: 'wealth' | 'expense';
+}) {
+  const storageKey = opts?.storageKey ?? CHAT_STORAGE_KEY;
+  const shouldPersist = opts?.persist !== false;
+  const initial = shouldPersist ? loadPersisted(storageKey) : { threadId: null, messages: [] };
   const [messages, setMessages] = useState<ChatMessage[]>(initial.messages);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +50,10 @@ export function useAgentChat() {
   // Persist the full transcript + threadId whenever either settles. Uses a ref
   // snapshot inside the state updater so we always save the freshest arrays.
   const save = useCallback((msgs: ChatMessage[], tid: string | null) => {
-    persist({ threadId: tid, messages: msgs });
-  }, []);
+    if (shouldPersist) {
+      persist({ threadId: tid, messages: msgs }, storageKey);
+    }
+  }, [shouldPersist, storageKey]);
 
   const setAssistantError = useCallback((message: string) => {
     setError(message);
@@ -80,6 +88,7 @@ export function useAgentChat() {
       for await (const ev of streamAgentChat({
         threadId: threadRef.current ?? undefined,
         message: trimmed,
+        agent: opts?.agent,
       })) {
         if (ev.type === 'start') {
           threadRef.current = ev.threadId;
@@ -131,12 +140,14 @@ export function useAgentChat() {
     setThreadId(null);
     setMessages([]);
     setError(null);
-    try {
-      localStorage.removeItem(CHAT_STORAGE_KEY);
-    } catch {
-      // ignore
+    if (shouldPersist) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // ignore
+      }
     }
-  }, []);
+  }, [shouldPersist, storageKey]);
 
   return { messages, send, isStreaming, error, threadId, clearChat };
 }

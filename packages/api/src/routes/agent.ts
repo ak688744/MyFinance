@@ -9,7 +9,7 @@ function sse(data: unknown): string {
 
 export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness }): Promise<void> {
   app.post('/agent/chat', async (req, reply) => {
-    const body = (req.body ?? {}) as { threadId?: string; message?: string };
+    const body = (req.body ?? {}) as { threadId?: string; message?: string; agent?: 'wealth' | 'expense' };
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     if (!message) {
       throw badRequest('message is required');
@@ -23,7 +23,7 @@ export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness
     reply.hijack();
 
     try {
-      const chat = await opts.harness.runChat({ threadId: body.threadId, message });
+      const chat = await opts.harness.runChat({ threadId: body.threadId, message, agent: body.agent });
       reply.raw.write(sse({ type: 'start', threadId: chat.threadId }));
       for await (const ev of chat.events) {
         if (ev.type === 'text') {
