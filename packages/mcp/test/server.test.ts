@@ -19,6 +19,7 @@ const EXPECTED_READ_TOOLS = [
   'list_accounts',
   'search_schemes',
   'get_scheme_nav',
+  'list_categories',
 ];
 
 const EXPECTED_WRITE_TOOLS = [
@@ -43,7 +44,7 @@ async function connectedClient(): Promise<Client> {
 }
 
 describe('MCP server (protocol smoke)', () => {
-  it('registers all 10 read tools and 23 write tools', async () => {
+  it('registers all 11 read tools and 23 write tools', async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
