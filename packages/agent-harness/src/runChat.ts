@@ -1,10 +1,11 @@
 import { costUsd } from '@myfinance/agents';
-import { resolveWealthRoute, type ResolverDeps, type ResolvedRoute } from './modelResolver';
+import { resolveRoute, type ResolverDeps, type ResolvedRoute } from './modelResolver';
 import { buildAgentModel } from './agentModel';
 import { mapChunk, type HarnessEvent } from './streamEvents';
 import { buildFinanceMcpClient, getFinanceTools } from './mcpClient';
 import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
+import { buildExpenseAgent, filterTools, EXPENSE_TOOL_ALLOWLIST } from './expenseAgent';
 import { buildAskUserTool } from './askUserTool';
 
 export type UsageInsert = {
@@ -43,19 +44,25 @@ export function makeWealthHarness(deps: HarnessDeps) {
   const makeModel = deps.makeModel ?? ((route: ResolvedRoute) => buildAgentModel(route));
 
   return {
-    async runChat(args: { threadId?: string; message: string }): Promise<ChatResult> {
-      const route = resolveWealthRoute(deps);
+    async runChat(args: { threadId?: string; message: string; agent?: 'wealth' | 'expense' }): Promise<ChatResult> {
+      const agentKind = args.agent ?? 'wealth';
+      const task = agentKind === 'expense' ? 'expense_agent' : 'wealth_chat';
+      const route = resolveRoute(deps, task);
       const threadId = args.threadId ?? mintThreadId(now);
+      const resourceId = agentKind === 'expense' ? 'expense-agent' : RESOURCE_ID;
 
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const financeTools = await getFinanceTools(mcpClient);
-      const tools = { ...financeTools, ...buildAskUserTool() };
+      const allTools = { ...financeTools, ...buildAskUserTool() };
+      const tools = agentKind === 'expense' ? filterTools(allTools, EXPENSE_TOOL_ALLOWLIST) : allTools;
       const memory = buildWealthMemory({ storeUrl: deps.memoryUrl });
       const model = await makeModel(route);
-      const agent = buildWealthAgent({ model, memory, tools });
+      const agent = agentKind === 'expense'
+        ? buildExpenseAgent({ model, memory, tools })
+        : buildWealthAgent({ model, memory, tools });
 
       const stream = await agent.stream(args.message, {
-        memory: { resource: RESOURCE_ID, thread: threadId },
+        memory: { resource: resourceId, thread: threadId },
       });
 
       let resolveDone!: (v: { usage: { inputTokens: number; outputTokens: number }; threadId: string }) => void;
@@ -84,7 +91,7 @@ export function makeWealthHarness(deps: HarnessDeps) {
           const inputTokens = usage?.inputTokens ?? 0;
           const outputTokens = usage?.outputTokens ?? 0;
           deps.usageRepo.insert({
-            ts: now(), task: 'wealth_chat', providerId: route.providerId,
+            ts: now(), task, providerId: route.providerId,
             dialect: route.dialect, model: route.modelString,
             inputTokens, outputTokens, callCount: 1,
             costUsd: costUsd(inputTokens, outputTokens, route.inputPerM, route.outputPerM),
@@ -93,7 +100,7 @@ export function makeWealthHarness(deps: HarnessDeps) {
           resolveDone({ usage: { inputTokens, outputTokens }, threadId });
         } catch (e) {
           deps.usageRepo.insert({
-            ts: now(), task: 'wealth_chat', providerId: route.providerId,
+            ts: now(), task, providerId: route.providerId,
             dialect: route.dialect, model: route.modelString,
             inputTokens: 0, outputTokens: 0, callCount: 1, costUsd: 0, ok: 0,
           });
