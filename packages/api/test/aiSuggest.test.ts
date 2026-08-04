@@ -102,6 +102,96 @@ describe('POST /categories/ai-suggest', () => {
     expect(res.json().data.counts.total).toBe(0);
   });
 
+  it('leaves low-confidence uncategorized; keeps high-confidence applied', async () => {
+    // Make a fake provider that returns both high and low confidence suggestions
+    const mixedConfidenceProvider: LlmProvider = {
+      async complete({ prompt }) {
+        const ids = [...prompt.matchAll(/"id": (\d+)/g)].map((m) => Number(m[1]));
+        // First ID gets high confidence (>=0.9), second gets low (<0.9)
+        return {
+          text: JSON.stringify([
+            { transactionId: ids[0], categoryId: 'food', keyword: 'swiggy', confidence: 0.95 },
+            { transactionId: ids[1], categoryId: 'food', keyword: 'mystery', confidence: 0.4 },
+          ]),
+          usage: { inputTokens: 10, outputTokens: 5 },
+        };
+      },
+    };
+
+    app = await buildServer({
+      dbPath: ':memory:',
+      amfiMatch: noAmfi,
+      gateway: makeFakeGateway(mixedConfidenceProvider),
+    });
+
+    // Seed two uncategorized transactions
+    app.sqlite.prepare(
+      `INSERT INTO transactions (transaction_date, description, normalized_description, amount, direction, source_type, dedupe_key)
+       VALUES ('2026-03-10', 'SWIGGY ORDER 999', 'swiggy order 999', 250, 'debit', 'manual', 'k-high-conf'),
+              ('2026-03-11', 'MYSTERY MERCHANT', 'mystery merchant', 150, 'debit', 'manual', 'k-low-conf')`
+    ).run();
+
+    const highRow = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key = 'k-high-conf'").get() as { id: number };
+    const lowRow = app.sqlite.prepare("SELECT id FROM transactions WHERE dedupe_key = 'k-low-conf'").get() as { id: number };
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/categories/ai-suggest',
+      payload: { from: '2026-03-01', to: '2026-03-31' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+
+    // Should process 2, suggest 1 (high-conf), skip 1 (low-conf)
+    expect(body.data.counts.total).toBe(2);
+    expect(body.data.counts.suggested).toBe(1);
+    expect(body.data.counts.skipped).toBe(1);
+
+    // High-confidence transaction should be categorized as ai_suggested
+    const highAfter = app.sqlite.prepare('SELECT category_id, category_source FROM transactions WHERE id = ?').get(highRow.id) as any;
+    expect(highAfter.category_id).toBe('food');
+    expect(highAfter.category_source).toBe('ai_suggested');
+
+    // Low-confidence transaction should remain uncategorized
+    const lowAfter = app.sqlite.prepare('SELECT category_id, category_source FROM transactions WHERE id = ?').get(lowRow.id) as any;
+    expect(lowAfter.category_id).toBeNull();
+    expect(lowAfter.category_source).toBeNull();
+  });
+
+  it('creates merchant rule on confident suggestion with derivable merchant key', async () => {
+    app = await buildServer({
+      dbPath: ':memory:',
+      amfiMatch: noAmfi,
+      gateway: makeFakeGateway(echoingProvider('food', 'swiggy')),
+    });
+
+    // Seed a UPI transaction with a derivable merchant key
+    app.sqlite.prepare(
+      `INSERT INTO transactions (transaction_date, description, normalized_description, amount, direction, source_type, dedupe_key)
+       VALUES ('2026-03-10', 'UPI-SWIGGY-ORDER999@paytm', 'upi-swiggy-order999@paytm', 250, 'debit', 'manual', 'k-upi-swiggy')`
+    ).run();
+
+    // No merchant rules before
+    const beforeRules = app.repos.categoryRuleRepo.getActiveRules();
+    const merchantRulesBefore = beforeRules.filter((r: any) => r.ruleType === 'merchant' && r.patternValue === 'swiggy');
+    expect(merchantRulesBefore.length).toBe(0);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/categories/ai-suggest',
+      payload: { from: '2026-03-01', to: '2026-03-31' },
+    });
+
+    expect(res.statusCode).toBe(200);
+
+    // Should have created a merchant rule
+    const afterRules = app.repos.categoryRuleRepo.getActiveRules();
+    const merchantRulesAfter = afterRules.filter((r: any) => r.ruleType === 'merchant' && r.patternValue === 'swiggy');
+    expect(merchantRulesAfter.length).toBe(1);
+    expect(merchantRulesAfter[0].categoryId).toBe('food');
+  });
+
   it('records exactly one usage row on successful ai-suggest', async () => {
     const { makeLlmGateway } = await import('@myfinance/agents');
     const { decryptSecret, encryptSecret } = await import('@myfinance/core');
