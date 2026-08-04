@@ -75,6 +75,7 @@ export const transactions = sqliteTable(
     // leaves the 'ai_suggested' state (confirm → manual, or a recategorize sweep).
     aiKeyword: text('ai_keyword'),
     note: text('note'),
+    tags: text('tags'),
     balance: real('balance'),
     sourceType: text('source_type').notNull(),
     importHistoryId: integer('import_history_id').references(
