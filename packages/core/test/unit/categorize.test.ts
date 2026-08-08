@@ -276,6 +276,15 @@ function makeFakeTxRepo(
     insertManual() {
       throw new Error('not used');
     },
+    insertChild() {
+      throw new Error('not used');
+    },
+    listChildren() {
+      throw new Error('not used');
+    },
+    getFullById() {
+      return null;
+    },
     getTags() {
       return [];
     },

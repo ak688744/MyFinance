@@ -15,4 +15,5 @@ export const starterCategories: StarterCategory[] = [
   { id: 'health', name: 'Health', icon: '🩺' },
   { id: 'travel', name: 'Travel', icon: '✈️' },
   { id: 'transfer', name: 'Transfer', icon: '🔁' },
+  { id: 'credit_card_bill', name: 'Credit Card Bill', icon: '💳' },
 ];

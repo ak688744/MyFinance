@@ -135,6 +135,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
       if (filters.search !== undefined) conds.push(like(transactions.description, `%${filters.search}%`));
       if (filters.categoryId !== undefined) conds.push(eq(transactions.categoryId, filters.categoryId));
       if (filters.accountId !== undefined) conds.push(eq(transactions.accountId, filters.accountId));
+      if (filters.parentId !== undefined) conds.push(eq(transactions.parentTransactionId, filters.parentId));
 
       let q = db
         .select({
@@ -150,6 +151,7 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
           tags: transactions.tags,
           accountId: transactions.accountId,
           balance: transactions.balance,
+          parentTransactionId: transactions.parentTransactionId,
         })
         .from(transactions)
         .where(conds.length ? and(...conds) : undefined)
@@ -171,6 +173,11 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
       if (filters.from !== undefined) windowConds.push(gte(transactions.transactionDate, filters.from));
       if (filters.to !== undefined) windowConds.push(lte(transactions.transactionDate, filters.to));
       if (filters.accountId !== undefined) windowConds.push(eq(transactions.accountId, filters.accountId));
+
+      // Exclude split PARENTS (rows that have at least one child) — their children
+      // carry the real categorized spend, so counting the parent would double-count.
+      const notParentCond = sql`${transactions.id} NOT IN (SELECT ${transactions.parentTransactionId} FROM ${transactions} WHERE ${transactions.parentTransactionId} IS NOT NULL)`;
+      windowConds.push(notParentCond);
 
       // Excludes only ever match non-null categories, so uncategorized (NULL)
       // debits always remain in spend. `NULL NOT IN (...)` is NULL (not true) in
@@ -282,6 +289,80 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
         accountId: tx.accountId ?? null,
       }).run();
       return Number(result.lastInsertRowid);
+    },
+
+    insertChild(parentId, tx) {
+      const dedupeKey = `cc_${parentId}_${tx.transactionDate}_${tx.description}_${tx.amount}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const result = db.insert(transactions).values({
+        transactionDate: tx.transactionDate,
+        valueDate: null,
+        referenceNumber: null,
+        description: tx.description,
+        normalizedDescription: tx.description.toLowerCase().trim(),
+        merchantKey: null,
+        upiNoteKeyword: null,
+        amount: tx.amount,
+        direction: tx.direction,
+        categoryId: tx.categoryId,
+        categorySource: tx.categorySource,
+        aiKeyword: null,
+        note: null,
+        balance: null,
+        sourceType: 'cc_statement',
+        importHistoryId: null,
+        dedupeKey,
+        accountId: tx.accountId ?? null,
+        parentTransactionId: parentId,
+      }).run();
+      return Number(result.lastInsertRowid);
+    },
+
+    listChildren(parentId) {
+      const rows = db
+        .select({
+          id: transactions.id,
+          transactionDate: transactions.transactionDate,
+          description: transactions.description,
+          amount: transactions.amount,
+          direction: transactions.direction,
+          categoryId: transactions.categoryId,
+          categorySource: transactions.categorySource,
+          aiKeyword: transactions.aiKeyword,
+          note: transactions.note,
+          tags: transactions.tags,
+          accountId: transactions.accountId,
+          balance: transactions.balance,
+          parentTransactionId: transactions.parentTransactionId,
+        })
+        .from(transactions)
+        .where(eq(transactions.parentTransactionId, parentId))
+        .orderBy(asc(transactions.transactionDate), asc(transactions.id))
+        .all();
+      return rows.map((r) => ({ ...r, tags: parseTags(r.tags as string | null) }));
+    },
+
+    getFullById(id) {
+      const row = db
+        .select({
+          id: transactions.id,
+          transactionDate: transactions.transactionDate,
+          description: transactions.description,
+          amount: transactions.amount,
+          direction: transactions.direction,
+          categoryId: transactions.categoryId,
+          categorySource: transactions.categorySource,
+          aiKeyword: transactions.aiKeyword,
+          note: transactions.note,
+          tags: transactions.tags,
+          accountId: transactions.accountId,
+          balance: transactions.balance,
+          parentTransactionId: transactions.parentTransactionId,
+        })
+        .from(transactions)
+        .where(eq(transactions.id, id))
+        .get();
+      if (!row) return null;
+      return { ...row, tags: parseTags(row.tags as string | null) };
     },
 
     getTags(id) {

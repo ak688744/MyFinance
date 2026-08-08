@@ -82,6 +82,9 @@ export const transactions = sqliteTable(
       () => importHistory.id,
     ),
     accountId: integer('account_id').references(() => accounts.id),
+    parentTransactionId: integer('parent_transaction_id').references(
+      (): any => transactions.id,
+    ),
     dedupeKey: text('dedupe_key').notNull().unique(),
     createdAt: text('created_at')
       .notNull()
@@ -96,6 +99,9 @@ export const transactions = sqliteTable(
     ),
     idxTransactionsCategory: index('idx_transactions_category').on(
       table.categoryId,
+    ),
+    idxTransactionsParent: index('idx_transactions_parent').on(
+      table.parentTransactionId,
     ),
     directionCheck: check(
       'transactions_direction_check',
