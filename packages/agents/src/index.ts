@@ -16,3 +16,6 @@ export { costUsd, pricingHint, PRICING_HINTS } from './pricing';
 
 export { triageInsights, applyCadenceBackstop, type TriageResult, type TriageDeps, type TriagedInsight, type TriageEventInput, type TriageVerdict } from './insights/triageInsights';
 export { CADENCE_VOCAB } from './insights/schema';
+
+export { parseCcStatement } from './ccStatement/parseCcStatement';
+export { type CcLineItem, type CcStatementParse, CcStatementParseSchema } from './ccStatement/schema';

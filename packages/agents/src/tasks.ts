@@ -23,6 +23,11 @@ export const AI_TASKS = {
     description: 'Evaluates rule-flagged expense insights: suppresses false alarms, routes to needs-input vs worth-knowing, suggests forecasting tags',
     defaultDialect: 'gemini',
   },
+  cc_statement_parse: {
+    label: 'Credit-Card Statement Parse',
+    description: 'Extract itemized line items from an uploaded credit-card statement PDF',
+    defaultDialect: 'gemini',
+  },
 } as const;
 
 export type AiTaskId = keyof typeof AI_TASKS;
