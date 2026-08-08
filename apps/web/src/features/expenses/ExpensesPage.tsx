@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag, useExpenseInsights, useResolveInsight } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
@@ -16,11 +16,23 @@ import { Modal } from '../../components/ui/Modal';
 import { InsightCards } from './InsightCards';
 import { useInsightDismissal } from './useInsightDismissal';
 import { ExpensesInsightDrawer } from './ExpensesInsightDrawer';
-import type { ExpenseRow, Insight } from '../../types';
+import { SplitStatementModal } from './SplitStatementModal';
+import { SplitPanel } from './SplitPanel';
+import { ExpensesIcon, UploadIcon } from '../../components/ui/icons';
+import type { ExpenseRow, Insight, SplitResult } from '../../types';
 
 const PAGE_SIZE = 25;
 
 type DirectionFilter = '' | 'debit' | 'credit' | 'transfer';
+
+export function isCreditCardBill(row: ExpenseRow): boolean {
+  return row.categoryId === 'credit_card_bill'
+    || row.tags.some((t) => t.tag === 'credit_card_bill');
+}
+
+export function isSplitContainer(row: ExpenseRow, allRows: ExpenseRow[]): boolean {
+  return allRows.some((r) => r.parentTransactionId === row.id);
+}
 
 export function ExpensesPage() {
   const [month, setMonth] = useState(() => currentMonth());
@@ -42,6 +54,9 @@ export function ExpensesPage() {
   // flagged them may still fire until the ~background re-triage suppresses the event,
   // so we don't wait for the refetch to make the card disappear.
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
+  const [splitTargetId, setSplitTargetId] = useState<number | null>(null);
+  const [splitResult, setSplitResult] = useState<SplitResult | null>(null);
+  const [expandedContainers, setExpandedContainers] = useState<Set<number>>(new Set());
 
   const bounds = monthBounds(month);
   const categories = useCategories();
@@ -174,6 +189,17 @@ export function ExpensesPage() {
   }, [txns.data, categoryFilters]);
 
   const rowCount = displayedRows.length;
+
+  // Container detection + child lookup must span the WHOLE month, not just the
+  // current page: a bill (mid-month) and its children (spread across the month)
+  // routinely land on different pages. Using the paginated `txns.data` here would
+  // make a parent whose children sit on another page render as a plain row and its
+  // children render nowhere. `fullMonthTxns` (limit 1000) is already fetched.
+  const allRows = fullMonthTxns.data ?? txns.data ?? [];
+  const topLevelRows = useMemo(
+    () => displayedRows.filter((r) => r.parentTransactionId == null),
+    [displayedRows],
+  );
 
   const resetFilters = () => { setCategoryFilters([]); setDirectionFilter(''); setSearchText(''); setPage(0); };
 
@@ -444,15 +470,26 @@ export function ExpensesPage() {
               </tr>
             </thead>
             <tbody>
-              {displayedRows.map((t) => (
+              {topLevelRows.map((t) => (
                 <TransactionRow
                   key={t.id}
                   tx={t}
+                  allRows={allRows}
                   expanded={expandedRow === t.id}
                   onToggle={() => setExpandedRow(expandedRow === t.id ? null : t.id)}
                   categories={categories.data ?? []}
                   accountLabel={accountLabel}
                   aiKeyword={aiKeywordById[t.id] ?? t.aiKeyword ?? undefined}
+                  onUploadSplit={() => setSplitTargetId(t.id)}
+                  containerExpanded={expandedContainers.has(t.id)}
+                  onToggleContainer={() => setExpandedContainers((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(t.id)) next.delete(t.id);
+                    else next.add(t.id);
+                    return next;
+                  })}
+                  splitResult={splitResult?.parentId === t.id ? splitResult : null}
+                  onSplitDone={() => setSplitResult(null)}
                 />
               ))}
             </tbody>
@@ -476,19 +513,36 @@ export function ExpensesPage() {
           </div>
         </DataState>
       </Card>
+
+      {splitTargetId != null && (
+        <SplitStatementModal
+          open
+          txId={splitTargetId}
+          merchantLabel={allRows.find((r) => r.id === splitTargetId)?.description ?? 'Credit card bill'}
+          onClose={() => setSplitTargetId(null)}
+          onSplit={(r) => { setSplitResult(r); setExpandedContainers((prev) => new Set(prev).add(r.parentId)); }}
+        />
+      )}
     </div>
   );
 }
 
 // ── Transaction Row (expandable with edit/delete/note) ──────────────────────
 
-function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKeyword }: {
+function TransactionRow({ tx, allRows, expanded, onToggle, categories, accountLabel, aiKeyword, onUploadSplit, containerExpanded, onToggleContainer, splitResult, onSplitDone, indented }: {
   tx: ExpenseRow;
+  allRows: ExpenseRow[];
   expanded: boolean;
   onToggle: () => void;
   categories: { id: string; name: string }[];
   accountLabel: (id: number | null) => string;
   aiKeyword?: string;
+  onUploadSplit: () => void;
+  containerExpanded: boolean;
+  onToggleContainer: () => void;
+  splitResult: SplitResult | null;
+  onSplitDone: () => void;
+  indented?: boolean;
 }) {
   const updateTx = useUpdateTransaction();
   const deleteTx = useDeleteTransaction();
@@ -497,6 +551,51 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
   const [editAmount, setEditAmount] = useState('');
   const [editNote, setEditNote] = useState('');
   const [editing, setEditing] = useState(false);
+
+  const container = isSplitContainer(tx, allRows);
+  const ccBill = isCreditCardBill(tx);
+  const children = allRows.filter((r) => r.parentTransactionId === tx.id);
+  const merchant = deriveMerchantName(tx.description) ?? tx.description;
+
+  if (container) {
+    return (
+      <>
+        <tr className="border-t border-dashed border-gray-300 bg-[#F9FAFB]">
+          <td className="py-2.5 pr-3" colSpan={2}>
+            <button type="button" onClick={onToggleContainer} className="flex items-center gap-2 text-left w-full">
+              <span className={`text-gray-400 text-[10px] transition-transform ${containerExpanded ? 'rotate-90' : ''}`}>▶</span>
+              <span className="text-sm text-gray-700">
+                Credit card bill · {children.length} items, split
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">excluded from totals</span>
+            </button>
+          </td>
+          <td className="py-2.5 pr-3 text-gray-500 whitespace-nowrap">{accountLabel(tx.accountId)}</td>
+          <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(tx.transactionDate)}</td>
+          <td className="py-2.5 text-right tabular text-gray-500">{formatINR(tx.amount)}</td>
+          <td />
+        </tr>
+        {containerExpanded && children.map((child) => (
+          <TransactionRow
+            key={child.id}
+            tx={child}
+            allRows={allRows}
+            expanded={false}
+            onToggle={() => {}}
+            categories={categories}
+            accountLabel={accountLabel}
+            aiKeyword={child.aiKeyword ?? undefined}
+            onUploadSplit={() => {}}
+            containerExpanded={false}
+            onToggleContainer={() => {}}
+            splitResult={null}
+            onSplitDone={() => {}}
+            indented
+          />
+        ))}
+      </>
+    );
+  }
 
   const startEdit = () => {
     setEditAmount(String(tx.amount));
@@ -523,12 +622,19 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
 
   return (
     <>
-      <tr className={`border-t border-gray-50 ${expanded ? 'bg-gray-50/50' : ''}`}>
+      <tr className={`border-t border-gray-50 ${expanded ? 'bg-gray-50/50' : ''} ${indented ? 'bg-gray-50/30' : ''}`}>
         <MerchantCell
           description={tx.description}
           tags={tx.tags}
           onAddTag={(t) => setTags.mutate({ id: tx.id, tags: [t], mode: 'add' })}
           onRemoveTag={(t) => removeTag.mutate({ id: tx.id, tag: t })}
+          indented={indented}
+          extraBelow={ccBill && !container ? (
+            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-brand/10 text-brand ring-1 ring-brand/20">
+              <ExpensesIcon className="w-3 h-3" />
+              Credit card bill
+            </span>
+          ) : null}
         />
         <td className="py-2.5 pr-3">
           <CategoryChip txId={tx.id} categoryId={tx.categoryId} categorySource={tx.categorySource} aiKeyword={aiKeyword} merchantLabel={tx.description} categories={categories} />
@@ -539,15 +645,38 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
           {tx.direction === 'credit' ? '+' : '-'}{formatINR(tx.amount)}
         </td>
         <td className="py-2.5 text-center">
-          <button
-            onClick={onToggle}
-            className="text-gray-400 hover:text-gray-600 text-xs px-1"
-            title={expanded ? 'Collapse' : 'Edit/Delete'}
-          >
-            {expanded ? '▲' : '⋯'}
-          </button>
+          {ccBill && !container ? (
+            <button
+              type="button"
+              onClick={onUploadSplit}
+              className="inline-flex items-center justify-center w-8 h-8 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+              title="Upload statement"
+            >
+              <UploadIcon className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={onToggle}
+              className="text-gray-400 hover:text-gray-600 text-xs px-1"
+              title={expanded ? 'Collapse' : 'Edit/Delete'}
+            >
+              {expanded ? '▲' : '⋯'}
+            </button>
+          )}
         </td>
       </tr>
+      {splitResult && (
+        <tr>
+          <td colSpan={6} className="px-4 pb-3">
+            <SplitPanel
+              result={splitResult}
+              merchantLabel={merchant}
+              categories={categories}
+              onDone={onSplitDone}
+            />
+          </td>
+        </tr>
+      )}
       {expanded && (
         <tr className="bg-gray-50/50 border-t border-gray-100">
           <td colSpan={6} className="px-4 py-3">
@@ -598,18 +727,20 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
 
 // ── Merchant Cell ───────────────────────────────────────────────────────────
 
-function MerchantCell({ description, tags, onAddTag, onRemoveTag }: {
+function MerchantCell({ description, tags, onAddTag, onRemoveTag, indented, extraBelow }: {
   description: string;
   tags: { tag: string; source: 'user' | 'agent' }[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
+  indented?: boolean;
+  extraBelow?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   const merchant = deriveMerchantName(description);
   const collapsedText = merchant ?? description;
 
   return (
-    <td className="py-2.5 pr-3 max-w-[280px] align-top">
+    <td className={`py-2.5 pr-3 max-w-[280px] align-top ${indented ? 'pl-6 border-l-2 border-gray-200' : ''}`}>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -627,6 +758,7 @@ function MerchantCell({ description, tags, onAddTag, onRemoveTag }: {
       {/* Tags live here — a thin inline strip under the merchant name (where notes used to sit). */}
       <div className="mt-1 pl-3.5">
         <TagChips tags={tags} onAdd={onAddTag} onRemove={onRemoveTag} />
+        {extraBelow && <div className="mt-1">{extraBelow}</div>}
       </div>
     </td>
   );
