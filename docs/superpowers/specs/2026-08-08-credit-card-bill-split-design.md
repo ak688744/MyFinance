@@ -143,11 +143,39 @@ parser remains a future drop-in behind the registry.)
   { lineItems: [{ date: 'YYYY-MM-DD', merchant: string, amount: number }],
     detectedTotal: number | null }
   ```
+  - `amount` is **signed spend**: purchases / fees / interest are **positive**;
+    **refunds / reversals are negative** (they reduce real spend, so they must be
+    kept — dropping them would overstate spend AND break reconciliation).
+  - The prompt **excludes only the prior-bill-payment line(s)** (where the user paid
+    last cycle's bill) — that is prior-cycle settlement, not this month's spend;
+    including it would double-count.
+  - `detectedTotal` = the statement's own printed **"total new debits / total
+    purchases"** figure for this cycle (used for reconciliation — see below), or
+    `null` if not extractable.
 - One retry on bad JSON, then throw (nothing partial written). Rethrows auth /
   provider-not-configured (endpoint → 502). One `ai_usage_events` row per call — same
   pattern as `categorizeWithAI`/`triageInsights`.
-- Amounts are absolute spend amounts (debits); payments/credits/refunds on the statement
-  are excluded by the prompt (they net against the bill, not part of the spend split).
+
+### 5a. Reconciliation model (what "matched" means)
+
+A CC bill's bank-paid amount usually does **not** equal this cycle's line items,
+because of **carryover** (unpaid balance from the previous statement rolled into the
+total due). The statement's line items physically cannot explain the carryover, so
+reconciling against the bank-paid parent amount would show a false mismatch even on a
+perfect parse.
+
+Therefore reconciliation compares to the **statement's own total**, not the bank debit:
+
+- `parsedTotal` = Σ children `amount` (signed).
+- **`matched` = `abs(parsedTotal − detectedTotal) < ₹1`** — answers the real question
+  *"did we capture every line item on the statement?"*
+- **Fallback:** if `detectedTotal` is `null` (couldn't extract the statement's printed
+  total), reconcile against the parent bank amount instead (`abs(parsedTotal −
+  parentAmount) < ₹1`), and note the fallback in the response.
+- The gap between `detectedTotal` (or `parsedTotal`) and the **parent bank amount** is
+  surfaced as an informational **"carryover / not itemized"** figure — **not** a parse
+  error. Green "Matched" means "the whole statement was parsed," which is achievable;
+  it does not claim the bill equals this month's spend.
 
 ## 6. Endpoint
 
@@ -160,8 +188,11 @@ parser remains a future drop-in behind the registry.)
   2. `extractPdfText(buffer, password)`.
   3. `gateway.runTask('cc_statement_parse', complete => parseCcStatement(complete, text))`.
   4. For each line item: `insertChild(parentId, …)` inside `runInTransaction`
-     (all-or-nothing), auto-categorized via `resolveCategoryFromRules`.
-  5. Return `{ data: { parentId, parentAmount, parsedTotal, matched, children: [...] } }`.
+     (all-or-nothing), auto-categorized via `resolveCategoryFromRules`. A refund
+     (negative amount) is stored as a `credit` child; positive amounts as `debit`.
+  5. Return `{ data: { parentId, parentAmount, detectedTotal, parsedTotal, matched,
+     reconciledAgainst: 'statementTotal' | 'billAmount', carryover, children: [...] } }`
+     where `carryover = parentAmount − (detectedTotal ?? parsedTotal)`.
 - **No confirm-preview step** — children are created directly, user reviews inline (per
   README §2/§3).
 - **Error handling (all surface to the user; nothing written on failure):**
@@ -222,9 +253,12 @@ HTML). Chosen direction: **inline-expand** (README §3).
   button. On submit → `useSplitFromStatement` → on success opens the inline split panel;
   on error shows the message inline (and keeps the row `flagged`).
 - `SplitPanel.tsx` — the inline-expand review panel: uppercase label, **reconciliation
-  bar** (green matched / amber mismatch with delta, live-recomputed), line-item rows
-  (merchant + `CategoryChip` reusing `useUpdateTxCategory` + amount), "+ Add missing
-  line" (creates a child via the manual-add flow), "Confirm split" (collapses to
+  bar** comparing `parsedTotal` to `detectedTotal` (green "Parsed ₹X of ₹Y · Matched" /
+  amber mismatch with delta, live-recomputed as lines are added/edited), a secondary
+  muted **"carryover / not itemized: ₹Z"** line when the parent bank amount exceeds the
+  statement total (informational, never red), line-item rows (merchant + `CategoryChip`
+  reusing `useUpdateTxCategory` + amount, refunds shown as negative/credit), "+ Add
+  missing line" (creates a child via the manual-add flow), "Confirm split" (collapses to
   container — pure client state transition, categorization already written per-line).
 
 **Hooks (`lib/hooks.ts`):** `useSplitFromStatement(parentId)` mutation (multipart POST),
@@ -244,7 +278,8 @@ invalidating `['expenses']`, `['expenseSummary']`, and `['expenseInsights']` on 
   `query()`; `summary()` excludes parents-with-children (double-count regression);
   migration applies. Groww golden-master **6/6 unchanged** (guardrail).
 - **agents (unit):** `parseCcStatement` with a fake `complete` — valid JSON, bad-JSON
-  retry, empty line items, credits excluded.
+  retry, empty line items, signed refunds kept (negative), prior-bill-payment line
+  excluded, `detectedTotal` parsed and `null`-fallback.
 - **api (inject):** split endpoint with a fake gateway + fixture extracted text — happy
   path (children created, reconciliation matched/mismatch), 404/409/400 error cases;
   `pdfText` password-required / wrong-password / success against a tiny fixture PDF.
