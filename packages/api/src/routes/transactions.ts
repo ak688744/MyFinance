@@ -3,8 +3,16 @@ import {
   extractMerchantKey,
   saveCategoryMemoryRule,
   recategorizeNonManualTransactions,
+  resolveCategoryFromRules,
+  createCategorizationInput,
 } from '@myfinance/core';
+import { parseCcStatement, LlmError } from '@myfinance/agents';
 import { badRequest, notFound } from '../errors';
+import type { Gateway } from '../plugins/gateway';
+import { makeRunInTransaction } from '../plugins/txRunner';
+import { readMultipart } from '../lib/multipart';
+import { extractPdfText, PdfPasswordRequiredError, PdfPasswordIncorrectError } from '../lib/pdfText';
+import { reconcile } from '../lib/ccSplit';
 
 type TransactionsQuery = {
   limit?: string;
@@ -39,8 +47,9 @@ type CreateTransactionBody = {
  * Query: limit (default 50), offset (default 0), categoryId (optional).
  * Returns { data: rows }.
  */
-export async function transactionRoutes(app: FastifyInstance): Promise<void> {
+export async function transactionRoutes(app: FastifyInstance, opts: { gateway: Gateway }): Promise<void> {
   const deps = () => ({ ruleRepo: app.repos.categoryRuleRepo, txRepo: app.repos.expenseTxRepo });
+  const runInTransaction = makeRunInTransaction(app.sqlite);
 
   app.get<{ Querystring: TransactionsQuery }>('/transactions', async (req) => {
     const limit = req.query.limit !== undefined ? Number(req.query.limit) : 50;
@@ -178,4 +187,86 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
       return { data: { tags: app.repos.expenseTxRepo.getTags(id) } };
     },
   );
+
+  // POST /transactions/:id/split-from-statement — upload a CC statement PDF, parse it
+  // via the LLM, and create categorized child transactions under this bill. The
+  // password (optional multipart field) is used only to open the PDF; never stored.
+  app.post<{ Params: { id: string } }>('/transactions/:id/split-from-statement', async (req, reply) => {
+    const parentId = Number(req.params.id);
+    if (!Number.isInteger(parentId)) throw badRequest('Invalid transaction id.');
+
+    if (!app.repos.expenseTxRepo.getById(parentId)) throw notFound('Transaction not found.');
+
+    const parent = app.repos.expenseTxRepo.getFullById(parentId);
+    if (!parent) throw notFound('Transaction not found.');
+    const parentAmount = parent.amount;
+    const parentAccountId = parent.accountId;
+
+    if (app.repos.expenseTxRepo.listChildren(parentId).length > 0) {
+      const err = new Error('This transaction is already split.') as Error & { statusCode?: number };
+      err.statusCode = 409;
+      throw err;
+    }
+
+    const mp = await readMultipart(req);
+    if (!mp.file) throw badRequest('Missing file upload (field "file").');
+    const password = mp.fields.password?.trim() || undefined;
+
+    let text: string;
+    try {
+      text = await extractPdfText(mp.file.buffer, password);
+    } catch (e) {
+      if (e instanceof PdfPasswordRequiredError) throw badRequest('This statement is password-protected. Enter the PDF password and try again.');
+      if (e instanceof PdfPasswordIncorrectError) throw badRequest("Couldn't open the PDF — the password may be incorrect.");
+      throw badRequest("Couldn't read the PDF file.");
+    }
+
+    let parsed;
+    try {
+      parsed = await opts.gateway.runTask('cc_statement_parse', (complete) => parseCcStatement(complete, text));
+    } catch (e) {
+      if (e instanceof LlmError && e.kind === 'auth') {
+        const err = new Error('AI provider auth failed.') as Error & { statusCode?: number };
+        err.statusCode = 502;
+        throw err;
+      }
+      if (e instanceof LlmError && e.kind === 'provider_not_configured') {
+        throw badRequest('No AI model is configured for statement parsing. Set it in AI Settings.');
+      }
+      throw badRequest("Couldn't read line items from this statement.");
+    }
+
+    if (!parsed.lineItems.length) throw badRequest("Couldn't read line items from this statement.");
+
+    const rules = app.repos.categoryRuleRepo.getActiveRules();
+    runInTransaction(() => {
+      for (const li of parsed.lineItems) {
+        const direction: 'debit' | 'credit' = li.amount < 0 ? 'credit' : 'debit';
+        const res = resolveCategoryFromRules(createCategorizationInput(li.merchant), rules);
+        app.repos.expenseTxRepo.insertChild(parentId, {
+          transactionDate: li.date,
+          description: li.merchant,
+          amount: Math.abs(li.amount),
+          direction,
+          categoryId: res.categoryId,
+          categorySource: res.categorySource,
+          accountId: parentAccountId,
+        });
+      }
+    });
+
+    const rec = reconcile(parsed.lineItems, parsed.detectedTotal, parentAmount);
+    return reply.send({
+      data: {
+        parentId,
+        parentAmount,
+        detectedTotal: rec.detectedTotal,
+        parsedTotal: rec.parsedTotal,
+        matched: rec.matched,
+        reconciledAgainst: rec.reconciledAgainst,
+        carryover: rec.carryover,
+        children: app.repos.expenseTxRepo.listChildren(parentId),
+      },
+    });
+  });
 }

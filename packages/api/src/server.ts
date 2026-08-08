@@ -68,7 +68,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   const harness: Harness = opts.harness ?? makeHarness(app.repos, { dbPath, memoryUrl: memoryUrlFor(dbPath) });
 
   await app.register(healthRoutes);
-  await app.register(transactionRoutes);
+  await app.register(transactionRoutes, { gateway });
   await app.register(expenseRoutes, { gateway });
   await app.register(investmentRoutes);
   await app.register(categoryRoutes, { gateway });
