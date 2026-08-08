@@ -10,7 +10,7 @@ import {
   computeExpenseInsights, consolidateInsights, LOOKBACK_MONTHS,
   type InsightEvent,
 } from '@myfinance/core';
-import { triageInsights, type TriageEventInput, type TriagedInsight } from '@myfinance/agents';
+import { triageInsights, applyCadenceBackstop, type TriageEventInput, type TriagedInsight } from '@myfinance/agents';
 import type { Repos } from '../plugins/db';
 import type { Gateway } from '../plugins/gateway';
 import { deriveMerchantName } from './deriveMerchantName';
@@ -62,11 +62,37 @@ export function buildMonthEvents(repos: Repos, month: string): { events: Insight
   return { events, txnById };
 }
 
+type TxnById = Map<number, { id: number; description: string; amount: number; categoryId: string | null; tags: { tag: string }[]; direction: 'debit' | 'credit' }>;
+
+function toTriageEventInput(e: InsightEvent, txnById: TxnById): TriageEventInput {
+  return {
+    eventId: e.eventId,
+    signature: e.signature,
+    flaggedBy: e.ruleSignals.map((s) => ({ type: s.type, title: s.title, detail: s.detail })),
+    transactions: e.txnIds.map((id) => {
+      const t = txnById.get(id);
+      return {
+        id, amount: t ? Math.round(t.amount) : 0, category: t?.categoryId ?? null,
+        tags: (t?.tags ?? []).map((x) => x.tag), merchant: t ? deriveMerchantName(t.description) : null,
+        raw: t?.description ?? '', direction: t?.direction,
+      };
+    }),
+  };
+}
+
 /**
  * Returns triaged cards for a month. Serves cached verdicts for events whose
  * signature is unchanged; triages only new/stale events (one gateway call), then
  * persists them. When `gateway` is absent or triage fails, returns the cached ones
  * plus raw (untriaged→fallback-shaped) cards so the page still renders.
+ *
+ * A cached verdict is re-checked against the deterministic cadence backstop on EVERY
+ * read (not just at triage time) — this heals a stale/wrong cache row (e.g. one written
+ * before the transaction was tagged, or a fallback verdict cached from a transient LLM
+ * failure) with no LLM call. Only CONFIDENT verdicts (genuinely judged by the model, or
+ * backstop-forced) are persisted back to the cache; an unconfident fallback is served
+ * for this load but left uncached so the next load retries triage instead of freezing
+ * a wrong "needs input" card forever.
  */
 export async function getTriagedInsights(
   repos: Repos,
@@ -77,36 +103,37 @@ export async function getTriagedInsights(
   const { events, txnById } = buildMonthEvents(repos, month);
   if (events.length === 0) return [];
 
-  // 1) Cache lookup by signature.
+  // 1) Cache lookup by signature, healed against the current cadence-tag data. If
+  // healing actually changed the verdict (a stale/wrong row gets backstop-suppressed),
+  // persist the healed version so the row itself stops being wrong, not just this read.
   const cached = repos.expenseInsightTriageRepo.getMany(events.map((e) => e.signature));
   const cachedBySig = new Map(cached.map((r) => [r.signature, JSON.parse(r.verdictJson) as TriagedInsight]));
+  const eventsBySig = new Map(events.map((e) => [e.signature, e]));
+  const healedBySig = new Map<string, TriagedInsight>();
+  for (const [sig, verdict] of cachedBySig) {
+    const e = eventsBySig.get(sig);
+    const healed = e ? applyCadenceBackstop(verdict, toTriageEventInput(e, txnById)) : verdict;
+    healedBySig.set(sig, healed);
+    if (healed !== verdict) {
+      repos.expenseInsightTriageRepo.upsert({ signature: sig, month, verdictJson: JSON.stringify(healed) });
+    }
+  }
 
-  const stale = events.filter((e) => !cachedBySig.has(e.signature));
+  const stale = events.filter((e) => !healedBySig.has(e.signature));
 
   // 2) Triage stale events (only if we have a gateway).
   let freshBySig = new Map<string, TriagedInsight>();
   if (stale.length > 0 && gateway) {
     const knownCategories = repos.categoryRepo.list().map((c) => c.id);
-    const triageInput: TriageEventInput[] = stale.map((e) => ({
-      eventId: e.eventId,
-      signature: e.signature,
-      flaggedBy: e.ruleSignals.map((s) => ({ type: s.type, title: s.title, detail: s.detail })),
-      transactions: e.txnIds.map((id) => {
-        const t = txnById.get(id);
-        return {
-          id, amount: t ? Math.round(t.amount) : 0, category: t?.categoryId ?? null,
-          tags: (t?.tags ?? []).map((x) => x.tag), merchant: t ? deriveMerchantName(t.description) : null,
-          raw: t?.description ?? '', direction: t?.direction,
-        };
-      }),
-    }));
+    const triageInput: TriageEventInput[] = stale.map((e) => toTriageEventInput(e, txnById));
 
     try {
       const result = await gateway.runTask('expense_insight_triage', (complete) =>
         triageInsights(triageInput, { complete, knownCategories, logger }));
       freshBySig = new Map(result.verdicts.map((v) => [v.signature, v]));
-      // Persist fresh verdicts keyed by signature.
+      // Persist only CONFIDENT verdicts — an unconfident fallback must not freeze.
       for (const v of result.verdicts) {
+        if (!v.confident) continue;
         repos.expenseInsightTriageRepo.upsert({ signature: v.signature, month, verdictJson: JSON.stringify(v) });
       }
     } catch (e) {
@@ -117,7 +144,7 @@ export async function getTriagedInsights(
   // 3) Assemble cards in event order; drop suppressed; attach txnIds.
   const cards: TriagedCard[] = [];
   for (const e of events) {
-    const verdict = freshBySig.get(e.signature) ?? cachedBySig.get(e.signature);
+    const verdict = freshBySig.get(e.signature) ?? healedBySig.get(e.signature);
     if (!verdict) {
       // Triage unavailable (no AI configured, or it failed) → surface the raw rule
       // flag as an untriaged needs_input card so the page still shows the work-queue.
@@ -148,6 +175,7 @@ function untriagedCard(e: InsightEvent): TriagedCard {
       { label: 'One-off', tags: ['one_off'], categoryFix: null },
     ],
     reason: 'AI triage not available; showing the raw rule flag.',
+    confident: false,
     txnIds: e.txnIds,
   };
 }

@@ -14,5 +14,5 @@ export { buildProvider } from './llm/factory';
 export { makeBedrockProvider, type BedrockLike } from './llm/bedrock';
 export { costUsd, pricingHint, PRICING_HINTS } from './pricing';
 
-export { triageInsights, type TriageResult, type TriageDeps, type TriagedInsight, type TriageEventInput, type TriageVerdict } from './insights/triageInsights';
+export { triageInsights, applyCadenceBackstop, type TriageResult, type TriageDeps, type TriagedInsight, type TriageEventInput, type TriageVerdict } from './insights/triageInsights';
 export { CADENCE_VOCAB } from './insights/schema';

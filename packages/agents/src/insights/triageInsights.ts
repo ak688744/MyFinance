@@ -28,7 +28,20 @@ function forceSuppress(v: TriagedInsight): TriagedInsight {
     question: null,
     options: [],
     reason: 'Already tagged with a cadence — resolved previously; not re-asking.',
+    confident: true,
   };
+}
+
+/**
+ * Re-applies the deterministic cadence backstop to an ALREADY-TRIAGED verdict (e.g. one
+ * read from the per-signature cache), with no LLM call. A verdict is data as of the
+ * moment it was produced — if the underlying transaction has since gained a cadence tag
+ * (or the cache is simply stale from before this backstop existed), a cached verdict can
+ * be wrong forever with nothing to ever re-check it. Exported so callers (insightsService)
+ * can heal a cached verdict on every read, not just at triage time.
+ */
+export function applyCadenceBackstop(v: TriagedInsight, e: TriageEventInput): TriagedInsight {
+  return alreadyHasCadenceTag(e) ? forceSuppress(v) : v;
 }
 
 export type { TriageEventInput } from './prompt';
@@ -36,8 +49,14 @@ export type { TriageVerdict } from './schema';
 
 export type CompleteFn = (input: { prompt: string; jsonSchema: object }) => Promise<{ text: string; usage?: LlmUsage }>;
 
-/** A verdict enriched with the event's stable signature (for per-event caching). */
-export type TriagedInsight = TriageVerdict & { signature: string };
+/**
+ * A verdict enriched with the event's stable signature (for per-event caching) and a
+ * `confident` flag: true when the model actually judged this event (or the deterministic
+ * backstop forced it), false when it's a fallback placeholder from a failed/dropped LLM
+ * call. Callers should NOT persist unconfident verdicts to the cache — a transient
+ * failure should mean "try again next load", not "frozen wrong forever".
+ */
+export type TriagedInsight = TriageVerdict & { signature: string; confident: boolean };
 
 export type TriageResult = {
   verdicts: TriagedInsight[];
@@ -77,6 +96,7 @@ function fallbackVerdict(e: TriageEventInput): TriagedInsight {
       { label: 'A reimbursable expense', tags: ['reimbursable'], categoryFix: null },
     ],
     reason: 'Not confidently triaged by the model; surfaced for your review.',
+    confident: false,
   };
 }
 
@@ -108,14 +128,11 @@ export async function triageInsights(events: TriageEventInput[], deps: TriageDep
 
   const byEventId = new Map(events.map((e) => [e.eventId, e]));
 
-  const withBackstop = (v: TriagedInsight, e: TriageEventInput): TriagedInsight =>
-    alreadyHasCadenceTag(e) ? forceSuppress(v) : v;
-
   if (verdicts === null) {
     // Whole batch failed after retry: fall back to keeping every event as needs_input
     // (unless the deterministic backstop already suppresses it).
     deps.logger?.warn({ reason: lastFailure?.reason, detail: lastFailure?.detail, events: events.length }, 'triageInsights: batch failed, using fallback');
-    return { verdicts: events.map((e) => withBackstop(fallbackVerdict(e), e)), usage };
+    return { verdicts: events.map((e) => applyCadenceBackstop(fallbackVerdict(e), e)), usage };
   }
 
   // Attach signatures; drop hallucinated eventIds.
@@ -125,10 +142,10 @@ export async function triageInsights(events: TriageEventInput[], deps: TriageDep
     const e = byEventId.get(v.eventId);
     if (!e) continue; // hallucinated event id → drop
     judged.add(v.eventId);
-    out.push(withBackstop({ ...v, signature: e.signature }, e));
+    out.push(applyCadenceBackstop({ ...v, signature: e.signature, confident: true }, e));
   }
   // Any event the model didn't judge → fallback so it isn't silently lost.
-  for (const e of events) if (!judged.has(e.eventId)) out.push(withBackstop(fallbackVerdict(e), e));
+  for (const e of events) if (!judged.has(e.eventId)) out.push(applyCadenceBackstop(fallbackVerdict(e), e));
 
   return { verdicts: out, usage };
 }

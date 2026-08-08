@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { triageInsights, type TriageEventInput } from '../src/insights/triageInsights';
+import { triageInsights, applyCadenceBackstop, type TriageEventInput, type TriagedInsight } from '../src/insights/triageInsights';
 import { LlmError } from '../src/llm/types';
 
 const event = (over: Partial<TriageEventInput> = {}): TriageEventInput => ({
@@ -116,5 +116,54 @@ describe('triageInsights', () => {
     expect(out.verdicts).toHaveLength(1);
     expect(out.verdicts[0].tier).toBe('suppress');
     expect(out.verdicts[0].keep).toBe(false);
+  });
+
+  // Regression: a real transaction (categoryId='investment', tags=[recurring,sip]) was
+  // permanently stuck showing "needs input" because a fallback verdict (LLM call failed
+  // that round) got cached forever under its signature, with no way to re-check it later.
+  // Fix: mark fallback verdicts as unconfident so callers (insightsService) can skip
+  // persisting them — a transient failure means "try again next load", not "frozen wrong".
+  it('marks a successfully-parsed model verdict as confident', async () => {
+    const complete = fakeComplete({
+      verdicts: [{
+        eventId: 'event:new_spend:ACME', tier: 'needs_input', keep: true, lane: 'needs_input',
+        refinedTitle: 't', refinedDetail: '', question: 'q?', options: [], reason: 'r',
+      }],
+    });
+    const out = await triageInsights([event()], { complete });
+    expect(out.verdicts[0].confident).toBe(true);
+  });
+
+  it('marks a fallback verdict (batch parse failure, no backstop) as NOT confident', async () => {
+    const complete = vi.fn(async () => ({ text: 'not json', usage: { inputTokens: 1, outputTokens: 1 } }));
+    const out = await triageInsights([event()], { complete });
+    expect(out.verdicts[0].tier).toBe('needs_input');
+    expect(out.verdicts[0].confident).toBe(false);
+  });
+
+  it('marks a backstop-forced suppression as confident, even when reached via fallback', async () => {
+    const cadenceTaggedEvent = event({ transactions: [{ id: 5, amount: 100, category: 'food', tags: ['one_off'], merchant: null, raw: 'x' }] });
+    const complete = vi.fn(async () => ({ text: 'not json', usage: { inputTokens: 1, outputTokens: 1 } }));
+    const out = await triageInsights([cadenceTaggedEvent], { complete });
+    expect(out.verdicts[0].tier).toBe('suppress');
+    expect(out.verdicts[0].confident).toBe(true);
+  });
+
+  it('exports applyCadenceBackstop for callers to re-check a CACHED verdict without an LLM call', () => {
+    const cadenceTaggedEvent = event({ transactions: [{ id: 327, amount: 15000, category: 'investment', tags: ['recurring', 'sip'], merchant: null, raw: 'x' }] });
+    const staleCachedVerdict: TriagedInsight = {
+      eventId: 'event:new_spend:ACME', signature: 'sig1', tier: 'needs_input', keep: true, lane: 'needs_input',
+      refinedTitle: 'New spending', refinedDetail: 'x', question: 'Recurring or one-off?',
+      options: [{ label: 'Recurring', tags: ['recurring'], categoryFix: null }],
+      reason: 'Not confidently triaged by the model; surfaced for your review.', confident: false,
+    };
+    const healed = applyCadenceBackstop(staleCachedVerdict, cadenceTaggedEvent);
+    expect(healed.tier).toBe('suppress');
+    expect(healed.keep).toBe(false);
+
+    // An event with no cadence tag passes through unchanged.
+    const noTagEvent = event();
+    const passthrough = applyCadenceBackstop(staleCachedVerdict, noTagEvent);
+    expect(passthrough).toEqual(staleCachedVerdict);
   });
 });
