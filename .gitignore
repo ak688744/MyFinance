@@ -75,3 +75,7 @@ agent_buildup.txt
 # local db backups + superpowers worktrees (scratch)
 *.bak-*
 .claude/worktrees/
+
+# Throwaway spike/verify scripts (not product code)
+packages/*/spike-*.mts
+packages/*/verify-*.mts

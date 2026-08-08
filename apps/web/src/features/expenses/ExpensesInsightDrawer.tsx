@@ -8,10 +8,11 @@ import type { Insight } from '../../types';
 type ExpensesInsightDrawerProps = {
   insight: Insight;
   txns: { id: number; description: string; amount: number }[];
+  seedText?: string;
   onClose: () => void;
 };
 
-export function ExpensesInsightDrawer({ insight, txns, onClose }: ExpensesInsightDrawerProps) {
+export function ExpensesInsightDrawer({ insight, txns, seedText, onClose }: ExpensesInsightDrawerProps) {
   const queryClient = useQueryClient();
   const chat = useAgentChat({ agent: 'expense', persist: false, storageKey: 'myfinance.expense.insight.chat' });
   const fired = useRef(false);
@@ -19,7 +20,7 @@ export function ExpensesInsightDrawer({ insight, txns, onClose }: ExpensesInsigh
   useEffect(() => {
     if (!fired.current) {
       fired.current = true;
-      void chat.send(buildInsightSeed(insight, txns));
+      void chat.send(buildInsightSeed(insight, txns, seedText));
     }
   }, []);
 
@@ -42,8 +43,8 @@ export function ExpensesInsightDrawer({ insight, txns, onClose }: ExpensesInsigh
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <div>
-            <h2 className="font-heading text-lg">{insight.title}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{insight.detail}</p>
+            <h2 className="font-heading text-lg">{insight.refinedTitle}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{insight.refinedDetail}</p>
           </div>
           <button
             onClick={handleClose}

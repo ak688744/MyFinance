@@ -11,4 +11,24 @@ describe('TagChips', () => {
     fireEvent.click(screen.getByLabelText('Remove tag subscription'));
     expect(onRemove).toHaveBeenCalledWith('subscription');
   });
+
+  it('accepts free-flowing text: adds a tag on Enter and strips a leading #', () => {
+    const onAdd = vi.fn();
+    render(<TagChips tags={[]} onRemove={() => {}} onAdd={onAdd} />);
+    const input = screen.getByLabelText('Add tag');
+    fireEvent.change(input, { target: { value: '#dinner' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onAdd).toHaveBeenCalledWith('dinner');
+    expect((input as HTMLInputElement).value).toBe('');
+  });
+
+  it('adds multiple comma-separated tags at once', () => {
+    const onAdd = vi.fn();
+    render(<TagChips tags={[]} onRemove={() => {}} onAdd={onAdd} />);
+    const input = screen.getByLabelText('Add tag');
+    fireEvent.change(input, { target: { value: 'treat, weekend' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onAdd).toHaveBeenNthCalledWith(1, 'treat');
+    expect(onAdd).toHaveBeenNthCalledWith(2, 'weekend');
+  });
 });

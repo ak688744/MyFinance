@@ -30,6 +30,7 @@ export { makeAiProviderRepo } from './repositories/aiProviderRepo';
 export { makeAiModelRepo } from './repositories/aiModelRepo';
 export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo';
 export { makeAiUsageRepo } from './repositories/aiUsageRepo';
+export { makeExpenseInsightTriageRepo } from './repositories/expenseInsightTriageRepo';
 
 export type {
   InvestmentTxRepo,
@@ -57,6 +58,8 @@ export type {
   AiModelRepo,
   AiTaskRouteRepo,
   AiUsageRepo,
+  ExpenseInsightTriageRow,
+  ExpenseInsightTriageRepo,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------
@@ -137,6 +140,13 @@ export type {
   InsightTxn,
   InsightInput,
 } from './domain/insights/expenseInsights';
+
+export { consolidateInsights } from './domain/insights/consolidateInsights';
+export type {
+  ConsolidationTxn,
+  RuleSignal,
+  InsightEvent,
+} from './domain/insights/consolidateInsights';
 
 // ---------------------------------------------------------------------------
 // Domain — NAV + AMFI

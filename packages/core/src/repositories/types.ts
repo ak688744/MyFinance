@@ -404,3 +404,17 @@ export interface AiUsageRepo {
     models: string[];
   };
 }
+
+export interface ExpenseInsightTriageRow {
+  signature: string;
+  month: string;
+  verdictJson: string;
+  triagedAt: string;
+}
+
+export interface ExpenseInsightTriageRepo {
+  /** Cached triage verdicts for the given signatures (whichever exist). */
+  getMany(signatures: string[]): ExpenseInsightTriageRow[];
+  /** Insert-or-replace a verdict keyed by signature. */
+  upsert(row: { signature: string; month: string; verdictJson: string; triagedAt?: string }): void;
+}

@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
-import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag, useExpenseInsights } from '../../lib/hooks';
+import { useState, useMemo, useEffect } from 'react';
+import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag, useExpenseInsights, useResolveInsight } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
-import { AIInsightCard } from '../../components/ui/AIInsightCard';
 import { DonutChart, SpendBarChart } from '../../components/ui/charts';
 import {
   formatINR, formatDate, currentMonth, addMonths, monthBounds, formatMonthLong, monthWindow,
@@ -37,12 +36,19 @@ export function ExpensesPage() {
   const [aiBanner, setAiBanner] = useState<null | { suggested: number; skipped: number; total: number; usage: { inputTokens: number; outputTokens: number }; warnings: string[] }>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
+  const [insightSeedText, setInsightSeedText] = useState<string | undefined>(undefined);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  // Events resolved this session: hide them immediately (optimistic) — the rule that
+  // flagged them may still fire until the ~background re-triage suppresses the event,
+  // so we don't wait for the refetch to make the card disappear.
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
 
   const bounds = monthBounds(month);
   const categories = useCategories();
   const accounts = useAccounts('expense');
   const aiSuggest = useAiSuggest();
   const insights = useExpenseInsights(month);
+  const resolveInsight = useResolveInsight();
   const { dismiss, isDismissed } = useInsightDismissal();
 
   const summary = useExpenseSummary({ from: bounds.from, to: bounds.to });
@@ -170,6 +176,29 @@ export function ExpensesPage() {
   const rowCount = displayedRows.length;
 
   const resetFilters = () => { setCategoryFilters([]); setDirectionFilter(''); setSearchText(''); setPage(0); };
+
+  // Reset optimistic-hide when the month changes (fresh set of events).
+  useEffect(() => { setResolvedIds(new Set()); }, [month]);
+
+  // Inline single-shot resolve: tap an option → apply its tags/category-fix. On
+  // success, optimistically hide the card immediately (the rule may still fire until
+  // the background re-triage suppresses the event).
+  const handleResolveOption = async (insight: Insight, option: { tags: string[]; categoryFix: string | null }) => {
+    setResolvingId(insight.eventId);
+    try {
+      await resolveInsight.mutateAsync({ transactionIds: insight.txnIds, tags: option.tags, categoryFix: option.categoryFix });
+      setResolvedIds((prev) => new Set(prev).add(insight.eventId));
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  // Free-text answers open the Discuss drawer seeded with the user's explanation —
+  // the expense agent interprets it and writes the tags (the messy ~10% path).
+  const handleResolveText = (insight: Insight, text: string) => {
+    setInsightSeedText(text);
+    setActiveInsight(insight);
+  };
 
   // Build transaction details for the insight drawer
   const rowsForIds = (ids: number[]) => {
@@ -319,7 +348,17 @@ export function ExpensesPage() {
         )}
       </DataState>
 
-      <AIInsightCard text="Spending insights and category trends will be analysed by the assistant in L4." />
+      {/* Compact AI insights panel */}
+      <InsightCards
+        insights={insights.data ?? []}
+        loading={insights.isLoading || insights.isFetching}
+        isDismissed={(id) => isDismissed(id) || resolvedIds.has(id)}
+        onDismiss={dismiss}
+        onResolveOption={handleResolveOption}
+        onResolveText={handleResolveText}
+        onDiscuss={(i) => { setInsightSeedText(undefined); setActiveInsight(i); }}
+        resolvingId={resolvingId}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
@@ -332,20 +371,13 @@ export function ExpensesPage() {
         </Card>
       </div>
 
-      {/* Insight cards */}
-      <InsightCards
-        insights={insights.data ?? []}
-        isDismissed={isDismissed}
-        onDismiss={dismiss}
-        onOpen={(i) => setActiveInsight(i)}
-      />
-
       {/* Insight drawer */}
       {activeInsight && (
         <ExpensesInsightDrawer
           insight={activeInsight}
-          txns={rowsForIds(activeInsight.transactionIds)}
-          onClose={() => setActiveInsight(null)}
+          txns={rowsForIds(activeInsight.txnIds)}
+          seedText={insightSeedText}
+          onClose={() => { setActiveInsight(null); setInsightSeedText(undefined); }}
         />
       )}
 
@@ -492,12 +524,14 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
   return (
     <>
       <tr className={`border-t border-gray-50 ${expanded ? 'bg-gray-50/50' : ''}`}>
-        <MerchantCell description={tx.description} />
+        <MerchantCell
+          description={tx.description}
+          tags={tx.tags}
+          onAddTag={(t) => setTags.mutate({ id: tx.id, tags: [t], mode: 'add' })}
+          onRemoveTag={(t) => removeTag.mutate({ id: tx.id, tag: t })}
+        />
         <td className="py-2.5 pr-3">
-          <div className="flex flex-col gap-1">
-            <CategoryChip txId={tx.id} categoryId={tx.categoryId} categorySource={tx.categorySource} aiKeyword={aiKeyword} merchantLabel={tx.description} categories={categories} />
-            <TagChips tags={tx.tags} onAdd={(t) => setTags.mutate({ id: tx.id, tags: [t], mode: 'add' })} onRemove={(t) => removeTag.mutate({ id: tx.id, tag: t })} />
-          </div>
+          <CategoryChip txId={tx.id} categoryId={tx.categoryId} categorySource={tx.categorySource} aiKeyword={aiKeyword} merchantLabel={tx.description} categories={categories} />
         </td>
         <td className="py-2.5 pr-3 text-gray-500 whitespace-nowrap">{accountLabel(tx.accountId)}</td>
         <td className="py-2.5 pr-3 text-right text-gray-400 text-xs whitespace-nowrap">{formatDate(tx.transactionDate)}</td>
@@ -564,7 +598,12 @@ function TransactionRow({ tx, expanded, onToggle, categories, accountLabel, aiKe
 
 // ── Merchant Cell ───────────────────────────────────────────────────────────
 
-function MerchantCell({ description }: { description: string }) {
+function MerchantCell({ description, tags, onAddTag, onRemoveTag }: {
+  description: string;
+  tags: { tag: string; source: 'user' | 'agent' }[];
+  onAddTag: (tag: string) => void;
+  onRemoveTag: (tag: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const merchant = deriveMerchantName(description);
   const collapsedText = merchant ?? description;
@@ -585,6 +624,10 @@ function MerchantCell({ description }: { description: string }) {
           {expanded ? description : collapsedText}
         </span>
       </button>
+      {/* Tags live here — a thin inline strip under the merchant name (where notes used to sit). */}
+      <div className="mt-1 pl-3.5">
+        <TagChips tags={tags} onAdd={onAddTag} onRemove={onRemoveTag} />
+      </div>
     </td>
   );
 }

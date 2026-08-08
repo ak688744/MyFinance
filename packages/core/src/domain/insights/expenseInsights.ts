@@ -34,9 +34,10 @@ const merchantKeyOf = (d: string, derive: (s: string) => string | null): string 
 export function computeExpenseInsights(input: InsightInput): Insight[] {
   const out: Insight[] = [];
 
-  // 1) needs_clarity
+  // 1) needs_clarity — debits AND credits. Uncategorized/unclear INFLOWS (a mystery
+  // ₹X credit) matter for forecasting income/savings just as much as spend, so credits
+  // are included here (unlike new_spend/abnormal_spend, which are inherently spend-only).
   const flagged = input.monthTxns.filter((t) =>
-    t.direction === 'debit' &&
     (t.tags?.length ?? 0) === 0 &&
     (t.categoryId === null || input.deriveMerchantName(t.description) === null),
   );

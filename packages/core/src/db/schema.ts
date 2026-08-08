@@ -455,6 +455,18 @@ export const aiTaskRoutes = sqliteTable('ai_task_routes', {
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Per-event cache of the LLM triage verdict over deterministic insight candidates.
+// Keyed by the event's content SIGNATURE (grouped txn ids + their category/tags):
+// a plain page refresh reuses the cached verdict (no LLM, no reshuffle), while
+// answering a question mutates a txn → the signature changes → only that event's
+// verdict recomputes. `verdictJson` holds the full TriagedInsight payload.
+export const expenseInsightTriage = sqliteTable('expense_insight_triage', {
+  signature: text('signature').primaryKey().notNull(),
+  month: text('month').notNull(),
+  verdictJson: text('verdict_json').notNull(),
+  triagedAt: text('triaged_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const aiUsageEvents = sqliteTable(
   'ai_usage_events',
   {

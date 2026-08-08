@@ -270,3 +270,19 @@ export function useRemoveTxTag() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
+
+// Resolve an insight inline: apply an option's tags (+ optional category fix), or
+// free-text tags, to the event's transactions. Completing the data self-heals the
+// card (its signature changes → it disappears on the next insights load).
+export function useResolveInsight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ transactionIds, tags, categoryFix }: { transactionIds: number[]; tags?: string[]; categoryFix?: string | null }) =>
+      apiSend('POST', '/expenses/insights/resolve', { transactionIds, tags, categoryFix }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['categories'] });
+      qc.invalidateQueries({ queryKey: ['expenseInsights'] });
+    },
+  });
+}

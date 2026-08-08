@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { computeExpenseInsights, LOOKBACK_MONTHS } from '@myfinance/core';
-import { deriveMerchantName } from '../lib/deriveMerchantName';
-import { badRequest } from '../errors';
+import type { Gateway } from '../plugins/gateway';
+import { getTriagedInsights } from '../lib/insightsService';
+import { badRequest, notFound } from '../errors';
 
 type ExpenseQuery = {
   from?: string; to?: string; direction?: string; search?: string;
@@ -26,7 +26,7 @@ function parseCsv(v: string | undefined, fallback: string[]): string[] {
   return parts; // explicit empty string => [] (opt out of exclusions)
 }
 
-export async function expenseRoutes(app: FastifyInstance): Promise<void> {
+export async function expenseRoutes(app: FastifyInstance, opts: { gateway: Gateway }): Promise<void> {
   app.get<{ Querystring: ExpenseQuery }>('/expenses', async (req) => {
     const q = req.query;
     const data = app.repos.expenseTxRepo.query({
@@ -54,44 +54,52 @@ export async function expenseRoutes(app: FastifyInstance): Promise<void> {
     return { data };
   });
 
+  // GET /expenses/insights?month=YYYY-MM — deterministic rules → semantic consolidation
+  // → per-event LLM triage (cached by signature). A plain refresh serves cached
+  // verdicts (no LLM, stable); answering a question re-triages only the touched event.
   app.get<{ Querystring: { month?: string } }>('/expenses/insights', async (req) => {
     const month = req.query.month;
     if (!month || !/^\d{4}-\d{2}$/.test(month)) throw badRequest('month=YYYY-MM is required.');
-
-    const [y, m] = month.split('-').map(Number);
-    const monthStart = `${month}-01`;
-    const monthEnd = `${month}-31`;
-    // prior LOOKBACK_MONTHS window
-    const priorStartDate = new Date(Date.UTC(y, m - 1 - LOOKBACK_MONTHS, 1));
-    const priorStart = `${priorStartDate.getUTCFullYear()}-${String(priorStartDate.getUTCMonth() + 1).padStart(2, '0')}-01`;
-
-    const monthTxns = app.repos.expenseTxRepo.query({ from: monthStart, to: monthEnd });
-    const priorAll = app.repos.expenseTxRepo.query({ from: priorStart, to: monthStart });
-    const priorTxns = priorAll.filter((t) => t.transactionDate < monthStart);
-
-    const thisMonthSummary = app.repos.expenseTxRepo.summary({ from: monthStart, to: monthEnd });
-    // prior byCategory per month: one summary per prior month keeps it simple + correct.
-    const byCategoryPriorMonths: { month: string; categoryId: string | null; amount: number }[] = [];
-    for (let k = 1; k <= LOOKBACK_MONTHS; k += 1) {
-      const d = new Date(Date.UTC(y, m - 1 - k, 1));
-      const mm = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-      const s = app.repos.expenseTxRepo.summary({ from: `${mm}-01`, to: `${mm}-31` });
-      for (const c of s.byCategory) byCategoryPriorMonths.push({ month: mm, categoryId: c.categoryId, amount: c.amount });
-    }
-
-    const toInsightTxn = (t: (typeof monthTxns)[number]) => ({
-      id: t.id, transactionDate: t.transactionDate, description: t.description, amount: t.amount,
-      direction: t.direction, categoryId: t.categoryId, tags: t.tags,
-    });
-
-    const data = computeExpenseInsights({
-      month,
-      monthTxns: monthTxns.map(toInsightTxn),
-      priorTxns: priorTxns.map(toInsightTxn),
-      byCategoryThisMonth: thisMonthSummary.byCategory,
-      byCategoryPriorMonths,
-      deriveMerchantName,
-    });
+    const data = await getTriagedInsights(app.repos, opts.gateway, month, req.log);
     return { data };
   });
+
+  // POST /expenses/insights/resolve — apply a tapped option (tags + optional
+  // categoryFix) OR free-text tags to the event's transactions. Writes are additive
+  // (source='agent'); category fixes set source='manual'. Completing the data makes
+  // the event self-heal: its signature changes → the card disappears on next load.
+  app.post<{ Body: { transactionIds?: number[]; tags?: string[]; categoryFix?: string | null } }>(
+    '/expenses/insights/resolve',
+    async (req) => {
+      const { transactionIds, tags, categoryFix } = req.body ?? {};
+      if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
+        throw badRequest('transactionIds (non-empty) is required.');
+      }
+      const cleanTags = (tags ?? [])
+        .map((t) => String(t).trim().toLowerCase())
+        .filter(Boolean);
+      if (cleanTags.length === 0 && !categoryFix) {
+        throw badRequest('Provide tags and/or categoryFix to apply.');
+      }
+      // Validate category fix against known categories.
+      if (categoryFix) {
+        const known = new Set(app.repos.categoryRepo.list().map((c) => c.id));
+        if (!known.has(categoryFix)) throw badRequest(`Unknown categoryId "${categoryFix}".`);
+      }
+
+      let applied = 0;
+      for (const id of transactionIds) {
+        const txn = app.repos.expenseTxRepo.getById(id);
+        if (!txn) throw notFound(`Transaction ${id} not found.`);
+        if (cleanTags.length > 0) {
+          app.repos.expenseTxRepo.addTags(id, cleanTags.map((tag) => ({ tag, source: 'agent' as const })));
+        }
+        if (categoryFix) {
+          app.repos.expenseTxRepo.updateCategory(id, categoryFix, 'manual', null);
+        }
+        applied += 1;
+      }
+      return { data: { applied, tags: cleanTags, categoryFix: categoryFix ?? null } };
+    },
+  );
 }

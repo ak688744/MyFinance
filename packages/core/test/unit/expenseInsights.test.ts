@@ -15,17 +15,18 @@ function base() {
 }
 
 describe('computeExpenseInsights', () => {
-  it('needs_clarity: flags uncategorized OR vague, skips tagged, one grouped card', () => {
+  it('needs_clarity: flags uncategorized OR vague (debit AND credit), skips tagged, one grouped card', () => {
     const input = { ...base(), monthTxns: [
-      { id: 1, transactionDate: '2026-08-02', description: 'UPI-SWIGGY', amount: 100, direction: 'debit' as const, categoryId: null, tags: [] },       // uncategorized → flag
+      { id: 1, transactionDate: '2026-08-02', description: 'UPI-SWIGGY', amount: 100, direction: 'debit' as const, categoryId: null, tags: [] },       // uncategorized debit → flag
       { id: 2, transactionDate: '2026-08-03', description: 'RANDOM NOISE', amount: 50, direction: 'debit' as const, categoryId: 'food', tags: [] },     // vague (derive→null) → flag
       { id: 3, transactionDate: '2026-08-04', description: 'UPI-ZOMATO', amount: 80, direction: 'debit' as const, categoryId: null, tags: [{ tag: 'x' }] }, // tagged → skip
       { id: 4, transactionDate: '2026-08-05', description: 'UPI-AMAZON', amount: 60, direction: 'debit' as const, categoryId: 'shopping', tags: [] },   // clean → skip
+      { id: 5, transactionDate: '2026-08-06', description: 'UPI-SHIKHA', amount: 23500, direction: 'credit' as const, categoryId: null, tags: [] },     // uncategorized CREDIT → flag (inflow)
     ] };
     const out = computeExpenseInsights(input);
     const clarity = out.filter((i) => i.type === 'needs_clarity');
     expect(clarity).toHaveLength(1);
-    expect(clarity[0].transactionIds.sort()).toEqual([1, 2]);
+    expect(clarity[0].transactionIds.sort((a, b) => a - b)).toEqual([1, 2, 5]);
     expect(clarity[0].id).toBe('needs-clarity:2026-08');
   });
 

@@ -44,12 +44,23 @@ export type LiabilityDetail = {
   schedule: import('@myfinance/core').AmortizationRow[];
 };
 
+// A triaged insight card (server: rule candidates → consolidation → LLM triage).
+export type InsightOption = {
+  label: string;
+  tags: string[];
+  categoryFix: string | null;
+};
+
 export type Insight = {
-  id: string;
-  type: 'needs_clarity' | 'new_spend' | 'abnormal_spend';
-  severity: 'info' | 'warn';
-  title: string;
-  detail: string;
-  transactionIds: number[];
-  cta: { label: string };
+  eventId: string;
+  signature: string;
+  tier: 'needs_input' | 'worth_knowing';
+  keep: boolean;
+  lane: 'needs_input' | 'worth_knowing' | null;
+  refinedTitle: string;
+  refinedDetail: string;
+  question: string | null;
+  options: InsightOption[];
+  reason: string;
+  txnIds: number[];
 };
