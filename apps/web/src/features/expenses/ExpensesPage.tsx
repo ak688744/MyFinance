@@ -34,6 +34,25 @@ export function isSplitContainer(row: ExpenseRow, allRows: ExpenseRow[]): boolea
   return allRows.some((r) => r.parentTransactionId === row.id);
 }
 
+const CLIENT_ONLY_CATEGORY_FILTERS = new Set(['__ai__', '__uncategorized__']);
+
+export function needsClientCategoryFilter(filters: string[]): boolean {
+  return filters.some((f) => CLIENT_ONLY_CATEGORY_FILTERS.has(f)) || filters.length > 1;
+}
+
+/** Category chips that only exist in the UI — never sent as a real categoryId to the API. */
+export function applyCategoryFilters(rows: ExpenseRow[], filters: string[]): ExpenseRow[] {
+  if (filters.length === 0) return rows;
+  if (filters.includes('__ai__')) return rows.filter((t) => t.categorySource === 'ai_suggested');
+  const set = new Set(filters);
+  if (filters.length === 1 && filters[0] === '__uncategorized__') {
+    return rows.filter((t) => t.categoryId == null);
+  }
+  return rows.filter(
+    (t) => (t.categoryId && set.has(t.categoryId)) || (set.has('__uncategorized__') && !t.categoryId),
+  );
+}
+
 export function ExpensesPage() {
   const [month, setMonth] = useState(() => currentMonth());
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
@@ -69,16 +88,20 @@ export function ExpensesPage() {
   const summary = useExpenseSummary({ from: bounds.from, to: bounds.to });
   const allTimeSummary = useExpenseSummary({});
 
-  // Build query params — multi-category not supported server-side, so if multiple categories selected, fetch all and filter client-side.
-  const serverCategoryId = categoryFilters.length === 1 && categoryFilters[0] !== '__ai__' ? categoryFilters[0] : undefined;
+  const clientCategoryFilter = needsClientCategoryFilter(categoryFilters);
+  // Build query params — multi-category / AI / uncategorized are client-side only.
+  const serverCategoryId =
+    categoryFilters.length === 1 && !CLIENT_ONLY_CATEGORY_FILTERS.has(categoryFilters[0])
+      ? categoryFilters[0]
+      : undefined;
   const txns = useExpenses({
     from: bounds.from,
     to: bounds.to,
     ...(directionFilter === 'debit' || directionFilter === 'credit' ? { direction: directionFilter === 'debit' ? 'out' : 'in' } : {}),
     ...(searchText ? { search: searchText } : {}),
     ...(serverCategoryId ? { categoryId: serverCategoryId } : {}),
-    limit: categoryFilters.length > 1 || categoryFilters.includes('__ai__') ? '500' : String(PAGE_SIZE),
-    offset: categoryFilters.length > 1 || categoryFilters.includes('__ai__') ? '0' : String(page * PAGE_SIZE),
+    limit: clientCategoryFilter ? '1000' : String(PAGE_SIZE),
+    offset: clientCategoryFilter ? '0' : String(page * PAGE_SIZE),
   });
 
   // Full-month unpaginated query for resolving insight drawer seed
@@ -114,7 +137,9 @@ export function ExpensesPage() {
     }
   };
 
-  const uncategorizedInMonthCount = (txns.data ?? []).filter((t) => t.categoryId == null).length;
+  const uncategorizedInMonthCount = (fullMonthTxns.data ?? []).filter((t) => t.categoryId == null).length;
+
+  const uncategorizedOnly = categoryFilters.length === 1 && categoryFilters[0] === '__uncategorized__';
 
   const byCategory = summary.data
     ? summaryByCategoryWithNames(summary.data.byCategory, categories.data ?? [])
@@ -137,37 +162,26 @@ export function ExpensesPage() {
   const goMonth = (delta: number) => { setMonth((m) => addMonths(m, delta)); setPage(0); setAiBanner(null); setAiKeywordById({}); };
   const isCurrent = month >= currentMonth();
 
-  // Client-side filtering for multi-category and AI-suggested
+  // Client-side filtering for multi-category, AI-suggested, and uncategorized
   const displayedRows = useMemo(() => {
-    let rows = txns.data ?? [];
-    if (categoryFilters.includes('__ai__')) {
-      rows = rows.filter((t) => t.categorySource === 'ai_suggested');
-    } else if (categoryFilters.length > 1) {
-      const set = new Set(categoryFilters);
-      rows = rows.filter((t) => (t.categoryId && set.has(t.categoryId)) || (set.has('__uncategorized__') && !t.categoryId));
-    }
+    const source = clientCategoryFilter ? (fullMonthTxns.data ?? []) : (txns.data ?? []);
+    let rows = applyCategoryFilters(source, categoryFilters);
     if (directionFilter === 'transfer') {
       rows = rows.filter((t) => {
         const catName = t.categoryId ? (categories.data ?? []).find(c => c.id === t.categoryId)?.name?.toLowerCase() : '';
         return catName === 'transfer' || catName === 'self_transfer';
       });
     }
-    // Paginate client-side when using multi-filter
-    if (categoryFilters.length > 1 || categoryFilters.includes('__ai__')) {
+    if (clientCategoryFilter) {
       return rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
     }
     return rows;
-  }, [txns.data, categoryFilters, directionFilter, categories.data, page]);
+  }, [txns.data, fullMonthTxns.data, categoryFilters, clientCategoryFilter, directionFilter, categories.data, page]);
 
   // Total for all filtered rows (not just current page)
   const filteredTotal = useMemo(() => {
-    let rows = txns.data ?? [];
-    if (categoryFilters.includes('__ai__')) {
-      rows = rows.filter((t) => t.categorySource === 'ai_suggested');
-    } else if (categoryFilters.length > 1) {
-      const set = new Set(categoryFilters);
-      rows = rows.filter((t) => (t.categoryId && set.has(t.categoryId)) || (set.has('__uncategorized__') && !t.categoryId));
-    }
+    const source = clientCategoryFilter ? (fullMonthTxns.data ?? []) : (txns.data ?? []);
+    let rows = applyCategoryFilters(source, categoryFilters);
     if (directionFilter === 'transfer') {
       rows = rows.filter((t) => {
         const catName = t.categoryId ? (categories.data ?? []).find(c => c.id === t.categoryId)?.name?.toLowerCase() : '';
@@ -175,18 +189,12 @@ export function ExpensesPage() {
       });
     }
     return rows.reduce((sum, t) => sum + (t.direction === 'credit' ? t.amount : -t.amount), 0);
-  }, [txns.data, categoryFilters, directionFilter, categories.data]);
+  }, [txns.data, fullMonthTxns.data, categoryFilters, clientCategoryFilter, directionFilter, categories.data]);
 
   const totalRowCount = useMemo(() => {
-    let rows = txns.data ?? [];
-    if (categoryFilters.includes('__ai__')) {
-      rows = rows.filter((t) => t.categorySource === 'ai_suggested');
-    } else if (categoryFilters.length > 1) {
-      const set = new Set(categoryFilters);
-      rows = rows.filter((t) => (t.categoryId && set.has(t.categoryId)) || (set.has('__uncategorized__') && !t.categoryId));
-    }
-    return rows.length;
-  }, [txns.data, categoryFilters]);
+    const source = clientCategoryFilter ? (fullMonthTxns.data ?? []) : (txns.data ?? []);
+    return applyCategoryFilters(source, categoryFilters).length;
+  }, [txns.data, fullMonthTxns.data, categoryFilters, clientCategoryFilter]);
 
   const rowCount = displayedRows.length;
 
@@ -196,10 +204,12 @@ export function ExpensesPage() {
   // make a parent whose children sit on another page render as a plain row and its
   // children render nowhere. `fullMonthTxns` (limit 1000) is already fetched.
   const allRows = fullMonthTxns.data ?? txns.data ?? [];
-  const topLevelRows = useMemo(
-    () => displayedRows.filter((r) => r.parentTransactionId == null),
-    [displayedRows],
-  );
+  const topLevelRows = useMemo(() => {
+    // Uncategorized CC children are nested under a categorized parent — show them
+    // as first-class rows when the user is working the uncategorized work-list.
+    if (uncategorizedOnly) return displayedRows;
+    return displayedRows.filter((r) => r.parentTransactionId == null);
+  }, [displayedRows, uncategorizedOnly]);
 
   const resetFilters = () => { setCategoryFilters([]); setDirectionFilter(''); setSearchText(''); setPage(0); };
 

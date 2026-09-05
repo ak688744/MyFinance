@@ -201,6 +201,7 @@ export async function transactionRoutes(app: FastifyInstance, opts: { gateway: G
     if (!parent) throw notFound('Transaction not found.');
     const parentAmount = parent.amount;
     const parentAccountId = parent.accountId;
+    const parentDate = parent.transactionDate;
 
     if (app.repos.expenseTxRepo.listChildren(parentId).length > 0) {
       const err = new Error('This transaction is already split.') as Error & { statusCode?: number };
@@ -244,7 +245,9 @@ export async function transactionRoutes(app: FastifyInstance, opts: { gateway: G
         const direction: 'debit' | 'credit' = li.amount < 0 ? 'credit' : 'debit';
         const res = resolveCategoryFromRules(createCategorizationInput(li.merchant), rules);
         app.repos.expenseTxRepo.insertChild(parentId, {
-          transactionDate: li.date,
+          // Bill children use the parent's payment date so a mid-month statement
+          // spanning two calendar months stays in one Expenses month view.
+          transactionDate: parentDate,
           description: li.merchant,
           amount: Math.abs(li.amount),
           direction,

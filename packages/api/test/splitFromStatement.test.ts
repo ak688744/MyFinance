@@ -47,12 +47,45 @@ describe('POST /transactions/:id/split-from-statement', () => {
     expect(res.statusCode).toBe(200);
     const d = res.json().data;
     expect(d.children).toHaveLength(2);
+    expect(d.children.every((c: { transactionDate: string }) => c.transactionDate === '2026-06-15')).toBe(true);
     expect(d.parsedTotal).toBe(2000);
     expect(d.matched).toBe(true);
     expect(d.carryover).toBe(6000);
 
     const sum = await app.inject({ method: 'GET', url: '/expenses/summary?from=2026-06-01&to=2026-06-30' });
     expect(sum.json().data.totalSpent).toBe(2000);
+    await app.close();
+  });
+
+  it('assigns the parent payment date to children even when statement dates span prior months', async () => {
+    const crossMonth = JSON.stringify({
+      lineItems: [
+        { date: '2026-06-12', merchant: 'Amazon Pay Flights', amount: 30953 },
+        { date: '2026-06-14', merchant: 'Amazon Pay E-Commerce', amount: 580 },
+        { date: '2026-07-02', merchant: 'Swiggy', amount: 500 },
+      ],
+      detectedTotal: 32033,
+    });
+    const app = await buildServer({ dbPath: ':memory:', gateway: fakeGateway(crossMonth) });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/transactions',
+      payload: { transactionDate: '2026-07-28', description: 'CRED CC PAYMENT', amount: 112773, direction: 'debit', categoryId: 'credit_card_bill' },
+    });
+    const parentId = created.json().data.id;
+    const { makeSimplePdf } = await import('./fixtures/makePdf');
+    const pdf = Buffer.from(new Uint8Array(makeSimplePdf('stmt')));
+    const mp = multipart({}, { name: 'stmt.pdf', content: pdf });
+    const res = await app.inject({ method: 'POST', url: `/transactions/${parentId}/split-from-statement`, payload: mp.payload, headers: mp.headers });
+    expect(res.statusCode).toBe(200);
+    const children = res.json().data.children as { transactionDate: string }[];
+    expect(children).toHaveLength(3);
+    expect(children.every((c) => c.transactionDate === '2026-07-28')).toBe(true);
+
+    const june = await app.inject({ method: 'GET', url: '/expenses/summary?from=2026-06-01&to=2026-06-30' });
+    expect(june.json().data.totalSpent).toBe(0);
+    const july = await app.inject({ method: 'GET', url: '/expenses/summary?from=2026-07-01&to=2026-07-31' });
+    expect(july.json().data.totalSpent).toBe(32033);
     await app.close();
   });
 

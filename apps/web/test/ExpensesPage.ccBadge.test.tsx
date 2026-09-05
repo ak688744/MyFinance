@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isCreditCardBill, isSplitContainer } from '../src/features/expenses/ExpensesPage';
+import { isCreditCardBill, isSplitContainer, applyCategoryFilters } from '../src/features/expenses/ExpensesPage';
 import type { ExpenseRow } from '../src/types';
 
 const row = (over: Partial<ExpenseRow>): ExpenseRow => ({
@@ -22,5 +22,16 @@ describe('CC-bill detection helpers', () => {
     const rows = [row({ id: 1 }), row({ id: 2, parentTransactionId: 1 })];
     expect(isSplitContainer(rows[0], rows)).toBe(true);
     expect(isSplitContainer(rows[1], rows)).toBe(false);
+  });
+});
+
+describe('applyCategoryFilters', () => {
+  it('uncategorized-only filter includes CC split children with null category', () => {
+    const rows = [
+      row({ id: 1, categoryId: 'bills' }),
+      row({ id: 2, parentTransactionId: 1, description: 'Amazon Pay Flights' }),
+    ];
+    const filtered = applyCategoryFilters(rows, ['__uncategorized__']);
+    expect(filtered.map((r) => r.id)).toEqual([2]);
   });
 });
