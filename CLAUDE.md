@@ -454,6 +454,7 @@ KEY GOTCHAS for subagents: (1) Node 20 mandatory — prefix cmds `source ~/.nvm/
 
 ## Workflow
 - Investment Analyzer spec written; committing pending CC-split branch changes before merge — Brainstormed+wrote spec docs/superpowers/specs/2026-09-06-l4.1-investment-analyzer-agent-design.md for the L4.1 Investment Analyzer agent (v1 health analysis). Meanwhile found 442 uncommitted lines on feat/credit-card-bill-split beyond the spec: (1) the needs_clarity per-txn hybrid + merchantKeyOf ref-number-stripping fix in packages/core/src/domain/insights/{expenseInsights,consolidateInsights}.ts + tests (T2 core insights change, matches prior memory decisions 0b91cf7d/b5bc154d), (2) CC-split UI/API follow-ups in ExpensesPage.tsx/transactions.ts + tests, (3) CLAUDE.md/copilot-instructions doc updates. User chose to commit these (Option 2) with per-body messages after verifying tests green, then merge the PR, then start Investment Analyzer fresh on main.
+- Merged PR #16, opened PR #17 for CC-split delta — Per user's chosen merge order: merged PR #16 (feat/agent-response-calibration -> main, calibration + Feature B) first via gh pr merge --merge (was CLEAN/MERGEABLE, no CI checks configured). Then confirmed feat/credit-card-bill-split is exactly 12 commits ahead of the new main (all CC-split-specific, calibration/Feature B commits absorbed). Opened PR #17 (https://github.com/ak688744/MyFinance/pull/17) feat/credit-card-bill-split -> main covering: CC bill upload+split feature (migration 0009, cc_statement_parse task, pdfText extraction, split-from-statement endpoint, expense agent CC tagging, web badge/modal/SplitPanel/container rows) + two follow-up fixes committed this session (split children take parent's payment date; CC children surfaced in uncategorized filter) + an in-flight needs_clarity insights fix (per-txn flagging + stable merchant key for recurring UPI refs, matches prior decisions 0b91cf7d/b5bc154d). All verified green before commit: core 289 (Groww 6/6), api 107, web 79, tsc --build clean core/api/web. Investment Analyzer spec (docs/superpowers/specs/2026-09-06-l4.1-investment-analyzer-agent-design.md) deliberately left UNCOMMITTED on this branch -- will commit on a fresh branch off main once PR #17 merges. NEXT: user reviews/merges PR #17, then start Investment Analyzer implementation planning (writing-plans) on a new branch off main.
 
 <!-- project-memory:end -->
 
@@ -508,7 +509,7 @@ _(65 older findings filtered — older than 7 days. Run check-memory.js to searc
 ## Script Library
 <!-- Auto-managed by project-memory plugin. Do not edit between markers. -->
 
-10 script templates (181 total scripts). **Reuse these — fill in {{params}} instead of rebuilding commands:**
+10 script templates (185 total scripts). **Reuse these — fill in {{params}} instead of rebuilding commands:**
 
 - **Run instrumented multi-turn repro against real DB** (4 variants, 4x total): `source ~/.nvm/nvm.sh && nvm use 22 >/dev/null 2>&1; cd /Users/vkhandelwal/Documents/MyFinance/packages/agent-harness; MYFINANCE_DB=/Users/vkhandelwal/Documents/MyFinance/demo.db AWS_REGION=us-east-1 node_modules/.bin/tsx repro-multiturn.mts 2>&1 | grep -vE "^\s*$" | tail -60`
   Variants: Run instrumented multi-turn repro against real DB, Probe fullStream chunk types, Live verify verbosity + markdown output +1 more
@@ -518,6 +519,7 @@ _(65 older findings filtered — older than 7 days. Run check-memory.js to searc
 - **Run failing tests** (2x): `source ~/.nvm/nvm.sh && nvm use 20 >/dev/null && pnpm -C /Users/vkhandelwal/Documents/MyFinance/packages/core exec vitest run test/unit/expenseTxRepo.query.test.ts 2>&1 | tail -20`
 - **Run failing test to verify 404** (2x): `source ~/.nvm/nvm.sh && nvm use 20 >/dev/null && pnpm -C /Users/vkhandelwal/Documents/MyFinance/packages/core exec tsc --build >/dev/null 2>&1 && pnpm -C /Users/vkhandelwal/Documents/MyFinance/packages/api exec vitest run test/expenses.test.ts 2>&1 | tail -20`
 - **Run Mastra+Bedrock SSO capability spike** (2x): `source ~/.nvm/nvm.sh && nvm use 22 >/dev/null 2>&1; AWS_REGION=us-east-1 node_modules/.bin/tsx spike-bedrock.mts 2>&1 | tail -25`
+- **Run web test suite** (2x): `source ~/.nvm/nvm.sh && nvm use 22 >/dev/null 2>&1; cd /Users/vkhandelwal/Documents/MyFinance/apps/web && node_modules/.bin/vitest run 2>&1 | tail -30`
 - **Check if port 3777 is accessible** (1x): `curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:3777 2>&1; echo "---"; lsof -iTCP:3777 -sTCP:LISTEN 2>&1 | head -5`
 - **Get latest NAV for Parag Parikh ELSS Regular Growth** (1x): `curl -s "https://api.mfapi.in/mf/147482" 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print('Scheme:', d['meta']['scheme_name']); print('Latest NAV:', d['data'][0])"`
 - **Search Motilal Oswal Midcap** (1x): `curl -s "https://api.mfapi.in/mf/search?q=motilal%20oswal%20midcap" | python3 -c "
@@ -525,16 +527,6 @@ import json, sys
 d = json.load(sys.stdin)
 for x in d[:8]:
     print(f'{x[\"schemeCode\"]} - {x[\"schemeName\"]}')
-"`
-- **Get Motilal Oswal Midcap Direct Growth NAV history** (1x): `curl -s "https://api.mfapi.in/mf/127042" | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-print('Scheme:', d['meta']['scheme_name'])
-print('Latest NAV:', d['data'][0])
-# Show some historical NAVs
-for i in [0, 50, 100, 200, 300, 500]:
-    if i < len(d['data']):
-        print(f'  data[{i}]: {d[\"data\"][i]}')
 "`
 
 <!-- project-memory-scripts:end -->
