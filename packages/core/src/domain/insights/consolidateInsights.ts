@@ -42,8 +42,16 @@ export type InsightEvent = {
   signature: string;
 };
 
+// Must mirror expenseInsights.merchantKeyOf exactly: drop volatile per-txn
+// reference numbers (>=6-digit tokens) so recurring UPI/ACH payments produce a
+// stable key (and thus a stable eventId) across months instead of re-surfacing
+// as new spend and defeating the per-event triage cache every month.
 const merchantKeyOf = (d: string, derive: (s: string) => string | null): string =>
-  (derive(d) ?? d).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  (derive(d) ?? d)
+    .split(/[^A-Za-z0-9]+/)
+    .filter((tok) => tok.length > 0 && !/^\d{6,}$/.test(tok))
+    .join('')
+    .toUpperCase();
 
 // FNV-1a 32-bit: tiny, dependency-free, deterministic. Sufficient as a cache key
 // (not used for anything security-sensitive).
