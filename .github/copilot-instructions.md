@@ -185,6 +185,18 @@ ARCHITECTURE (Approach C — persist, chosen over A because per-refresh LLM call
 GATES: full suite 608 green (core 279 + agents 43 + api 92 + mcp 74 + agent-harness 50 + web 70); tsc --build clean all pkgs; Groww golden-master 6/6 UNCHANGED. LIVE-VERIFIED end-to-end through real endpoint on demo.db April via Bedrock haiku: car→one-off-vs-loan options with categoryFix, rent/loan miscat own card, shopping-spike→worth_knowing (no Q), cold 20.7s (1 LLM call) / warm 7ms cached / titles identical (stability holds). Had to add expense_insight_triage route to demo.db (→haiku-4.5) for the live test.
 
 DEFERRED: forecasting (own T1, consumes these tags); free-text inline interpretation currently routes to Discuss drawer rather than a dedicated interpret endpoint (v1 simplification). NEXT: this stacks on the Feature-B/calibration branch feat/agent-response-calibration; will go in the same eventual PR. Node 22; node_modules/.bin/{tsc,vitest}; tsx never compile; push gh auth switch --user ak688744.
+- needs_clarity insights: hybrid — deterministic floor + self-explanatory-category exclusion, and one event PER transaction (not a grouped card) — BUILT + live-verified 2026-09-05 (T2, user chose hybrid). Branch feat/credit-card-bill-split (worktree). Solves: the single grouped needs_clarity card kept asking for cadence on self-explanatory/immaterial txns (₹3.45L salary, ₹60k rent, two ₹52 dividends, ₹23 forex markup) because the detector flagged ANY untagged txn where deriveMerchantName→null even when already categorized, and because the LLM triage suppress-tier is ALL-OR-NOTHING per event (one grouped card can't drop salary while keeping unknowns).
+
+CHANGE (packages/core/src/domain/insights/expenseInsights.ts, computeExpenseInsights needs_clarity block):
+1. New consts: NEEDS_CLARITY_MIN_INR=100 (amount floor — skip immaterial dividends/fees/markup); SELF_EXPLANATORY_CADENCE_CATEGORIES=Set['salary','rent','loan'] (assumable recurring → not flagged; 'investment' deliberately ABSENT so SIP-vs-lumpsum still asked).
+2. New flagged filter: skip if tagged; skip if amount<floor; flag if categoryId===null (needs a category); skip if categoryId in self-explanatory set; else flag iff deriveMerchantName===null (ambiguous cadence). 
+3. Emit ONE Insight PER remaining txn (id `needs-clarity:<month>:<txnId>`, transactionIds:[t.id]) instead of one grouped card. consolidateInsights already turns each needs_clarity candidate into its own event (event:<id>) so per-item events + per-item triage fall out automatically; the LLM suppress/needs_input tier now acts per-item. Web InsightCards keys only on tier → renders multiple cards fine (no UI change needed).
+
+LIVE (demo.db Aug, cold triage after clearing stale cache): went from 6-item grouped 'need cadence tags' card → 2 cards: `event:needs-clarity:2026-08:978` "₹15,000 investment — cadence unknown" (genuinely ambiguous) + `event:new_spend:THIRUPATHI` (real new merchant). Salary/rent/dividends/markup all correctly gone.
+
+KNOWN MINOR (pre-existing, surfaced here): consolidateInsights.signatureFor = hash(sorted txnIds + each txn's category + sorted tags) and does NOT include event type/eventId. So a per-item needs_clarity event and an old new_spend event for the SAME single txn collide on signature → the cache serves whichever verdict was stored (stale eventId/title). Manifested as the Aug investment card briefly showing the old "new payee" new_spend title until the stale row was cleared. Benign going forward because after the merchant-key ref-number fix (b5bc154d) new_spend no longer fires for recurring items, so a txn is usually flagged by only one detector; legacy pre-fix cache rows just need clearing (self-heal is by signature match). If cross-type collisions ever bite, add event type to signatureFor (mass re-triage cost). NOT done now (scope).
+
+TESTS: expenseInsights.test.ts updated (grouped→per-item) + 2 new (floor/self-explanatory suppression, per-item ids). Core 289 + api 107 green, Groww 6/6 unchanged. NOT committed. Related: merchant-key ref fix b5bc154d, mechanism finding 0b91cf7d.
 
 ## Convention
 - Tiered SDLC for agent-built work: T1 full discipline / T2 light / T3 direct, with core-logic override and SessionStart-hook triage — Work is triaged by size to save tokens. T1 (layer/substantial feature OR any core-logic change): full discipline — brainstorm spec → writing-plans → branch → TDD → subagent review → PR → update master plan. T2 (scoped, few files): short inline plan → implement → tests → self-review. T3 (localized bug/tweak): direct fix → verify. OVERRIDE: any change touching core financial logic (XIRR, categorization, parsers, portfolio math) is ALWAYS T1 with Groww re-validation, regardless of size (it regresses silently). When unsure, round up a tier. Enforced by a minimal SessionStart hook that injects 'classify tier per myfinance-sdlc skill'; the fat procedure lives in .claude/skills/myfinance-sdlc and lazy-loads. CLAUDE.md holds a backstop pointer. Plugin rejected (YAGNI). MASTER_PLAN.md is durable state, read-first/update-last every session.
@@ -295,6 +307,27 @@ NEXT: execute via superpowers:subagent-driven-development, fresh subagent per ta
 DESIGN (from README): (1) detection at categorization time sets a credit_card_bill signal/categorySource → UI renders 'Credit card bill' badge + upload button on the ledger row. (2) Upload modal → parse PDF → NO confirm-preview → auto-create child transactions → open inline split/categorize panel. (3) Split panel: reconciliation bar (green matched / amber mismatch delta), line-item rows each with CategoryChip (reuses useUpdateTxCategory), '+ Add missing line', 'Confirm split'. (4) Post-split: parent collapses to dashed 'container' row EXCLUDED FROM MONTH TOTALS/KPIs; children render indented, independently editable. State model per parent: status flagged|parsing|split|done, linkedChildIds, billAmount, parsedTotal(derived), matched(derived). Children get parentTransactionId FK back to bill row.
 
 KEY BACKEND FACTS gathered: transactions table (packages/core/src/db/schema.ts) has no parent_id/split column and no CC flag — needs schema add (migration 0009). categorySource is free TEXT (no CHECK) so a new 'credit_card_bill' value is additive/safe. Import registry at packages/api/src/import/registry.ts REGISTRY{hdfc:{expense},groww:{...}} — CC parser is drop-in (add e.g. {hdfc_cc:{expense:parseHdfcCcStatementPdf}}). Existing parsers are XLS (parseHdfcStatementXls); CC statements are PDF → NEW pdf-parse dependency. expenseTxRepo.summary() computes totalSpent/byCategory/byMonth — parent must be excluded once split (add a WHERE cond, e.g. exclude rows with a split marker/categorySource='credit_card_bill' that are done, and DON'T double count children+parent). insertManual self-generates unique dedupeKey. Node 22; never pnpm install; node_modules/.bin/{tsc,vitest}; tsx never compile; push gh auth switch --user ak688744.
+- CC-bill-split plan complete; worktree REBASED onto feat/agent-response-calibration (Feature B needed); migration 0009 — Feature A (credit-card bill split) spec+plan DONE 2026-08-08 in worktree .claude/worktrees/credit-card-split, branch feat/credit-card-bill-split. Spec docs/superpowers/specs/2026-08-08-credit-card-bill-split-design.md; plan docs/superpowers/plans/2026-08-08-credit-card-bill-split.md (13 TDD tasks). NO code yet.
+
+KEY BASE-BRANCH DECISION (user via AskUserQuestion): worktree was created off origin/main but REBASED onto feat/agent-response-calibration because Feature A's detection (credit_card_bill TAG) + agent auto-tagging need Feature B machinery that is NOT on main (tags column, domain/tags.ts, buildExpenseAgent/EXPENSE_INSTRUCTIONS, tag_transaction MCP tool, migrations 0007/0008). Rebase was CLEAN (my 2 doc commits replayed on top of calibration tip 9b2bc7d). Consequence: this branch STACKS on calibration+Feature B, so its eventual PR carries all of that too (or merge calibration first). Another session actively works the calibration branch in the MAIN working dir — I kept my own branch and never checked out theirs.
+
+PLAN SHAPE (T2, keep categorize.ts BYTE-IDENTICAL, Groww 6/6 standing gate): Task0 add pdfjs-dist dep (install via node ~/.cache/node/corepack/v1/pnpm/10.4.1/dist/pnpm.cjs install --config.manage-package-manager-versions=false) + migration 0009_credit_card_split.sql (ALTER TABLE transactions ADD parent_transaction_id integer REFERENCES transactions(id) + idx_transactions_parent; journal idx 9). Task1 seed credit_card_bill starter category. Task2 repo insertChild/listChildren + parentId query filter + parentTransactionId on ExpenseTransactionRow (dedupeKey cc_<parent>_..._<rand>). Task3 summary() excludes split parents via NOT IN (SELECT parent_transaction_id WHERE NOT NULL) appended to windowConds+spendConds. Task4 agents cc_statement_parse task + parseCcStatement(complete,text) mirroring categorizeWithAI (Zod CcStatementParseSchema {lineItems:[{date,merchant,amount signed}], detectedTotal:number|null}, retry-once, rethrow auth/provider_not_configured, throw 'cc_parse_failed'). Task5 api/lib/pdfText.ts extractPdfText(buffer,password?) via pdfjs-dist/legacy/build/pdf.mjs + PdfPasswordRequiredError/PdfPasswordIncorrectError (password never logged/persisted). Task6 api/lib/ccSplit.ts reconcile() = matched when |parsedTotal - (detectedTotal ?? parentAmount)| < 1, reconciledAgainst statementTotal|billAmount, carryover=parentAmount-(detectedTotal??parsedTotal). Task7 POST /transactions/:id/split-from-statement (extend transactionRoutes signature to (app,{gateway}), wire in server.ts; getFullById repo read for parent amount/accountId; refund negative→credit child; insertChild in runInTransaction; 404/409-already-split/400 password&parse errors, 502 auth). Task8 expenseAgent EXPENSE_INSTRUCTIONS add step to tag credit_card_bill. Task9 web types SplitResult + useSplitFromStatement (apiUpload multipart) + UploadIcon. Task10 SplitStatementModal (file + optional password). Task11 SplitPanel (reconciliation bar green/amber + carryover line + CategoryChip line items). Task12 ExpensesPage wire isCreditCardBill (categoryId==='credit_card_bill' || tag) + isSplitContainer + badge/upload/panel/dashed-container-row. Task13 full-suite + guardrails (categorize.ts git-diff EMPTY, Groww 6/6, seam clean) + MASTER_PLAN/memory close-out.
+
+RECONCILIATION MODEL (user-refined): LLM keeps refunds as NEGATIVE line items (don't drop — would overstate spend + break totals), excludes ONLY prior-bill-payment line; reconcile parsedTotal vs statement's own detectedTotal (NOT bank-paid amount, because carryover); carryover surfaced as informational muted line, never red. PDF parse = LLM via gateway (user chose over deterministic parser).
+
+NEXT: execute via superpowers:subagent-driven-development, Task 0 first, in the worktree. Node 22; never pnpm install; node_modules/.bin/{tsc,vitest}; tsx never compile; push gh auth switch --user ak688744. Supersedes brainstorm-start decision 05486149.
+- CC-bill-split BUILT + reviewed + fixed + pushed (feat/credit-card-bill-split); 3 review findings fixed — Feature A (credit-card bill split) BUILT by a separate executing agent, then reviewed + fixed + committed + pushed by me 2026-08-08. Branch feat/credit-card-bill-split pushed to origin (ak688744/MyFinance), stacks on feat/agent-response-calibration (unmerged — carries Feature B). PR not yet opened. 6 clean per-layer commits (core/agents/api/agent-harness/web/docs) on top of the spec+plan commits.
+
+REVIEW VERDICT: faithful to spec+plan. Full suite green: core 285, agents 54, api 106, agent-harness 51, web 78. T2 guardrails held: categorize.ts BYTE-IDENTICAL vs base (git diff empty), Groww golden 6/6, seam clean (grep hits were comments only). tsc --noEmit clean web+api (note: tsc --build hits a NON-code EPERM writing packages/core/dist/test/fixtures/growwGolden.json — a sandbox/xattr quirk on the fixture-copy step, unrelated to feature; tests run via tsx so unaffected).
+
+3 FINDINGS FOUND & FIXED before commit:
+1. (REAL BUG) apps/web ExpensesPage: allRows = txns.data (paginated page, PAGE_SIZE=25) was used for isSplitContainer + children lookup. Parent bill (mid-month) and children (spread across month) land on different pages → parent renders as plain row not container, children (filtered out of topLevelRows by parentTransactionId!=null) render on NO page (invisible) after refresh. FIX: allRows = fullMonthTxns.data ?? txns.data (fullMonthTxns limit-1000 whole-month query already existed for insights). topLevelRows still from paginated displayedRows. Totals were always correct (summary is separate core SQL).
+2. (TEST GAP) pdfText password tests were silent no-ops (early return when fixtures/encrypted.pdf absent) → password branches untested. FIX: makePdf.ts gained makeEncryptedPdf() — generates a REAL RC4 (rev-2, 40-bit, Standard security handler) password-protected PDF in pure JS (Node 22 OpenSSL disables rc4 via createCipheriv → ERR_OSSL_EVP_UNSUPPORTED, so RC4 is hand-implemented; MD5 via node:crypto is fine). Verified against real pdfjs: no-pw→PasswordException code1 (NEED_PASSWORD), wrong-pw→code2 (INCORRECT_PASSWORD), correct-pw→extracts 'SWIGGY 500'. pdfText.test.ts rewritten to assert all 4 real cases + corrupt-buffer→pdf_extract_failed (api 104→106 tests).
+3. (COSMETIC) migration 0009 journal 'when' was 1785000000000 < 0008's 1786000000000 (out of order; Drizzle applies by idx so harmless). FIX: bumped to 1787000000000.
+
+DESIGN AS BUILT (matches spec 2026-08-08-credit-card-bill-split-design.md): migration 0009 parent_transaction_id self-FK + idx; repo insertChild (dedupeKey cc_<parent>_..._<rand>, sourceType='cc_statement')/listChildren/getFullById + parentId query filter + parentTransactionId on ExpenseTransactionRow; summary() excludes parents-with-children via NOT IN (SELECT parent_transaction_id WHERE NOT NULL) on windowConds+spendConds; seed credit_card_bill starter category; agents cc_statement_parse task + parseCcStatement (Zod, signed refunds negative, detectedTotal, retry-once, rethrow auth/provider_not_configured, throw cc_parse_failed); api/lib/pdfText.ts extractPdfText via pdfjs-dist/legacy/build/pdf.mjs (+optional password never logged, PdfPasswordRequired/IncorrectError); api/lib/ccSplit.ts reconcile (matched=|parsedTotal-(detectedTotal??parentAmount)|<1, carryover); POST /transactions/:id/split-from-statement (getFullById parent, 404/409-already-split/400 password&parse/502 auth, refund→credit child, insertChild in runInTransaction, resolveCategoryFromRules auto-categorize); expenseAgent EXPENSE_INSTRUCTIONS step 4 tags credit_card_bill; web types SplitResult + useSplitFromStatement + UploadIcon + SplitStatementModal (+password field) + SplitPanel (reconciliation bar + carryover line + CategoryChip) + ExpensesPage isCreditCardBill/isSplitContainer + badge/upload/container rows.
+
+NEXT: open PR (user call) — either merge calibration/Feature B first, or this PR carries all of it. Node 22; never pnpm install; node_modules/.bin/{tsc,vitest}; tsx never compile. Supersedes plan decision dd7d3e71.
 
 ## Unresolved
 - L0 build PARKED at Task 2.2 done — resume from Task 2.3 (schemeRepo + holdingsRepo) — L0 Foundation build paused 2026-06-12, mid-execution. Resume point for next session.
@@ -367,6 +400,15 @@ KEY GOTCHAS for subagents: (1) Node 20 mandatory — prefix cmds `source ~/.nvm/
 - NEXT FEATURE A (own session): Credit-card bill upload flow — detect CC bill/autopay txn, prompt user to upload the CC statement, parse+ingest line items — User decided 2026-08-04 to build this in a SEPARATE session (T1 likely — new parser + new ingestion surface, but reuses existing seams). MOTIVATION: the wealth agent's #1 advice blind spot is credit-card spend — today only the CC autopay lump sum (~₹5-9k/mo) is visible as one expense debit; zero category-level visibility into what that spend actually is (dining/subscriptions/shopping). This blocks accurate category budgeting + lifestyle-creep detection. FEATURE: when the system recognizes a credit-card bill / CC-autopay transaction, surface an option to the user to UPLOAD that card's bill/statement; parse it and ingest the line items as real categorized expense transactions (so the lump sum is replaced/expanded into itemized spend). ARCHITECTURE FIT (verified against current build): (1) import parser registry ALREADY exists — packages/api/src/import/registry.ts resolveParser(platform,kind), REGISTRY currently {hdfc:{expense:parseHdfcStatementXls}, groww:{holdings,transactions}}; a CC parser is a DROP-IN new module (D6 seam: zero route/orchestrator change). Model it on the HDFC expense parser (packages/core parsers + importTransactions orchestrator). (2) multipart upload endpoint pattern exists — POST /imports/expenses via lib/multipart.ts readMultipart + @fastify/multipart; a CC statement is another multipart upload. (3) categorization engine (packages/core/src/domain/categorize.ts, FROZEN — T1 if touched) auto-categorizes on import via the priority ladder. (4) expense txns already support accountId (L1.5 multi-account) so the CC can be its own account. (5) web ImportModal already launches expense import (BUG-008 fix). OPEN DESIGN Qs for the brainstorm: which CC issuers/formats to parse first (statements are PDF, not XLS — need a PDF parser, unlike HDFC's .xls; likely new dependency); how to DEDUPE the itemized CC spend against the existing autopay lump-sum debit so spend isn't double-counted (the autopay debit is the bank paying the card; the line items are the actual spend — need to net one out, mirrors the existing excludeFromSpend/self_transfer logic); how the agent 'recognizes a CC bill' (a category/rule match on the autopay txn -> surfaces upload CTA). Start: invoke myfinance-sdlc (classify, likely T1) -> brainstorming -> spec. Related: feature B (expense AI insights) c-separate; both split off from the response-calibration session 2026-08-04.
 - NEXT FEATURE B (own session): Expense-page AI insights — clickable insight cards that open the assistant side-chat to resolve vague/abnormal txns, plus migrate Notes -> Tags — User decided 2026-08-04 to build this in a SEPARATE session from feature A (credit-card upload). T1 (new agent-driven surface + schema change notes->tags + new insights contract). FULL FEATURE as user described: On the Expenses page, generate AI INSIGHTS that (1) flag transactions needing MORE CLARITY — vague/unclear txn descriptions, or a NEW/unknown spending not seen before; (2) detect ABNORMAL spend — a category or period whose spend GREW vs the user's usual pattern. Insights must be CLICKABLE: clicking an insight OPENS THE AI CHAT IN A SIDEBAR (side-panel, not the full Assistant page) scoped to that insight, where the agent ASKS the user for details about the doubtful transaction(s); the user's explanations are then used to CREATE TAGS on those transactions. \n\nTAGS MODEL (replaces Notes): migrate away from the free-text  column to first-class TAGS. Tags carry structured hints the agent uses to categorize/understand expenses — e.g. one-time vs recurring, subscription; if a nuance like 'quarterly' is needed it goes in notes (so notes may persist as a secondary free-text field, but tags become the primary structured signal). Tags are both user- and agent-writable (the chat flow writes tags from the user's explanation). \n\nARCHITECTURE FIT (verified vs current build): (a)  column exists — transactions.note TEXT added in the expense-enhancements change (migration 0005) + ExpenseTransactionRepo.updateNote + PATCH /transactions/:id {note}. A tags model is a NEW table (e.g. transaction_tags) or JSON column + repo + endpoints; migration needed; decide relationship to note (keep note for free-text like 'quarterly', add tags for structured). (b) The wealth agent already has WRITE tools over the MCP write layer (add/update txns, categories, rules) and the categorize engine is frozen (T1 if touched). Tag-writing = new MCP write tool + core repo method. (c) The assistant chat harness (packages/agent-harness runChat + SSE POST /agent/chat + web useAgentChat/AssistantPage) EXISTS but is a FULL-PAGE Assistant; this feature needs a SIDEBAR/side-panel chat variant scoped with transaction context (pass the flagged txn ids + insight into the thread's first turn / working context). The ask_user clarifying-question tool (built this session on feat/agent-response-calibration — ask_user + question SSE event + QuestionChips) is directly reusable: the agent asks about a doubtful txn via ask_user, user answers, agent writes a tag. (d) Insights themselves: abnormal-spend detection can reuse expenseTxRepo.summary() byCategory/byMonth aggregation (already built for the Expenses redesign) to compare a category/period vs baseline; vague-txn detection = heuristic (deriveMerchantName returns null / no category / description not structured) + agent judgment; new-spend = category/merchant not seen in prior windows. There was an L2/spike 'AI insight slot as a data concern (text+severity+CTA)' reserved for exactly this — check the frontend-design-spike doc. \n\nOPEN Qs for brainstorm: insights computed server-side (deterministic stats) vs agent-generated (LLM over data) vs hybrid; the sidebar-chat UX (new component vs reuse AssistantPage in a drawer); tags schema (table vs JSON, controlled vocab vs free tags, one-time/recurring/subscription as enum tag-types); how tag writes flow from chat (agent write tool with user confirmation). Start: myfinance-sdlc (T1) -> brainstorming -> spec. Reuses this session's ask_user/question-chips machinery. Related: feature A (CC upload), response-calibration session 2026-08-04.
 
+## Insights-bugfix
+- Fixed stale/unconfident triage-cache verdicts (T2) — Root cause: a fallback verdict (from a failed/dropped LLM triage call) was persisted to expense_insight_triage forever with no re-check, so a transient failure could permanently freeze a wrong needs_input card even after the txn was tagged/categorized. Fix (branch feat/agent-response-calibration, commit 9b2bc7d, pushed to PR #16): (1) packages/agents/src/insights/triageInsights.ts - new exported applyCadenceBackstop(verdict, event) re-checks the deterministic cadence-tag backstop against ALREADY-triaged verdicts (no LLM call); TriagedInsight gained a confident:boolean field (true=genuine model judgment or backstop-forced, false=fallback placeholder). (2) packages/api/src/lib/insightsService.ts getTriagedInsights - on every cache read, heals each cached verdict via applyCadenceBackstop and persists the healed version back if it changed (so the DB row itself stops being wrong, not just the in-memory response); on fresh triage, only persists confident verdicts (unconfident fallbacks are served but left uncached so next load retries). Regression tests added in both packages (agents 12 tests incl 4 new re confident/applyCadenceBackstop; api added a 2-test describe block reproducing the exact bug + persistence-of-heal). Verified live against real demo.db: the reported May txn (UPI-...-123916535575-INVESTMENT, tags=[recurring,sip]) card now correctly suppressed on read, cache row persisted with tier=suppress confident=true. ~102 other pre-fix cache rows in demo.db lack the confident field - NOT bulk-migrated, they self-heal lazily the next time each month's insights are viewed (no LLM call for backstop-eligible ones). Full suite green: core 279 (Groww 6/6 unchanged) + agents 49 + api 94 + mcp 74 + web 70, tsc --build clean. Classified T2 (scoped bugfix, no core financial logic, no new architecture) via AskUserQuestion.
+
+## Data-source-research
+- Evaluating RapidAPI Indian MF APIs for holdings/sector/expense/risk fundamentals — MyFinance needs MF fundamentals beyond NAV; indianapi.in only gives NAV+returns+rating, so checking RapidAPI marketplace options
+
+## Workflow
+- Investment Analyzer spec written; committing pending CC-split branch changes before merge — Brainstormed+wrote spec docs/superpowers/specs/2026-09-06-l4.1-investment-analyzer-agent-design.md for the L4.1 Investment Analyzer agent (v1 health analysis). Meanwhile found 442 uncommitted lines on feat/credit-card-bill-split beyond the spec: (1) the needs_clarity per-txn hybrid + merchantKeyOf ref-number-stripping fix in packages/core/src/domain/insights/{expenseInsights,consolidateInsights}.ts + tests (T2 core insights change, matches prior memory decisions 0b91cf7d/b5bc154d), (2) CC-split UI/API follow-ups in ExpensesPage.tsx/transactions.ts + tests, (3) CLAUDE.md/copilot-instructions doc updates. User chose to commit these (Option 2) with per-body messages after verifying tests green, then merge the PR, then start Investment Analyzer fresh on main.
+
 ---
 
 ## How to Save Decisions (for Copilot)
@@ -381,9 +423,112 @@ grouping by category, and reproducing this exact format including this instructi
 
 ---
 
-## Research Findings Index (65 entries)
+## Research Findings Index (168 entries)
 | Topic | Tags | Staleness | Date |
 |-------|------|-----------|------|
+| Indian MF holdings disclosure — ground truth | mf-holdings, sebi, amfi, amc, opendata | stable | 2026-09-05 |
+| AMFI portfolio disclosure is link aggregator not host | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| SEBI monthly portfolio disclosure clause found | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Advisorkhoj FINAL verdict | advisorkhoj, mf-data, external-api, verdict, holdings, sector | stable | 2026-09-05 |
+| Advisorkhoj real urls | advisorkhoj, mf-data | stable | 2026-09-05 |
+| ICICI monthly portfolio CONFIRMED ZIP | mf-holdings, amc | stable | 2026-09-05 |
+| Advisorkhoj bad url | advisorkhoj, mf-data | stable | 2026-09-05 |
+| Morningstar FINAL verdict | morningstar, mf-data, external-api, verdict, auth | stable | 2026-09-05 |
+| ICICI official file URL not indexed | mf-holdings, amc | stable | 2026-09-05 |
+| Bing broke hyphen slug->movie | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Morningstar bad fund id | morningstar, mf-data | stable | 2026-09-05 |
+| Axis MF monthly portfolio CONFIRMED consolidated XLSX | mf-holdings, amc | stable | 2026-09-05 |
+| Bing functional, need slug query | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| ValueResearch FINAL verdict | valueresearch, mf-data, external-api, verdict, paywall | stable | 2026-09-05 |
+| ICICI blob download path found | mf-holdings, amc | stable | 2026-09-05 |
+| searx antibot | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| VR 301 redirect | valueresearch, mf-data | stable | 2026-09-05 |
+| ICICI/Axis JS-gated portfolio lists | mf-holdings, amc | stable | 2026-09-05 |
+| AMFI SPA nav no hrefs | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Tickertape FINAL verdict | tickertape, mf-data, external-api, verdict, holdings, sector, risk | stable | 2026-09-05 |
+| All search engines blocked | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Tickertape holdings PUBLIC works | tickertape, mf-data, holdings, sector, external-api | stable | 2026-09-05 |
+| SBI portfolios CONFIRMED consolidated XLSX | mf-holdings, amc | stable | 2026-09-05 |
+| Tickertape mfId format | tickertape, mf-data | stable | 2026-09-05 |
+| marginalia redirect | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| archive.org blocked, SEBI guess 404 | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Tickertape holdings route valid | tickertape, mf-data, holdings, external-api | stable | 2026-09-05 |
+| SBI /portfolios and ICICI statutory-disclosures paths | mf-holdings, amc | stable | 2026-09-05 |
+| Ecosia 403 too | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Tickertape soft404 empty | tickertape, mf-data | stable | 2026-09-05 |
+| Mojeek 403; recall Reg 59A | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Google CAPTCHA on ICICI/SBI queries | mf-holdings, amc | stable | 2026-09-05 |
+| Tickertape MF NEXT_DATA rich | tickertape, mf-data, holdings, sector, risk | stable | 2026-09-05 |
+| Bing returns static generic SEBI set | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Axis portfolios JS accordion; ICICI mandatory-disclosures 404 | mf-holdings, amc | stable | 2026-09-05 |
+| Tickertape MF page keywords | tickertape, mf-data, holdings, sector | stable | 2026-09-05 |
+| Tickertape search stocks only | tickertape, mf-data | stable | 2026-09-05 |
+| master keyword triggers film | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Axis downloads no portfolio; ICICI search noise | mf-holdings, amc | stable | 2026-09-05 |
+| Tickertape API host live | tickertape, mf-data, external-api | stable | 2026-09-05 |
+| Master circular URL guess 404 | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| mfapi.in confirmed free NAV source | mfapi, mutual-funds, nav, data-source | stable | 2026-09-05 |
+| Groww FINAL verdict COMPLETE | groww, mf-data, external-api, verdict, holdings, sector, risk | stable | 2026-09-05 |
+| DDG lite captcha too | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Axis MF portfolio URLs found | mf-holdings, amc | stable | 2026-09-05 |
+| RapidAPI listing pages are SPA-unreadable by WebFetch | mutual-fund, api, rapidapi, data-source, limitation | stable | 2026-09-05 |
+| SEBI GET search JS-only | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Groww HOLDINGS+SECTOR confirmed | groww, mf-data, external-api, holdings, sector, risk, verdict | stable | 2026-09-05 |
+| ICICI 404 Axis portfolios link probe | mf-holdings, amc | stable | 2026-09-05 |
+| Bing returned film Master results | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Groww NEXT_DATA parse retry | groww, mf-data | stable | 2026-09-05 |
+| RapidAPI Indian MF listings verify | mutual-fund, api, rapidapi, data-source | stable | 2026-09-05 |
+| HDFC MF monthly portfolio CONFIRMED | mf-holdings, amc | stable | 2026-09-05 |
+| Circular-number Bing query no hit | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Groww page embeds holdings+sector+risk | groww, mf-data, external-api, holdings, sector, risk | stable | 2026-09-05 |
+| Groww detail paths probe | groww, mf-data, external-api | stable | 2026-09-05 |
+| AMFI research nav no portfolio link | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| HDFC MF monthly portfolio path | mf-holdings, amc | stable | 2026-09-05 |
+| Groww search works | groww, mf-data, external-api | stable | 2026-09-05 |
+| Bing site filter ignored | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Indian MF holdings free sources conclusion | mf-holdings, github, opendata | stable | 2026-09-05 |
+| Kuvera FINAL verdict | kuvera, mf-data, external-api, verdict, holdings-check | stable | 2026-09-05 |
+| AMFI portfolio URL guess 404 | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Bing works but generic SEBI hits | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Kuvera v5 detail RICH | kuvera, mf-data, external-api, expense-ratio, returns, risk | stable | 2026-09-05 |
+| Bing generic banking noise | mf-holdings, amc | stable | 2026-09-05 |
+| Kuvera v5 detail works | kuvera, mf-data, external-api, holdings-check | stable | 2026-09-05 |
+| Google search blocked too | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| DuckDuckGo CAPTCHA block | mf-holdings, amc | stable | 2026-09-05 |
+| Kuvera Parag code | kuvera, mf-data | stable | 2026-09-05 |
+| DDG CAPTCHA blocked | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| MF disclosure search engine probe | mf-holdings, amc | stable | 2026-09-05 |
+| Indian MF holdings parsers | mf-holdings, github, opendata | stable | 2026-09-05 |
+| Kuvera v4 list works | kuvera, mf-data, external-api, holdings-check | stable | 2026-09-05 |
+| ICICI/SBI MF disclosure URL probing | mf-holdings, amc | stable | 2026-09-05 |
+| SEBI MF disclosure search retry | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| Indian MF free data sources | mf-holdings, github, opendata | stable | 2026-09-05 |
+| Kuvera v5 list confirmed empty | kuvera, mf-data, external-api | stable | 2026-09-05 |
+| Axis MF statutory disclosures page | mf-holdings, amc | stable | 2026-09-05 |
+| DDG redirect for SEBI MF disclosure search | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| RapidAPI MF fetch pending | mutual-fund, api, rapidapi, data-source | stable | 2026-09-05 |
+| WebFetch JSON limit | webfetch-limit, mf-data, external-api | stable | 2026-09-05 |
+| SEBI MF portfolio disclosure research start | mf-holdings, sebi, amfi | stable | 2026-09-05 |
+| indianapi.in base URLs + auth | mutual-fund, api, data-source, indianapi | stable | 2026-09-05 |
+| Kuvera search empty | kuvera, mf-data, external-api, webfetch-limit | stable | 2026-09-05 |
+| indianapi.in/pricing 404 | mutual-fund, api, data-source, indianapi | stable | 2026-09-05 |
+| needs_clarity detector flags already-categorized txns as needing input (conflates category-clarity with cadence) | insights, needs_clarity, cadence, expenseInsights, deriveMerchantName, triage, ux | stable | 2026-09-05 |
+| indianapi.in pricing/auth pending | mutual-fund, api, data-source, indianapi | stable | 2026-09-05 |
+| AMFI homepage nav (no hrefs extracted) | mf-holdings, amfi | stable | 2026-09-05 |
+| Kuvera search probe | kuvera, mf-data, external-api | stable | 2026-09-05 |
+| indianapi.in stock-market API MF endpoints | mutual-fund, api, data-source, indianapi | stable | 2026-09-05 |
+| Kuvera list endpoint | kuvera, mf-data, external-api | stable | 2026-09-05 |
+| AMFI monthly-portfolio-disclosure guessed URL 404 | mf-holdings, amfi | stable | 2026-09-05 |
+| stock.indianapi.in/docs | mutual-fund, api, data-source | stable | 2026-09-05 |
+| MF data API research | mf-data, external-api, holdings, sector, research | stable | 2026-09-05 |
+| mfapi scheme JSON shape confirmed | mfapi, mutual-funds, nav | stable | 2026-09-05 |
+| SEBI portfolio disclosure circular URL 404 | mf-holdings, sebi | stable | 2026-09-05 |
+| stock.indianapi.in root | mutual-fund, api, data-source | stable | 2026-09-05 |
+| Indian MF holdings disclosure research start | mf-holdings, sebi, amfi, disclosure | stable | 2026-09-05 |
+| indianapi.in API products | mutual-fund, api, data-source | stable | 2026-09-05 |
+| AMFI NAVAll.txt fields confirmed | amfi, navall, mutual-funds | stable | 2026-09-05 |
+| Indian MF fundamentals data sources | mutual-funds, data-sources, holdings, mfapi, amfi | stable | 2026-09-05 |
+| Recurring UPI rent/SIP falsely flagged as new_spend every month — root cause + fix | insights, new_spend, merchantKeyOf, expenseInsights, consolidateInsights, upi, recurring, rent, sip, bugfix | stable | 2026-09-05 |
 | May-2026 needs_input insight bug investigation | insights, bugs, expense-triage | stable | 2026-08-08 |
 | A2 migration 0007 tags | migration, schema, tags, drizzle, test | stable | 2026-08-04 |
 | wealth-agent calibration+arithmetic follow-up (T2) | l4, agent-harness, calibration, markdown, arithmetic | stable | 2026-08-01 |
