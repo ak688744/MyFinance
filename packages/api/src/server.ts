@@ -69,7 +69,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
 
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
-  await app.register(expenseRoutes);
+  await app.register(expenseRoutes, { gateway });
   await app.register(investmentRoutes);
   await app.register(categoryRoutes, { gateway });
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });

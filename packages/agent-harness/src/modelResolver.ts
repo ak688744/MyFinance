@@ -20,6 +20,8 @@ export type ResolverDeps = {
   decrypt: (blob: string) => string;
 };
 
+export type BedrockConfig = { region: string; profile: string | undefined };
+
 export type ResolvedRoute = {
   modelString: string;
   apiKey: string | undefined;
@@ -27,6 +29,8 @@ export type ResolvedRoute = {
   inputPerM: number;
   outputPerM: number;
   providerId: string;
+  /** Present only for the bedrock dialect (SSO — no apiKey). */
+  bedrock?: BedrockConfig;
 };
 
 export class AgentConfigError extends Error {
@@ -38,7 +42,7 @@ export class AgentConfigError extends Error {
   }
 }
 
-const AGENT_SUPPORTED_DIALECTS = new Set(['gemini', 'openai-compatible']);
+const AGENT_SUPPORTED_DIALECTS = new Set(['gemini', 'openai-compatible', 'bedrock']);
 
 export function toMastraModelString(dialect: string, modelString: string): string {
   if (dialect === 'gemini') {
@@ -52,31 +56,75 @@ export function toMastraModelString(dialect: string, modelString: string): strin
 
 const WEALTH_TASK = 'wealth_chat';
 
-export function resolveWealthRoute(deps: ResolverDeps): ResolvedRoute {
-  const route = deps.routeRepo.getByTask(WEALTH_TASK);
+export function resolveRoute(deps: ResolverDeps, task: string): ResolvedRoute {
+  const route = deps.routeRepo.getByTask(task);
   if (!route) {
     throw new AgentConfigError(
       'not_configured',
-      'No model is assigned to the wealth agent. Configure one in AI Settings → Routing (task "Wealth Chat Agent").',
+      task === 'wealth_chat'
+        ? 'No model is assigned to the wealth agent. Configure one in AI Settings → Routing (task "Wealth Chat Agent").'
+        : `No model is assigned to the "${task}" task. Configure one in AI Settings → Routing.`,
     );
   }
   const model = deps.modelRepo.get(route.modelId);
   if (!model) {
-    throw new AgentConfigError('not_configured', 'The wealth agent’s assigned model no longer exists. Reassign it in AI Settings.');
+    throw new AgentConfigError(
+      'not_configured',
+      task === 'wealth_chat'
+        ? 'The wealth agent\'s assigned model no longer exists. Reassign it in AI Settings.'
+        : `The "${task}" task\'s assigned model no longer exists. Reassign it in AI Settings.`,
+    );
   }
   const provider = deps.providerRepo.get(model.providerId);
   if (!provider) {
-    throw new AgentConfigError('not_configured', 'The wealth agent’s provider no longer exists. Reconfigure it in AI Settings.');
+    throw new AgentConfigError(
+      'not_configured',
+      task === 'wealth_chat'
+        ? 'The wealth agent\'s provider no longer exists. Reconfigure it in AI Settings.'
+        : `The "${task}" task\'s provider no longer exists. Reconfigure it in AI Settings.`,
+    );
   }
   if (!AGENT_SUPPORTED_DIALECTS.has(provider.dialect)) {
     throw new AgentConfigError(
       'unsupported_dialect',
-      `The wealth agent doesn’t support the "${provider.dialect}" provider yet — choose a Gemini or OpenAI-compatible model in AI Settings.`,
+      task === 'wealth_chat'
+        ? `The wealth agent doesn\'t support the "${provider.dialect}" provider yet — choose a Gemini, OpenAI-compatible, or Bedrock model in AI Settings.`
+        : `The "${task}" task doesn\'t support the "${provider.dialect}" provider yet — choose a Gemini, OpenAI-compatible, or Bedrock model in AI Settings.`,
     );
   }
+
+  // Bedrock authenticates via the ambient AWS credential chain (SSO), not an API
+  // key — mirroring the categorization Bedrock adapter. Region/profile live in
+  // the provider's configJson (AI Settings stores no secret for bedrock).
+  if (provider.dialect === 'bedrock') {
+    const config = provider.configJson ? (JSON.parse(provider.configJson) as { region?: string; profile?: string }) : {};
+    if (!config.region) {
+      throw new AgentConfigError(
+        'not_configured',
+        task === 'wealth_chat'
+          ? 'The wealth agent\'s Bedrock provider has no AWS region. Set one in AI Settings.'
+          : `The "${task}" task\'s Bedrock provider has no AWS region. Set one in AI Settings.`,
+      );
+    }
+    return {
+      modelString: model.modelString,
+      apiKey: undefined,
+      dialect: provider.dialect,
+      inputPerM: model.inputPerM,
+      outputPerM: model.outputPerM,
+      providerId: provider.id,
+      bedrock: { region: config.region, profile: config.profile },
+    };
+  }
+
   const apiKey = provider.secretEnc ? deps.decrypt(provider.secretEnc) : undefined;
   if (!apiKey) {
-    throw new AgentConfigError('not_configured', 'The wealth agent’s provider has no API key. Add one in AI Settings.');
+    throw new AgentConfigError(
+      'not_configured',
+      task === 'wealth_chat'
+        ? 'The wealth agent\'s provider has no API key. Add one in AI Settings.'
+        : `The "${task}" task\'s provider has no API key. Add one in AI Settings.`,
+    );
   }
   return {
     modelString: toMastraModelString(provider.dialect, model.modelString),
@@ -86,4 +134,8 @@ export function resolveWealthRoute(deps: ResolverDeps): ResolvedRoute {
     outputPerM: model.outputPerM,
     providerId: provider.id,
   };
+}
+
+export function resolveWealthRoute(deps: ResolverDeps): ResolvedRoute {
+  return resolveRoute(deps, WEALTH_TASK);
 }

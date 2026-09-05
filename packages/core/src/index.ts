@@ -30,6 +30,7 @@ export { makeAiProviderRepo } from './repositories/aiProviderRepo';
 export { makeAiModelRepo } from './repositories/aiModelRepo';
 export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo';
 export { makeAiUsageRepo } from './repositories/aiUsageRepo';
+export { makeExpenseInsightTriageRepo } from './repositories/expenseInsightTriageRepo';
 
 export type {
   InvestmentTxRepo,
@@ -57,6 +58,8 @@ export type {
   AiModelRepo,
   AiTaskRouteRepo,
   AiUsageRepo,
+  ExpenseInsightTriageRow,
+  ExpenseInsightTriageRepo,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------
@@ -105,6 +108,45 @@ export type {
   CategorizationInput,
   RecategorizeDeps,
 } from './domain/categorize';
+
+// ---------------------------------------------------------------------------
+// Domain — tags
+// ---------------------------------------------------------------------------
+export {
+  normalizeTags,
+  parseTags,
+  serializeTags,
+  mergeTags,
+  removeTagFrom,
+} from './domain/tags';
+
+export type { Tag, TagSource } from './domain/tags';
+
+// ---------------------------------------------------------------------------
+// Domain — expense insights
+// ---------------------------------------------------------------------------
+export {
+  computeExpenseInsights,
+  LOOKBACK_MONTHS,
+  NEW_SPEND_MIN_INR,
+  NEW_SPEND_TOP_N,
+  ABNORMAL_RATIO,
+  ABNORMAL_MIN_JUMP_INR,
+} from './domain/insights/expenseInsights';
+
+export type {
+  Insight,
+  InsightType,
+  InsightTxn,
+  InsightInput,
+} from './domain/insights/expenseInsights';
+
+export { consolidateInsights } from './domain/insights/consolidateInsights';
+export type {
+  ConsolidationTxn,
+  RuleSignal,
+  InsightEvent,
+} from './domain/insights/consolidateInsights';
 
 // ---------------------------------------------------------------------------
 // Domain — NAV + AMFI

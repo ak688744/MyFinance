@@ -53,8 +53,37 @@ describe('resolveWealthRoute', () => {
     }
   });
 
-  it('throws unsupported_dialect for a bedrock route (v1)', () => {
-    const provider = { id: 'p1', dialect: 'bedrock', label: 'AWS', secretEnc: null, configJson: '{"region":"us-east-1"}', createdAt: 't' };
+  it('resolves a bedrock route from configJson region/profile (no apiKey, SSO)', () => {
+    const model = { id: 'm1', providerId: 'p1', modelString: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', label: 'Haiku', inputPerM: 0.8, outputPerM: 4, createdAt: 't' };
+    const provider = { id: 'p1', dialect: 'bedrock', label: 'AWS', secretEnc: null, configJson: '{"region":"us-east-1","profile":"dev"}', createdAt: 't' };
+    const r = resolveWealthRoute(fakeDeps({ model, provider }));
+    expect(r.dialect).toBe('bedrock');
+    expect(r.apiKey).toBeUndefined();
+    expect(r.modelString).toBe('us.anthropic.claude-haiku-4-5-20251001-v1:0');
+    expect(r.bedrock).toEqual({ region: 'us-east-1', profile: 'dev' });
+    expect(r.inputPerM).toBe(0.8);
+    expect(r.providerId).toBe('p1');
+  });
+
+  it('resolves a bedrock route with no profile (default SSO chain)', () => {
+    const provider = { id: 'p1', dialect: 'bedrock', label: 'AWS', secretEnc: null, configJson: '{"region":"ap-south-1"}', createdAt: 't' };
+    const r = resolveWealthRoute(fakeDeps({ provider }));
+    expect(r.bedrock).toEqual({ region: 'ap-south-1', profile: undefined });
+  });
+
+  it('throws not_configured when a bedrock provider has no region', () => {
+    const provider = { id: 'p1', dialect: 'bedrock', label: 'AWS', secretEnc: null, configJson: '{"profile":"dev"}', createdAt: 't' };
+    try {
+      resolveWealthRoute(fakeDeps({ provider }));
+      throw new Error('should have thrown');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AgentConfigError);
+      expect((e as AgentConfigError).kind).toBe('not_configured');
+    }
+  });
+
+  it('still throws unsupported_dialect for a genuinely unsupported dialect', () => {
+    const provider = { id: 'p1', dialect: 'cohere', label: 'Cohere', secretEnc: 'ENC', configJson: null, createdAt: 't' };
     try {
       resolveWealthRoute(fakeDeps({ provider }));
       throw new Error('should have thrown');

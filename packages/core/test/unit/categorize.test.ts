@@ -276,6 +276,12 @@ function makeFakeTxRepo(
     insertManual() {
       throw new Error('not used');
     },
+    getTags() {
+      return [];
+    },
+    setTags() {},
+    addTags() {},
+    removeTag() {},
   };
   return { repo, txns, updates };
 }

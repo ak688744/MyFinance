@@ -13,6 +13,14 @@ describe('wealth agent', () => {
     expect(WEALTH_INSTRUCTIONS.toLowerCase()).toContain('profile');
   });
 
+  it('instructs calibrated verbosity and clarifying questions', () => {
+    const lower = WEALTH_INSTRUCTIONS.toLowerCase();
+    // Calibration: matches depth to the question (few-shot / rules present).
+    expect(lower).toContain('ask_user');
+    // Anti-pattern guidance present (no mega-report-every-turn).
+    expect(lower).toMatch(/1[–-]3 sentences|1 to 3 sentences|one to three sentences/);
+  });
+
   it('calls the net-worth tool for a net-worth question', async () => {
     client = buildFinanceMcpClient({ dbPath: ':memory:' });
     const tools = await getFinanceTools(client);

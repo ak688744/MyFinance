@@ -9,6 +9,7 @@ export type ExpenseRow = {
   amount: number; direction: 'debit' | 'credit';
   categoryId: string | null; categorySource: string | null; aiKeyword: string | null;
   note: string | null; accountId: number | null; balance: number | null;
+  tags: { tag: string; source: 'user' | 'agent' }[];
 };
 
 export type ExpenseSummary = {
@@ -41,4 +42,25 @@ export type LiabilityDetail = {
   liability: import('@myfinance/core').Liability;
   status: import('@myfinance/core').LoanStatus;
   schedule: import('@myfinance/core').AmortizationRow[];
+};
+
+// A triaged insight card (server: rule candidates → consolidation → LLM triage).
+export type InsightOption = {
+  label: string;
+  tags: string[];
+  categoryFix: string | null;
+};
+
+export type Insight = {
+  eventId: string;
+  signature: string;
+  tier: 'needs_input' | 'worth_knowing';
+  keep: boolean;
+  lane: 'needs_input' | 'worth_knowing' | null;
+  refinedTitle: string;
+  refinedDetail: string;
+  question: string | null;
+  options: InsightOption[];
+  reason: string;
+  txnIds: number[];
 };

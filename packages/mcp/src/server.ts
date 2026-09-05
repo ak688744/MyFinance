@@ -6,6 +6,7 @@ import { registerExpenseTools } from './tools/read/expenses';
 import { registerLoanTools } from './tools/read/loans';
 import { registerAccountTools } from './tools/read/accounts';
 import { registerMarketTools } from './tools/read/market';
+import { registerCategoriesReadTool } from './tools/read/categories';
 import { registerTransactionWriteTools } from './tools/write/transactions';
 import { registerCategoryWriteTools } from './tools/write/categories';
 import { registerAccountWriteTools } from './tools/write/accounts';
@@ -29,6 +30,7 @@ export function buildServer(ctx: McpContext): McpServer {
   registerLoanTools(server, ctx);
   registerAccountTools(server, ctx);
   registerMarketTools(server, ctx);
+  registerCategoriesReadTool(server, ctx);
 
   registerTransactionWriteTools(server, ctx);
   registerCategoryWriteTools(server, ctx);

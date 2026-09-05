@@ -4,7 +4,7 @@ import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
-  Category, CategoryRule, LiabilityDetail, LiabilityListItem,
+  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight,
 } from '../types';
 import type {
   AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
@@ -30,6 +30,8 @@ export const useExpenses = (params: Record<string, string | undefined>) =>
   useQuery({ queryKey: qk.expenses(params), queryFn: () => apiGet<ExpenseRow[]>('/expenses', params) });
 export const useExpenseSummary = (params: Record<string, string | undefined>) =>
   useQuery({ queryKey: qk.expenseSummary(params), queryFn: () => apiGet<ExpenseSummary>('/expenses/summary', params) });
+export const useExpenseInsights = (month: string) =>
+  useQuery({ queryKey: qk.expenseInsights(month), queryFn: () => apiGet<Insight[]>('/expenses/insights', { month }), enabled: !!month });
 export const useCategories = () => useQuery({ queryKey: qk.categories(), queryFn: () => apiGet<Category[]>('/categories') });
 export const useAccounts = (domain?: string) => useQuery({ queryKey: qk.accounts(domain), queryFn: () => apiGet<Account[]>('/accounts', domain ? { domain } : undefined) });
 
@@ -97,7 +99,7 @@ export function useUpdateTxCategory() {
         createRuleKeyword: v.createRuleKeyword,
         keyword: v.keyword,
       }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
 export function useCreateCategory() {
@@ -134,7 +136,7 @@ export function useUpdateTransaction() {
   return useMutation({
     mutationFn: (v: { id: number; amount?: number; note?: string | null }) =>
       apiSend<{ ok: boolean }>('PATCH', `/transactions/${v.id}`, { amount: v.amount, note: v.note }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
 
@@ -142,7 +144,7 @@ export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => apiSend<{ ok: boolean }>('DELETE', `/transactions/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
 
@@ -151,7 +153,7 @@ export function useCreateTransaction() {
   return useMutation({
     mutationFn: (body: { transactionDate: string; description: string; amount: number; direction: 'debit' | 'credit'; categoryId?: string | null; note?: string | null; accountId?: number | null }) =>
       apiSend<{ id: number }>('POST', '/transactions', body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['networth'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
 
@@ -166,7 +168,7 @@ export function useAiSuggest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { from: string; to: string }) => apiSend<AiSuggestResult>('POST', '/categories/ai-suggest', v),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['networth'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
   });
 }
 
@@ -248,5 +250,39 @@ export function useUnsetTaskRoute() {
   return useMutation({
     mutationFn: (task: string) => apiSend<{ ok: boolean }>('DELETE', `/ai/tasks/${task}/route`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: qk.ai.tasks() }); },
+  });
+}
+
+export function useSetTxTags() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tags, mode }: { id: number; tags: string[]; mode: 'add' | 'replace' }) =>
+      apiSend('PATCH', `/transactions/${id}/tags`, { tags, mode }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
+  });
+}
+
+export function useRemoveTxTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tag }: { id: number; tag: string }) =>
+      apiSend('DELETE', `/transactions/${id}/tags/${encodeURIComponent(tag)}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['expenseInsights'] }); },
+  });
+}
+
+// Resolve an insight inline: apply an option's tags (+ optional category fix), or
+// free-text tags, to the event's transactions. Completing the data self-heals the
+// card (its signature changes → it disappears on the next insights load).
+export function useResolveInsight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ transactionIds, tags, categoryFix }: { transactionIds: number[]; tags?: string[]; categoryFix?: string | null }) =>
+      apiSend('POST', '/expenses/insights/resolve', { transactionIds, tags, categoryFix }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['categories'] });
+      qc.invalidateQueries({ queryKey: ['expenseInsights'] });
+    },
   });
 }

@@ -3,6 +3,8 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 export type AgentEvent =
   | { type: 'start'; threadId: string }
   | { type: 'token'; text: string }
+  | { type: 'step'; label: string }
+  | { type: 'question'; question: string; options: { label: string }[] }
   | { type: 'done'; threadId: string; usage: { inputTokens: number; outputTokens: number } }
   | { type: 'error'; message: string };
 
@@ -27,6 +29,7 @@ export function parseSseChunk(buffer: string): { events: AgentEvent[]; rest: str
 export async function* streamAgentChat(body: {
   threadId?: string;
   message: string;
+  agent?: 'wealth' | 'expense';
 }): AsyncGenerator<AgentEvent> {
   const res = await fetch(`${API_BASE}/agent/chat`, {
     method: 'POST',

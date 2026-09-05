@@ -13,6 +13,16 @@ export const AI_TASKS = {
     description: 'The conversational wealth-manager agent (multi-step, tool-using)',
     defaultDialect: 'gemini',
   },
+  expense_agent: {
+    label: 'Expense Clarity Agent',
+    description: 'The expense specialist: categorizes, disambiguates, and tags transactions',
+    defaultDialect: 'gemini',
+  },
+  expense_insight_triage: {
+    label: 'Expense Insight Triage',
+    description: 'Evaluates rule-flagged expense insights: suppresses false alarms, routes to needs-input vs worth-knowing, suggests forecasting tags',
+    defaultDialect: 'gemini',
+  },
 } as const;
 
 export type AiTaskId = keyof typeof AI_TASKS;

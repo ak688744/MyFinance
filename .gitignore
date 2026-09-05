@@ -71,3 +71,11 @@ agent_buildup.txt
 
 # local secrets — master key for AI-provider key encryption (never commit)
 .env
+
+# local db backups + superpowers worktrees (scratch)
+*.bak-*
+.claude/worktrees/
+
+# Throwaway spike/verify scripts (not product code)
+packages/*/spike-*.mts
+packages/*/verify-*.mts

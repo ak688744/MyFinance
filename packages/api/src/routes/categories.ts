@@ -5,6 +5,8 @@ import {
   deleteRule,
   recategorizeNonManualTransactions,
   slugifyCategoryName,
+  extractMerchantKey,
+  saveCategoryMemoryRule,
   type CategoryRuleType,
 } from '@myfinance/core';
 import { categorizeWithAI, LlmError, type CategoryForPrompt } from '@myfinance/agents';
@@ -169,8 +171,29 @@ export async function categoryRoutes(
     // Apply each suggestion as ai_suggested, persisting the AI keyword so the
     // pending suggestion (and its "always do this?" prompt) survives a refresh.
     // Empty keyword (non-substring, blanked by categorizeWithAI) → null.
+    // Also attempt to create a merchant rule if the merchant key is derivable.
+    const learnDeps = deps();
     for (const s of result.suggestions) {
       app.repos.expenseTxRepo.updateCategory(s.transactionId, s.categoryId, 'ai_suggested', s.keyword || null);
+
+      // Best-effort merchant rule creation: if a merchant key is derivable, create a rule.
+      // Do NOT recategorize here (the just-applied ai_suggested rows would flip to
+      // merchant_rule source immediately). Let the rule exist for future imports/manual recategorize.
+      const txn = app.repos.expenseTxRepo.getById(s.transactionId);
+      const merchantKey = txn ? extractMerchantKey(txn.description) : null;
+      if (merchantKey) {
+        try {
+          saveCategoryMemoryRule(learnDeps, {
+            ruleType: 'merchant',
+            patternValue: merchantKey,
+            categoryId: s.categoryId,
+            createdFromTransactionId: s.transactionId,
+          });
+        } catch (e) {
+          // Swallow unique-constraint errors (rule already exists); rethrow anything else.
+          if (!/unique/i.test((e as Error).message)) throw e;
+        }
+      }
     }
     req.log.info(
       { suggested: result.suggestions.length, skipped: result.skipped, total: candidates.length, usage: result.usage },
