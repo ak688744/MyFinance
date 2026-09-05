@@ -28,8 +28,29 @@ export const NEW_SPEND_TOP_N = 5;
 export const ABNORMAL_RATIO = 1.4;
 export const ABNORMAL_MIN_JUMP_INR = 1000;
 
-const merchantKeyOf = (d: string, derive: (s: string) => string | null): string =>
-  (derive(d) ?? d).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+// needs_clarity tuning. We only ask about a transaction when the answer isn't
+// self-evident:
+//  - Below this floor the amount is immaterial to a forecast (tiny dividends,
+//    fees, forex markup) — never worth a prompt.
+export const NEEDS_CLARITY_MIN_INR = 100;
+//  - These categories have an obvious/assumable cadence (recurring), so a
+//    categorized txn in one of them is already forecasting-complete and is NOT
+//    flagged. Ambiguous-cadence categories (e.g. investment: SIP vs lump-sum)
+//    are deliberately absent so they still get asked.
+export const SELF_EXPLANATORY_CADENCE_CATEGORIES = new Set<string>(['salary', 'rent', 'loan']);
+
+// Merchant key used to recognize the "same" payee across months. When a clean
+// merchant name can't be derived (e.g. masked-account UPI transfers), we fall
+// back to the raw description — but that embeds a UNIQUE per-transaction
+// reference number (UPI RRN / ACH txn id) that changes every month for the same
+// recurring payee, so rent/SIP would look like brand-new spend each month. Drop
+// pure-numeric tokens of >=6 digits (volatile refs) so recurring payments match.
+export const merchantKeyOf = (d: string, derive: (s: string) => string | null): string =>
+  (derive(d) ?? d)
+    .split(/[^A-Za-z0-9]+/)
+    .filter((tok) => tok.length > 0 && !/^\d{6,}$/.test(tok))
+    .join('')
+    .toUpperCase();
 
 export function computeExpenseInsights(input: InsightInput): Insight[] {
   const out: Insight[] = [];
@@ -37,18 +58,30 @@ export function computeExpenseInsights(input: InsightInput): Insight[] {
   // 1) needs_clarity — debits AND credits. Uncategorized/unclear INFLOWS (a mystery
   // ₹X credit) matter for forecasting income/savings just as much as spend, so credits
   // are included here (unlike new_spend/abnormal_spend, which are inherently spend-only).
-  const flagged = input.monthTxns.filter((t) =>
-    (t.tags?.length ?? 0) === 0 &&
-    (t.categoryId === null || input.deriveMerchantName(t.description) === null),
-  );
-  if (flagged.length > 0) {
+  //
+  // Only flag a txn when clarity is genuinely missing: it's untagged, material
+  // (>= floor), and either uncategorized OR categorized in an ambiguous-cadence
+  // category with no derivable merchant. Self-explanatory categories (salary,
+  // rent, loan) are skipped — their cadence is assumable, so asking is noise.
+  const flagged = input.monthTxns.filter((t) => {
+    if ((t.tags?.length ?? 0) > 0) return false;                       // already has metadata
+    if (t.amount < NEEDS_CLARITY_MIN_INR) return false;                // immaterial
+    if (t.categoryId === null) return true;                            // needs a category
+    if (SELF_EXPLANATORY_CADENCE_CATEGORIES.has(t.categoryId)) return false; // cadence obvious
+    return input.deriveMerchantName(t.description) === null;           // ambiguous cadence
+  });
+  // Emit ONE event PER transaction (not a single grouped card) so triage can
+  // suppress the obvious ones and ask about the genuinely-unknown ones
+  // individually, instead of the whole batch being kept or dropped together.
+  for (const t of flagged) {
+    const cat = t.categoryId ?? 'uncategorized';
     out.push({
-      id: `needs-clarity:${input.month}`,
+      id: `needs-clarity:${input.month}:${t.id}`,
       type: 'needs_clarity',
       severity: 'info',
-      title: `${flagged.length} transaction${flagged.length === 1 ? '' : 's'} need clarity`,
-      detail: 'Uncategorized or unclear transactions this month. Review them so every rupee is understood.',
-      transactionIds: flagged.map((t) => t.id),
+      title: 'Transaction needs clarity',
+      detail: `₹${Math.round(t.amount)} ${t.direction} (${cat}): "${t.description}" — needs a ${t.categoryId === null ? 'category' : 'cadence tag'} so forecasting understands it.`,
+      transactionIds: [t.id],
       cta: { label: 'Review in chat' },
     });
   }

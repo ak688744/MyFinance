@@ -10,6 +10,19 @@ export type ExpenseRow = {
   categoryId: string | null; categorySource: string | null; aiKeyword: string | null;
   note: string | null; accountId: number | null; balance: number | null;
   tags: { tag: string; source: 'user' | 'agent' }[];
+  parentTransactionId: number | null;
+};
+
+export type SplitChild = ExpenseRow;
+export type SplitResult = {
+  parentId: number;
+  parentAmount: number;
+  detectedTotal: number | null;
+  parsedTotal: number;
+  matched: boolean;
+  reconciledAgainst: 'statementTotal' | 'billAmount';
+  carryover: number;
+  children: SplitChild[];
 };
 
 export type ExpenseSummary = {

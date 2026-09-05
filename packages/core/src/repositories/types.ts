@@ -141,6 +141,7 @@ export type ExpenseTransactionRow = {
   tags: Tag[];
   accountId: number | null;
   balance: number | null;
+  parentTransactionId: number | null;
 };
 
 export interface ExpenseTransactionRepo {
@@ -165,6 +166,7 @@ export interface ExpenseTransactionRepo {
     search?: string;
     categoryId?: string;
     accountId?: number;
+    parentId?: number;
     limit?: number;
     offset?: number;
   }): ExpenseTransactionRow[];
@@ -242,6 +244,23 @@ export interface ExpenseTransactionRepo {
     note?: string | null;
     accountId?: number | null;
   }): number; // returns inserted id
+  /**
+   * Insert a split child transaction linked to `parentId`. sourceType='cc_statement',
+   * self-generated unique dedupeKey. Used by the CC-bill split flow.
+   */
+  insertChild(parentId: number, tx: {
+    transactionDate: string;
+    description: string;
+    amount: number;
+    direction: 'debit' | 'credit';
+    categoryId: string | null;
+    categorySource: string | null;
+    accountId: number | null;
+  }): number;
+  /** All child transactions of a split parent, ordered by transaction_date. */
+  listChildren(parentId: number): ExpenseTransactionRow[];
+  /** Full row by id (same shape as query rows). */
+  getFullById(id: number): ExpenseTransactionRow | null;
   /** Parse the JSON tags column for one transaction. [] when null. */
   getTags(id: number): Tag[];
   /** Replace all tags on a transaction (normalized; empty → NULL). */

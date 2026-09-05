@@ -157,6 +157,23 @@ export function useCreateTransaction() {
   });
 }
 
+export function useSplitFromStatement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file, password }: { id: number; file: File; password?: string }) => {
+      const form = new FormData();
+      form.append('file', file);
+      if (password) form.append('password', password);
+      return apiUpload<import('../types').SplitResult>(`/transactions/${id}/split-from-statement`, form);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['expenseInsights'] });
+      qc.invalidateQueries({ queryKey: ['networth'] });
+    },
+  });
+}
+
 export type AiSuggestResult = {
   suggestions: { transactionId: number; categoryId: string; keyword: string; confidence: number; reason?: string }[];
   counts: { suggested: number; skipped: number; total: number };

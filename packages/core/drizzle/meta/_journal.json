@@ -64,6 +64,13 @@
       "when": 1786000000000,
       "tag": "0008_expense_insight_triage",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1787000000000,
+      "tag": "0009_credit_card_split",
+      "breakpoints": true
     }
   ]
 }
