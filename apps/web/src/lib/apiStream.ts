@@ -29,7 +29,7 @@ export function parseSseChunk(buffer: string): { events: AgentEvent[]; rest: str
 export async function* streamAgentChat(body: {
   threadId?: string;
   message: string;
-  agent?: 'wealth' | 'expense';
+  agent?: 'wealth' | 'expense' | 'investment';
 }): AsyncGenerator<AgentEvent> {
   const res = await fetch(`${API_BASE}/agent/chat`, {
     method: 'POST',

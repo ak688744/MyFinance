@@ -77,3 +77,22 @@ export type Insight = {
   reason: string;
   txnIds: number[];
 };
+
+export type FundDataCoverage = {
+  schemeId: number;
+  schemeName: string;
+  amfiCode: string | null;
+  hasHoldings: boolean;
+  asOfDate: string | null;
+  ageDays: number | null;
+  refreshable: boolean;
+};
+
+export type InvestmentInsight = {
+  id: string;
+  kind: 'high_overlap' | 'stock_concentration' | 'cost_leak' | 'over_diversification' | 'portfolio_profile' | 'goal_drift';
+  severity: 'info' | 'warn';
+  title: string;
+  detail: string;
+  schemeIds: number[];
+};

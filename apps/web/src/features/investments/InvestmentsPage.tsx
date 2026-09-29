@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts } from '../../lib/hooks';
+import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat, Badge } from '../../components/ui/primitives';
 import { formatINR, formatPercent } from '../../lib/format';
 import { classLabel } from '../../lib/transforms';
-import type { ValuedAsset } from '../../types';
+import type { ValuedAsset, InvestmentInsight } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
+import { InvestmentInsightCards } from './InvestmentInsightCards';
+import { FundDataStatus } from './FundDataStatus';
+import { InvestmentInsightDrawer } from './InvestmentInsightDrawer';
+import { useInvestmentInsightDismissal } from './useInvestmentInsightDismissal';
 
 const delta = (n: number | null | undefined) =>
   n == null ? 'text-gray-700' : n >= 0 ? 'text-gain' : 'text-loss';
@@ -14,8 +18,11 @@ const delta = (n: number | null | undefined) =>
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
+  const [activeInsight, setActiveInsight] = useState<InvestmentInsight | null>(null);
 
   const summary = useInvestmentSummary(account);
+  const insights = useInvestmentInsights(account);
+  const { dismiss, isDismissed } = useInvestmentInsightDismissal();
   const accounts = useInvestmentAccounts();
   const accountRows = useAccounts('investment');
   const selectedAccountId = useMemo(() => {
@@ -89,6 +96,16 @@ export function InvestmentsPage() {
           </div>
         )}
       </DataState>
+
+      <FundDataStatus account={account} />
+
+      <InvestmentInsightCards
+        insights={insights.data ?? []}
+        loading={insights.isLoading || insights.isFetching}
+        isDismissed={isDismissed}
+        onDismiss={dismiss}
+        onDiscuss={setActiveInsight}
+      />
 
       <DataState
         isLoading={holdings.isLoading || assets.isLoading}
@@ -185,6 +202,16 @@ export function InvestmentsPage() {
       </DataState>
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
+
+      {activeInsight && (
+        <InvestmentInsightDrawer
+          insight={activeInsight}
+          fundNames={mf
+            .filter((h) => activeInsight.schemeIds.includes(h.schemeId ?? -1))
+            .map((h) => h.schemeName)}
+          onClose={() => setActiveInsight(null)}
+        />
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
-  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight,
+  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight, InvestmentInsight, FundDataCoverage,
 } from '../types';
 import type {
   AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
@@ -32,6 +32,31 @@ export const useExpenseSummary = (params: Record<string, string | undefined>) =>
   useQuery({ queryKey: qk.expenseSummary(params), queryFn: () => apiGet<ExpenseSummary>('/expenses/summary', params) });
 export const useExpenseInsights = (month: string) =>
   useQuery({ queryKey: qk.expenseInsights(month), queryFn: () => apiGet<Insight[]>('/expenses/insights', { month }), enabled: !!month });
+export const useInvestmentInsights = (account?: string) =>
+  useQuery({
+    queryKey: qk.investmentInsights(account),
+    queryFn: () => apiGet<InvestmentInsight[]>('/investments/analysis/insights', account ? { account } : undefined),
+  });
+
+export const useFundDataCoverage = (account?: string) =>
+  useQuery({
+    queryKey: qk.fundDataCoverage(account),
+    queryFn: () => apiGet<FundDataCoverage[]>('/investments/fund-data/coverage', account ? { account } : undefined),
+  });
+
+export function useRefreshFundData() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { amfiCode?: string; all?: boolean; source?: string }) =>
+      apiSend('POST', '/investments/fund-data/refresh', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['investmentInsights'] });
+      qc.invalidateQueries({ queryKey: ['investments', 'fund-data'] });
+      qc.invalidateQueries({ queryKey: ['investments'] });
+      qc.invalidateQueries({ queryKey: ['networth'] });
+    },
+  });
+}
 export const useCategories = () => useQuery({ queryKey: qk.categories(), queryFn: () => apiGet<Category[]>('/categories') });
 export const useAccounts = (domain?: string) => useQuery({ queryKey: qk.accounts(domain), queryFn: () => apiGet<Account[]>('/accounts', domain ? { domain } : undefined) });
 
