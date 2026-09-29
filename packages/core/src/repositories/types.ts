@@ -2,7 +2,7 @@ import type {
   InvestmentTransaction, Scheme, CashFlow, TransactionType, TransactionSummary,
   TransactionWithSchemeMeta,
   Account, AccountDomain, Asset, AssetContribution, AssetRate, AssetValuation,
-  Liability,
+  Liability, SchemeFundamentals, StoredFundHolding,
 } from '../types';
 import type { Tag } from '../domain/tags';
 
@@ -42,6 +42,7 @@ export interface InvestmentTxRepo {
 
 export interface SchemeRepo {
   getSchemeById(id: number): Scheme | null;
+  getByAmfiCode(amfiCode: string): Scheme | null;
   getSchemes(filters?: { category?: 'equity'|'debt'|'hybrid'|'other'; amc?: string; search?: string }): Scheme[];
   findSchemeByName(schemeName: string): Scheme | null;
   getSchemesWithAmfi(filters: { account?: string }): { schemeId: number; amfiCode: string }[];
@@ -436,4 +437,16 @@ export interface ExpenseInsightTriageRepo {
   getMany(signatures: string[]): ExpenseInsightTriageRow[];
   /** Insert-or-replace a verdict keyed by signature. */
   upsert(row: { signature: string; month: string; verdictJson: string; triagedAt?: string }): void;
+}
+
+export interface SchemeFundamentalsRepo {
+  upsert(row: Omit<SchemeFundamentals, 'fetchedAt'> & { fetchedAt?: string }): void;
+  get(schemeId: number): SchemeFundamentals | null;
+}
+
+export interface SchemeHoldingsRepo {
+  replaceSnapshot(schemeId: number, asOfDate: string, rows: Array<Omit<StoredFundHolding, 'id' | 'schemeId' | 'asOfDate'>>): void;
+  getLatestSnapshot(schemeId: number): StoredFundHolding[];
+  listAsOfDates(schemeId: number): string[];
+  prune(schemeId: number, keep: number): number;
 }

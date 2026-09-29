@@ -62,6 +62,15 @@ export function makeSchemeRepo(db: Db): SchemeRepo {
       return row ? mapRowToScheme(row) : null;
     },
 
+    getByAmfiCode(amfiCode: string): Scheme | null {
+      const row = db
+        .select(SCHEME_COLUMNS)
+        .from(schemes)
+        .where(eq(schemes.amfiCode, amfiCode))
+        .get();
+      return row ? mapRowToScheme(row) : null;
+    },
+
     getSchemes(filters = {}) {
       const conditions = [
         filters.category !== undefined ? eq(schemes.category, filters.category) : undefined,

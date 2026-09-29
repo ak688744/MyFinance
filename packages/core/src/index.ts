@@ -31,6 +31,8 @@ export { makeAiModelRepo } from './repositories/aiModelRepo';
 export { makeAiTaskRouteRepo } from './repositories/aiTaskRouteRepo';
 export { makeAiUsageRepo } from './repositories/aiUsageRepo';
 export { makeExpenseInsightTriageRepo } from './repositories/expenseInsightTriageRepo';
+export { makeSchemeFundamentalsRepo } from './repositories/schemeFundamentalsRepo';
+export { makeSchemeHoldingsRepo } from './repositories/schemeHoldingsRepo';
 
 export type {
   InvestmentTxRepo,
@@ -60,6 +62,8 @@ export type {
   AiUsageRepo,
   ExpenseInsightTriageRow,
   ExpenseInsightTriageRepo,
+  SchemeFundamentalsRepo,
+  SchemeHoldingsRepo,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------
@@ -194,6 +198,54 @@ export {
 } from './domain/networth/networth';
 
 // ---------------------------------------------------------------------------
+// Domain — fund data ingestion (L4.1)
+// ---------------------------------------------------------------------------
+export { resolveFundDataAdapter } from './domain/fundData/registry';
+export { FetchedFundDataSchema } from './domain/fundData/types';
+export type { FundDataAdapter } from './domain/fundData/types';
+export { parseGrowwFundData, fetchGrowwFundData } from './domain/fundData/groww';
+export { parseTickertapeFundData, fetchTickertapeFundData } from './domain/fundData/tickertape';
+export { parseKuveraFundData, fetchKuveraFundData } from './domain/fundData/kuvera';
+export { mergeFundData } from './domain/fundData/merge';
+export { ingestFundData } from './domain/fundData/ingest';
+export type { IngestFundDataDeps } from './domain/fundData/ingest';
+
+// ---------------------------------------------------------------------------
+// Domain — investment analysis (L4.1)
+// ---------------------------------------------------------------------------
+export {
+  fundOverlap,
+  overlapMatrix,
+  portfolioLookthrough,
+  portfolioConcentration,
+  detectRedundancy,
+  inferSubCategory,
+  inferPortfolioProfile,
+  portfolioCost,
+  checkGoalFit,
+  computeInvestmentInsights,
+  HIGH_OVERLAP_THRESHOLD_PCT,
+  SINGLE_STOCK_CONCENTRATION_PCT,
+  COST_LEAK_MIN_INR,
+  OVER_DIVERSIFICATION_CATEGORY_MIN,
+} from './domain/investmentAnalysis';
+export type {
+  OwnedFund,
+  OverlapResult,
+  LookthroughResult,
+  LookthroughBucket,
+  ConcentrationResult,
+  RedundancyResult,
+  SubCategory,
+  InferredProfile,
+  CostResult,
+  GoalFitProfile,
+  GoalFitResult,
+  InvestmentInsight,
+  InvestmentInsightInput,
+} from './domain/investmentAnalysis';
+
+// ---------------------------------------------------------------------------
 // Import — parsers
 // ---------------------------------------------------------------------------
 export {
@@ -271,4 +323,10 @@ export type {
   NetWorthClassBreakdown,
   NetWorthSummary,
   NetWorthPoint,
+  MarketCapBucket,
+  FundDataSource,
+  FundPlanType,
+  SchemeFundamentals,
+  StoredFundHolding,
+  FetchedFundData,
 } from './types';

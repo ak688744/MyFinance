@@ -130,6 +130,7 @@ function makeTxRepo(fixtures: TxFixture[]): InvestmentTxRepo {
 function makeSchemeRepo(schemes: Record<number, Scheme>): SchemeRepo {
   return {
     getSchemeById: (id) => schemes[id] ?? null,
+    getByAmfiCode: (code) => Object.values(schemes).find((s) => s.amfiCode === code) ?? null,
     getSchemes: () => [],
     findSchemeByName: () => null,
     getSchemesWithAmfi: () =>

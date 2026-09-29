@@ -71,6 +71,13 @@
       "when": 1787000000000,
       "tag": "0009_credit_card_split",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1788000000000,
+      "tag": "0010_scheme_fundamentals_holdings",
+      "breakpoints": true
     }
   ]
 }

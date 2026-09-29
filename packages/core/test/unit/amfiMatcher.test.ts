@@ -27,6 +27,7 @@ function makeFakeSchemeRepo(schemes: Scheme[]) {
   const updates: Array<{ schemeId: number; amfiCode: string }> = [];
   const repo: SchemeRepo = {
     getSchemeById: (id) => schemes.find((s) => s.id === id) ?? null,
+    getByAmfiCode: (code) => schemes.find((s) => s.amfiCode === code) ?? null,
     getSchemes: () => schemes.slice(),
     findSchemeByName: (name) => schemes.find((s) => s.schemeName === name) ?? null,
     getSchemesWithAmfi: () => [],

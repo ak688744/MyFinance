@@ -174,6 +174,51 @@ export const investmentSchemes = sqliteTable(
   }),
 );
 
+export const schemeFundamentals = sqliteTable(
+  'scheme_fundamentals',
+  {
+    schemeId: integer('scheme_id').primaryKey().references(() => investmentSchemes.id),
+    expenseRatioDirect: real('expense_ratio_direct'),
+    expenseRatioRegular: real('expense_ratio_regular'),
+    planType: text('plan_type', { enum: ['direct', 'regular', 'unknown'] }),
+    aum: real('aum'),
+    benchmarkName: text('benchmark_name'),
+    stdDev: real('std_dev'),
+    sharpe: real('sharpe'),
+    beta: real('beta'),
+    alpha: real('alpha'),
+    source: text('source').notNull(),
+    fetchedAt: text('fetched_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    planTypeCheck: check(
+      'scheme_fundamentals_plan_type_check',
+      sql`${table.planType} IN ('direct', 'regular', 'unknown')`,
+    ),
+  }),
+);
+
+export const schemeHoldings = sqliteTable(
+  'scheme_holdings',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    schemeId: integer('scheme_id').notNull().references(() => investmentSchemes.id),
+    asOfDate: text('as_of_date').notNull(),
+    securityName: text('security_name').notNull(),
+    isin: text('isin'),
+    weightPct: real('weight_pct').notNull(),
+    sector: text('sector'),
+    marketCapBucket: text('market_cap_bucket', { enum: ['large', 'mid', 'small', 'other'] }),
+  },
+  (table) => ({
+    idxSchemeHoldingsSchemeDate: index('idx_scheme_holdings_scheme_date').on(table.schemeId, table.asOfDate),
+    marketCapBucketCheck: check(
+      'scheme_holdings_market_cap_bucket_check',
+      sql`${table.marketCapBucket} IN ('large', 'mid', 'small', 'other')`,
+    ),
+  }),
+);
+
 export const investmentImportHistory = sqliteTable(
   'investment_import_history',
   {

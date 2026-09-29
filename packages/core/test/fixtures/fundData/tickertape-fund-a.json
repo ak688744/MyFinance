@@ -1,0 +1,2448 @@
+{
+  "success": true,
+  "data": {
+    "assetAllocationHistory": [
+      {
+        "date": 1751241600000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 89.07363483405717
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 8.183686200017604
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 5.335086392333512
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": -2.59240742640829
+          }
+        ]
+      },
+      {
+        "date": 1759190400000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 78.28302025477183
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 19.37560669983617
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 4.041963679196289
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": -1.7005906338042998
+          }
+        ]
+      },
+      {
+        "date": 1767139200000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 75.32478187367558
+          },
+          {
+            "assetClass": "Rights",
+            "value": 0.514000200829953
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 22.637489720112463
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 5.957726726083355
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": -4.433998520701401
+          }
+        ]
+      },
+      {
+        "date": 1774915200000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 71.41617578076085
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 24.59854586611581
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 7.254707118438129
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": -3.2694287653147995
+          }
+        ]
+      },
+      {
+        "date": 1782777600000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 73.98194852896474
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 18.44659635421862
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 6.533225187579679
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": 1.0382299292370014
+          }
+        ]
+      },
+      {
+        "date": 1785456000000,
+        "holdings": [
+          {
+            "assetClass": "Equity",
+            "value": 67.77670717685992
+          },
+          {
+            "assetClass": "Futures & Options",
+            "value": 28.884509813330638
+          },
+          {
+            "assetClass": "Treasury Bills",
+            "value": 6.973585301241375
+          },
+          {
+            "assetClass": "Cash & Equivalents",
+            "value": -3.6348022914318996
+          }
+        ]
+      }
+    ],
+    "currentAllocation": [
+      {
+        "type": "Equity",
+        "title": "Kotak Mahindra Bank Ltd",
+        "rating": "Equity",
+        "sid": "KTKM",
+        "ticker": "KOTAKBANK",
+        "slug": "/stocks/kotak-mahindra-bank-KTKM",
+        "latest": 0,
+        "change3m": -5.438451961154451
+      },
+      {
+        "type": "Equity",
+        "title": "Reliance Industries Ltd",
+        "rating": "Equity",
+        "sid": "RELI",
+        "ticker": "RELIANCE",
+        "slug": "/stocks/reliance-industries-RELI",
+        "latest": 2.15288446614388,
+        "change3m": -7.369328027731279
+      },
+      {
+        "type": "Equity",
+        "title": "HDFC Life Insurance Company Ltd",
+        "rating": "Equity",
+        "sid": "HDFL",
+        "ticker": "HDFCLIFE",
+        "slug": "/stocks/hdfc-life-insurance-company-HDFL",
+        "latest": 0,
+        "change3m": -6.922789233129571
+      },
+      {
+        "type": "Equity",
+        "title": "State Bank of India",
+        "rating": "Equity",
+        "sid": "SBI",
+        "ticker": "SBIN",
+        "slug": "/stocks/state-bank-of-india-SBI",
+        "latest": 0,
+        "change3m": -5.14267950808479
+      },
+      {
+        "type": "Equity",
+        "title": "DLF Ltd",
+        "rating": "Equity",
+        "sid": "DLF",
+        "ticker": "DLF",
+        "slug": "/stocks/dlf-DLF",
+        "latest": 4.84952044508752,
+        "change3m": 4.84952044508752
+      },
+      {
+        "type": "Others",
+        "title": "NCA-NET CURRENT ASSETS",
+        "rating": "Cash",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": -27.6855354995739,
+        "change3m": -8.021695765613
+      },
+      {
+        "type": "Equity",
+        "title": "Infosys Limited",
+        "rating": "Equity",
+        "sid": "INFY",
+        "ticker": "INFY",
+        "slug": "/stocks/infosys-INFY",
+        "latest": 2.95835747384143,
+        "change3m": 2.95835747384143
+      },
+      {
+        "type": "Equity",
+        "title": "Bharti Airtel Ltd",
+        "rating": "Equity",
+        "sid": "BRTI",
+        "ticker": "BHARTIARTL",
+        "slug": "/stocks/bharti-airtel-BRTI",
+        "latest": 9.20946400566343,
+        "change3m": 3.25959694486483
+      },
+      {
+        "type": "Equity",
+        "title": "Wipro Limited",
+        "rating": "Equity",
+        "sid": "WIPR",
+        "ticker": "WIPRO",
+        "slug": "/stocks/wipro-WIPR",
+        "latest": 1.42534806126434,
+        "change3m": 1.42534806126434
+      },
+      {
+        "type": "Equity",
+        "title": "ICICI Bank Limited",
+        "rating": "Equity",
+        "sid": "ICBK",
+        "ticker": "ICICIBANK",
+        "slug": "/stocks/icici-bank-ICBK",
+        "latest": 8.90219594120855,
+        "change3m": 0.0693459014472797
+      },
+      {
+        "type": "Equity",
+        "title": "Divi's Laboratories Ltd",
+        "rating": "Equity",
+        "sid": "DIVI",
+        "ticker": "DIVISLAB",
+        "slug": "/stocks/divis-laboratories-DIVI",
+        "latest": 9.37002443623309,
+        "change3m": 9.37002443623309
+      },
+      {
+        "type": "Equity",
+        "title": "HCL Technologies Ltd",
+        "rating": "Equity",
+        "sid": "HCLT",
+        "ticker": "HCLTECH",
+        "slug": "/stocks/hcl-technologies-HCLT",
+        "latest": 3.01128161847231,
+        "change3m": 3.01128161847231
+      },
+      {
+        "type": "Equity",
+        "title": "Adani Green Energy Ltd",
+        "rating": "Equity",
+        "sid": "ADNA",
+        "ticker": "ADANIGREEN",
+        "slug": "/stocks/adani-green-energy-ADNA",
+        "latest": 8.41266640240336,
+        "change3m": -0.19910775357327992
+      },
+      {
+        "type": "Others",
+        "title": "Tata Consultancy Services Limited 28/03/2024",
+        "rating": "Derivatives",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 8.27273755965803,
+        "change3m": 8.27273755965803
+      },
+      {
+        "type": "Equity",
+        "title": "Adani Enterprises Limited",
+        "rating": "Equity",
+        "sid": "ADEL",
+        "ticker": "ADANIENT",
+        "slug": "/stocks/adani-enterprises-ADEL",
+        "latest": 8.64767377872516,
+        "change3m": 0.32210366634935994
+      },
+      {
+        "type": "Equity",
+        "title": "Samvardhana Motherson International Ltd",
+        "rating": "Equity",
+        "sid": "MOSS",
+        "ticker": "MOTHERSON",
+        "slug": "/stocks/motherson-sumi-systems-MOSS",
+        "latest": 3.19290531830699,
+        "change3m": -5.53951819144858
+      },
+      {
+        "type": "Equity",
+        "title": "Capri Global Capital Ltd",
+        "rating": "Equity",
+        "sid": "CAPG",
+        "ticker": "CGCL",
+        "slug": "/stocks/capri-global-capital-CAPG",
+        "latest": 6.71498583792445,
+        "change3m": 0.5082561422789107
+      },
+      {
+        "type": "Equity",
+        "title": "Adani Energy Solutions Ltd",
+        "rating": "Equity",
+        "sid": "ADAI",
+        "ticker": "ADANIENSOL",
+        "slug": "/stocks/adani-transmission-ADAI",
+        "latest": 4.64686411144489,
+        "change3m": 0.27360296423178987
+      },
+      {
+        "type": "Equity",
+        "title": "Tech Mahindra Limited",
+        "rating": "Equity",
+        "sid": "TEML",
+        "ticker": "TECHM",
+        "slug": "/stocks/tech-mahindra-TEML",
+        "latest": 5.51437113469305,
+        "change3m": 2.48357582893289
+      },
+      {
+        "type": "Equity",
+        "title": "ICICI Prudential Asset Management Company Limited",
+        "rating": "Equity",
+        "sid": "ICIAI",
+        "ticker": "ICICIAMC",
+        "slug": "/stocks/icici-prudential-asset-management-co-ICIAI",
+        "latest": 3.34008362421468,
+        "change3m": -3.86108591945444
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 22-May-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -1.05719679018097
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 14-May-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.801786445824263
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 07-May-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.642066622219723
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 04-Jun-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.799431293325729
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 19-Jun-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.478664663876684
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 11-Jun-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.479181962038026
+      },
+      {
+        "type": "Equity",
+        "title": "LG Electronics India Ltd",
+        "rating": "Equity",
+        "sid": "LGE",
+        "ticker": "LGEINDIA",
+        "slug": "/stocks/lg-electronics-india-LGE",
+        "latest": 6.03985277490539,
+        "change3m": 1.4279661628067206
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 23-Jul-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.635033295044701
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 30-Jul-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.634348919216342
+      },
+      {
+        "type": "Others",
+        "title": "TREPS 04-May-2026 DEPO 10",
+        "rating": "Cash",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -20.9158555099484
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 16-Jul-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0,
+        "change3m": -0.317813852987718
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 20-Aug-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.833262152312976,
+        "change3m": 0.833262152312976
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 13-Aug-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.639467820891861,
+        "change3m": 0.639467820891861
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 06-Aug-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.556615619732877,
+        "change3m": 0.556615619732877
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 28-Aug-2026",
+        "rating": "SOV",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.416157619092485,
+        "change3m": 0.416157619092485
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 03-Sep-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.69299910458129,
+        "change3m": 0.69299910458129
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 24-Sep-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.690907538375018,
+        "change3m": 0.690907538375018
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 17-Sep-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.553284710035538,
+        "change3m": 0.553284710035538
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 10-Sep-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.415386162582315,
+        "change3m": 0.415386162582315
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 29-Oct-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.65985154001797,
+        "change3m": 0.65985154001797
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 22-Oct-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.550424472360649,
+        "change3m": 0.550424472360649
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 15-Oct-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.413255605794301,
+        "change3m": 0.413255605794301
+      },
+      {
+        "type": "Others",
+        "title": "TREPS 03-Aug-2026 DEPO 10",
+        "rating": "Cash",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 24.050733208142,
+        "change3m": 24.050733208142
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 08-Oct-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.137890192328564,
+        "change3m": 0.137890192328564
+      },
+      {
+        "type": "Debt",
+        "title": "91 Days Treasury Bill 01-Oct-2026",
+        "rating": "Sov",
+        "sid": null,
+        "ticker": null,
+        "slug": null,
+        "latest": 0.41408276313553,
+        "change3m": 0.41408276313553
+      }
+    ],
+    "sectorDistribution": [
+      {
+        "date": 1751241600000,
+        "holdings": [
+          {
+            "sector": "Pharmaceuticals",
+            "value": 6.252816410956744
+          },
+          {
+            "sector": "Diversified Chemicals",
+            "value": 6.0478211008133
+          },
+          {
+            "sector": "Oil & Gas - Exploration & Production",
+            "value": 3.11140611252205
+          },
+          {
+            "sector": "Others",
+            "value": -1.120684128853466
+          },
+          {
+            "sector": "G-Sec",
+            "value": 5.335086392333512
+          },
+          {
+            "sector": "Oil & Gas - Refining & Marketing",
+            "value": 6.78927425718211
+          },
+          {
+            "sector": "Tea & Coffee",
+            "value": 2.11842409923428
+          },
+          {
+            "sector": "Two Wheelers",
+            "value": 3.46076002008512
+          },
+          {
+            "sector": "Oil & Gas - Storage & Transportation",
+            "value": 1.64273371875207
+          },
+          {
+            "sector": "Retail - Speciality",
+            "value": 7.38037960143937
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 3.15312358975151
+          },
+          {
+            "sector": "Electrical Components & Equipments",
+            "value": 3.45432769793873
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 2.13099818126182
+          },
+          {
+            "sector": "Real Estate",
+            "value": 3.711366341812
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 6.03461867788721
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 5.5660507049313
+          },
+          {
+            "sector": "Insurance",
+            "value": 10.50331740386248
+          },
+          {
+            "sector": "Specialized Finance",
+            "value": 8.08931884032968
+          },
+          {
+            "sector": "Power Generation",
+            "value": 6.189397564543411
+          },
+          {
+            "sector": "Precious Metals, Jewellery & Watches",
+            "value": 2.49020578164427
+          },
+          {
+            "sector": "Construction & Engineering",
+            "value": 7.6592576315725
+          }
+        ]
+      },
+      {
+        "date": 1759190400000,
+        "holdings": [
+          {
+            "sector": "Insurance",
+            "value": 5.7741401965175205
+          },
+          {
+            "sector": "Packaged Foods & Meats",
+            "value": 2.83176517876666
+          },
+          {
+            "sector": "Public Banks",
+            "value": 4.569740464386551
+          },
+          {
+            "sector": "Real Estate",
+            "value": 5.20872325822645
+          },
+          {
+            "sector": "Specialized Finance",
+            "value": 11.413483099052845
+          },
+          {
+            "sector": "Oil & Gas - Storage & Transportation",
+            "value": 1.54710471683144
+          },
+          {
+            "sector": "Pharmaceuticals",
+            "value": 4.9642307458027
+          },
+          {
+            "sector": "Alcoholic Beverages",
+            "value": 1.07474949302435
+          },
+          {
+            "sector": "Consumer Finance",
+            "value": 1.25432246150679
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 8.91374739476633
+          },
+          {
+            "sector": "Tea & Coffee",
+            "value": 1.09114601028263
+          },
+          {
+            "sector": "Others",
+            "value": -16.6517260130117
+          },
+          {
+            "sector": "Power Generation",
+            "value": 4.66032863019651
+          },
+          {
+            "sector": "Labs & Life Sciences Services",
+            "value": 1.9900587782558
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 6.08476310679935
+          },
+          {
+            "sector": "Two Wheelers",
+            "value": 4.6193558516367
+          },
+          {
+            "sector": "Oil & Gas - Refining & Marketing",
+            "value": 6.291693227383
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 14.9511353792074
+          },
+          {
+            "sector": "FMCG - Household Products",
+            "value": 2.52771124355623
+          },
+          {
+            "sector": "G-Sec",
+            "value": 4.041963679196289
+          },
+          {
+            "sector": "Construction & Engineering",
+            "value": 9.25727442708002
+          },
+          {
+            "sector": "IT Services & Consulting",
+            "value": 11.36054989801241
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 2.22373877252369
+          }
+        ]
+      },
+      {
+        "date": 1767139200000,
+        "holdings": [
+          {
+            "sector": "Others",
+            "value": -16.7143440880092
+          },
+          {
+            "sector": "Specialized Finance",
+            "value": 2.86425982030678
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 6.78338612414134
+          },
+          {
+            "sector": "Construction & Engineering",
+            "value": 6.55225860640721
+          },
+          {
+            "sector": "Oil & Gas - Refining & Marketing",
+            "value": 5.46742073199489
+          },
+          {
+            "sector": "Insurance",
+            "value": 2.67228981659339
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 18.2357557927742
+          },
+          {
+            "sector": "Precious Metals, Jewellery & Watches",
+            "value": 2.94079420491425
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 7.674866091453383
+          },
+          {
+            "sector": "Private Banks",
+            "value": 15.06475268243948
+          },
+          {
+            "sector": "Real Estate",
+            "value": 2.79046795941824
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 9.12510864005138
+          },
+          {
+            "sector": "Tea & Coffee",
+            "value": 1.03520951133852
+          },
+          {
+            "sector": "Pharmaceuticals",
+            "value": 4.98471991593766
+          },
+          {
+            "sector": "IT Services & Consulting",
+            "value": 11.652667092667583
+          },
+          {
+            "sector": "Power Generation",
+            "value": 7.44592194211684
+          },
+          {
+            "sector": "G-Sec",
+            "value": 5.957726726083355
+          },
+          {
+            "sector": "Two Wheelers",
+            "value": 5.46673842937065
+          }
+        ]
+      },
+      {
+        "date": 1774915200000,
+        "holdings": [
+          {
+            "sector": "Retail - Online",
+            "value": 0.00187944435765967
+          },
+          {
+            "sector": "Oil & Gas - Refining & Marketing",
+            "value": 8.10366733345547
+          },
+          {
+            "sector": "Two Wheelers",
+            "value": 4.70601746185451
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 6.40360055572241
+          },
+          {
+            "sector": "Private Banks",
+            "value": 18.8874964607505
+          },
+          {
+            "sector": "Insurance",
+            "value": 8.0293607019973
+          },
+          {
+            "sector": "Others",
+            "value": -20.22268412975684
+          },
+          {
+            "sector": "Telecom Services",
+            "value": 2.96982605835145
+          },
+          {
+            "sector": "G-Sec",
+            "value": 7.25470711843813
+          },
+          {
+            "sector": "Pharmaceuticals",
+            "value": 5.27115933692017
+          },
+          {
+            "sector": "Specialized Finance",
+            "value": 6.11901116167529
+          },
+          {
+            "sector": "Power Generation",
+            "value": 7.500406471545991
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 19.9412975757985
+          },
+          {
+            "sector": "FMCG - Household Products",
+            "value": 1.87093310668297
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 7.01468687530254
+          },
+          {
+            "sector": "Asset Management",
+            "value": 9.52950575654901
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 6.61912871035494
+          }
+        ]
+      },
+      {
+        "date": 1782777600000,
+        "holdings": [
+          {
+            "sector": "Construction & Engineering",
+            "value": 6.77478231643388
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 16.8506151876824
+          },
+          {
+            "sector": "IT Services & Consulting",
+            "value": 6.93083260149407
+          },
+          {
+            "sector": "Labs & Life Sciences Services",
+            "value": 3.80075736656865
+          },
+          {
+            "sector": "Packaged Foods & Meats",
+            "value": 6.24693427329867
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 9.24479736955779
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 6.97146104315044
+          },
+          {
+            "sector": "Telecom Services",
+            "value": 8.2138395949221
+          },
+          {
+            "sector": "Oil & Gas - Exploration & Production",
+            "value": 2.95323851120579
+          },
+          {
+            "sector": "Power Generation",
+            "value": 14.08246245543592
+          },
+          {
+            "sector": "G-Sec",
+            "value": 6.533225187579679
+          },
+          {
+            "sector": "Private Banks",
+            "value": 9.03817550613193
+          },
+          {
+            "sector": "Others",
+            "value": -15.8123852584454
+          },
+          {
+            "sector": "Four Wheelers",
+            "value": 3.84950205219967
+          },
+          {
+            "sector": "Home Electronics & Appliances",
+            "value": 6.66464045865574
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 7.65712133412871
+          }
+        ]
+      },
+      {
+        "date": 1785456000000,
+        "holdings": [
+          {
+            "sector": "G-Sec",
+            "value": 6.973585301241374
+          },
+          {
+            "sector": "Asset Management",
+            "value": 3.34008362421468
+          },
+          {
+            "sector": "Others",
+            "value": -27.6855354995739
+          },
+          {
+            "sector": "Oil & Gas - Refining & Marketing",
+            "value": 2.15288446614388
+          },
+          {
+            "sector": "Real Estate",
+            "value": 4.84952044508752
+          },
+          {
+            "sector": "Commodities Trading",
+            "value": 8.64767377872516
+          },
+          {
+            "sector": "IT Services & Consulting",
+            "value": 21.182095847929162
+          },
+          {
+            "sector": "Home Electronics & Appliances",
+            "value": 6.03985277490539
+          },
+          {
+            "sector": "Pharmaceuticals",
+            "value": 9.37002443623309
+          },
+          {
+            "sector": "Power Generation",
+            "value": 13.05953051384825
+          },
+          {
+            "sector": "Telecom Services",
+            "value": 9.20946400566343
+          },
+          {
+            "sector": "Auto Parts",
+            "value": 3.19290531830699
+          },
+          {
+            "sector": "Private Banks",
+            "value": 8.90219594120855
+          },
+          {
+            "sector": "Investment Banking & Brokerage",
+            "value": 6.71498583792445
+          },
+          {
+            "sector": "Miscellaneous",
+            "value": 24.050733208142
+          }
+        ]
+      }
+    ],
+    "sectorWeightage": [
+      {
+        "sector": "Miscellaneous",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 3.15312358975151
+          },
+          {
+            "date": 1759190400000,
+            "value": 14.9511353792074
+          },
+          {
+            "date": 1767139200000,
+            "value": 18.2357557927742
+          },
+          {
+            "date": 1774915200000,
+            "value": 19.9412975757985
+          },
+          {
+            "date": 1782777600000,
+            "value": 16.8506151876824
+          },
+          {
+            "date": 1785456000000,
+            "value": 24.050733208142
+          }
+        ]
+      },
+      {
+        "sector": "IT Services & Consulting",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 11.36054989801241
+          },
+          {
+            "date": 1767139200000,
+            "value": 11.652667092667583
+          },
+          {
+            "date": 1772236800000,
+            "value": 5.18890447665799
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.93083260149407
+          },
+          {
+            "date": 1785456000000,
+            "value": 21.182095847929162
+          }
+        ]
+      },
+      {
+        "sector": "Power Generation",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 6.189397564543411
+          },
+          {
+            "date": 1759190400000,
+            "value": 4.66032863019651
+          },
+          {
+            "date": 1767139200000,
+            "value": 7.44592194211684
+          },
+          {
+            "date": 1774915200000,
+            "value": 7.500406471545991
+          },
+          {
+            "date": 1782777600000,
+            "value": 14.08246245543592
+          },
+          {
+            "date": 1785456000000,
+            "value": 13.05953051384825
+          }
+        ]
+      },
+      {
+        "sector": "Pharmaceuticals",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 6.252816410956744
+          },
+          {
+            "date": 1759190400000,
+            "value": 4.9642307458027
+          },
+          {
+            "date": 1767139200000,
+            "value": 4.98471991593766
+          },
+          {
+            "date": 1774915200000,
+            "value": 5.27115933692017
+          },
+          {
+            "date": 1780185600000,
+            "value": 4.2854420389654
+          },
+          {
+            "date": 1785456000000,
+            "value": 9.37002443623309
+          }
+        ]
+      },
+      {
+        "sector": "Telecom Services",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 2.96982605835145
+          },
+          {
+            "date": 1782777600000,
+            "value": 8.2138395949221
+          },
+          {
+            "date": 1785456000000,
+            "value": 9.20946400566343
+          }
+        ]
+      },
+      {
+        "sector": "Private Banks",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 15.06475268243948
+          },
+          {
+            "date": 1774915200000,
+            "value": 18.8874964607505
+          },
+          {
+            "date": 1782777600000,
+            "value": 9.03817550613193
+          },
+          {
+            "date": 1785456000000,
+            "value": 8.90219594120855
+          }
+        ]
+      },
+      {
+        "sector": "Commodities Trading",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 6.03461867788721
+          },
+          {
+            "date": 1759190400000,
+            "value": 8.91374739476633
+          },
+          {
+            "date": 1767139200000,
+            "value": 7.674866091453383
+          },
+          {
+            "date": 1774915200000,
+            "value": 7.01468687530254
+          },
+          {
+            "date": 1782777600000,
+            "value": 9.24479736955779
+          },
+          {
+            "date": 1785456000000,
+            "value": 8.64767377872516
+          }
+        ]
+      },
+      {
+        "sector": "G-Sec",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 5.335086392333512
+          },
+          {
+            "date": 1759190400000,
+            "value": 4.041963679196289
+          },
+          {
+            "date": 1767139200000,
+            "value": 5.957726726083355
+          },
+          {
+            "date": 1774915200000,
+            "value": 7.25470711843813
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.533225187579679
+          },
+          {
+            "date": 1785456000000,
+            "value": 6.973585301241374
+          }
+        ]
+      },
+      {
+        "sector": "Investment Banking & Brokerage",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 5.5660507049313
+          },
+          {
+            "date": 1759190400000,
+            "value": 6.08476310679935
+          },
+          {
+            "date": 1767139200000,
+            "value": 9.12510864005138
+          },
+          {
+            "date": 1774915200000,
+            "value": 6.40360055572241
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.97146104315044
+          },
+          {
+            "date": 1785456000000,
+            "value": 6.71498583792445
+          }
+        ]
+      },
+      {
+        "sector": "Home Electronics & Appliances",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.66464045865574
+          },
+          {
+            "date": 1785456000000,
+            "value": 6.03985277490539
+          }
+        ]
+      },
+      {
+        "sector": "Real Estate",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 3.711366341812
+          },
+          {
+            "date": 1759190400000,
+            "value": 5.20872325822645
+          },
+          {
+            "date": 1767139200000,
+            "value": 2.79046795941824
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1785456000000,
+            "value": 4.84952044508752
+          }
+        ]
+      },
+      {
+        "sector": "Asset Management",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 9.52950575654901
+          },
+          {
+            "date": 1780185600000,
+            "value": 7.34610764887233
+          },
+          {
+            "date": 1785456000000,
+            "value": 3.34008362421468
+          }
+        ]
+      },
+      {
+        "sector": "Auto Parts",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 2.13099818126182
+          },
+          {
+            "date": 1759190400000,
+            "value": 2.22373877252369
+          },
+          {
+            "date": 1767139200000,
+            "value": 6.78338612414134
+          },
+          {
+            "date": 1774915200000,
+            "value": 6.61912871035494
+          },
+          {
+            "date": 1782777600000,
+            "value": 7.65712133412871
+          },
+          {
+            "date": 1785456000000,
+            "value": 3.19290531830699
+          }
+        ]
+      },
+      {
+        "sector": "Oil & Gas - Refining & Marketing",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 6.78927425718211
+          },
+          {
+            "date": 1759190400000,
+            "value": 6.291693227383
+          },
+          {
+            "date": 1767139200000,
+            "value": 5.46742073199489
+          },
+          {
+            "date": 1774915200000,
+            "value": 8.10366733345547
+          },
+          {
+            "date": 1780185600000,
+            "value": 8.346195392175229
+          },
+          {
+            "date": 1785456000000,
+            "value": 2.15288446614388
+          }
+        ]
+      },
+      {
+        "sector": "Public Banks",
+        "holdings": [
+          {
+            "date": 1748649600000,
+            "value": 1.49154910015392
+          },
+          {
+            "date": 1759190400000,
+            "value": 4.569740464386551
+          },
+          {
+            "date": 1764460800000,
+            "value": 4.99033555860663
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1777507200000,
+            "value": 5.14267950808479
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Iron & Steel",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1761868800000,
+            "value": 2.94098732956358
+          },
+          {
+            "date": 1772236800000,
+            "value": 4.00344785530678
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Insurance",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 10.50331740386248
+          },
+          {
+            "date": 1759190400000,
+            "value": 5.7741401965175205
+          },
+          {
+            "date": 1767139200000,
+            "value": 2.67228981659339
+          },
+          {
+            "date": 1774915200000,
+            "value": 8.0293607019973
+          },
+          {
+            "date": 1780185600000,
+            "value": 7.54012732257269
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "FMCG - Tobacco",
+        "holdings": [
+          {
+            "date": 1748649600000,
+            "value": 3.41347651460896
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Retail - Online",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0.00187944435765967
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Specialized Finance",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 8.08931884032968
+          },
+          {
+            "date": 1759190400000,
+            "value": 11.413483099052845
+          },
+          {
+            "date": 1767139200000,
+            "value": 2.86425982030678
+          },
+          {
+            "date": 1774915200000,
+            "value": 6.11901116167529
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Oil & Gas - Storage & Transportation",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 1.64273371875207
+          },
+          {
+            "date": 1759190400000,
+            "value": 1.54710471683144
+          },
+          {
+            "date": 1761868800000,
+            "value": 1.53383309863529
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Health Care Equipment & Supplies",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Construction & Engineering",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 7.6592576315725
+          },
+          {
+            "date": 1759190400000,
+            "value": 9.25727442708002
+          },
+          {
+            "date": 1767139200000,
+            "value": 6.55225860640721
+          },
+          {
+            "date": 1769817600000,
+            "value": 6.49271468090537
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.77478231643388
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Metals - Diversified",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Packaged Foods & Meats",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 2.83176517876666
+          },
+          {
+            "date": 1764460800000,
+            "value": 0.78929213970537
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 6.24693427329867
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Consumer Finance",
+        "holdings": [
+          {
+            "date": 1745971200000,
+            "value": 0.724797328806849
+          },
+          {
+            "date": 1759190400000,
+            "value": 1.25432246150679
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Diversified Chemicals",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 6.0478211008133
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Tea & Coffee",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 2.11842409923428
+          },
+          {
+            "date": 1759190400000,
+            "value": 1.09114601028263
+          },
+          {
+            "date": 1767139200000,
+            "value": 1.03520951133852
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "FMCG - Household Products",
+        "holdings": [
+          {
+            "date": 1748649600000,
+            "value": 2.38543373626882
+          },
+          {
+            "date": 1759190400000,
+            "value": 2.52771124355623
+          },
+          {
+            "date": 1761868800000,
+            "value": 2.37029678189003
+          },
+          {
+            "date": 1774915200000,
+            "value": 1.87093310668297
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Labs & Life Sciences Services",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 1.9900587782558
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 3.80075736656865
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Oil & Gas - Exploration & Production",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 3.11140611252205
+          },
+          {
+            "date": 1756598400000,
+            "value": 3.08489230787987
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1772236800000,
+            "value": 4.60541669077274
+          },
+          {
+            "date": 1782777600000,
+            "value": 2.95323851120579
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Two Wheelers",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 3.46076002008512
+          },
+          {
+            "date": 1759190400000,
+            "value": 4.6193558516367
+          },
+          {
+            "date": 1767139200000,
+            "value": 5.46673842937065
+          },
+          {
+            "date": 1774915200000,
+            "value": 4.70601746185451
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Logistics",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Retail - Speciality",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 7.38037960143937
+          },
+          {
+            "date": 1753920000000,
+            "value": 4.27272963560667
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Mining - Diversified",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1772236800000,
+            "value": 1.4836210829776
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Electrical Components & Equipments",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 3.45432769793873
+          },
+          {
+            "date": 1753920000000,
+            "value": 2.17833383374351
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Alcoholic Beverages",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 1.07474949302435
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Four Wheelers",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 3.84950205219967
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "TV Channels & Broadcasters",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Home Financing",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Paints",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Precious Metals, Jewellery & Watches",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 2.49020578164427
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 2.94079420491425
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Fertilizers & Agro Chemicals",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Metals - Aluminium",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Hotels, Resorts & Cruise Lines",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Airlines",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": 0
+          },
+          {
+            "date": 1759190400000,
+            "value": 0
+          },
+          {
+            "date": 1767139200000,
+            "value": 0
+          },
+          {
+            "date": 1774915200000,
+            "value": 0
+          },
+          {
+            "date": 1782777600000,
+            "value": 0
+          },
+          {
+            "date": 1790726400000,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "sector": "Others",
+        "holdings": [
+          {
+            "date": 1751241600000,
+            "value": -1.120684128853466
+          },
+          {
+            "date": 1759190400000,
+            "value": -16.6517260130117
+          },
+          {
+            "date": 1767139200000,
+            "value": -16.7143440880092
+          },
+          {
+            "date": 1774915200000,
+            "value": -20.22268412975684
+          },
+          {
+            "date": 1782777600000,
+            "value": -15.8123852584454
+          },
+          {
+            "date": 1785456000000,
+            "value": -27.6855354995739
+          }
+        ]
+      }
+    ],
+    "targetAssetAllocation": [
+      {
+        "min": 0,
+        "max": 100,
+        "assetClass": "Equity"
+      },
+      {
+        "min": 0,
+        "max": 20,
+        "assetClass": "Cash & Equivalents"
+      },
+      {
+        "min": 0,
+        "max": 10,
+        "assetClass": "REITs & InvITs"
+      }
+    ],
+    "totalRedFlagsCount": {
+      "equity": 1,
+      "debt": 0,
+      "others": 0
+    }
+  }
+}
