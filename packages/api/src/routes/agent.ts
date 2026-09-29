@@ -9,7 +9,7 @@ function sse(data: unknown): string {
 
 export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness }): Promise<void> {
   app.post('/agent/chat', async (req, reply) => {
-    const body = (req.body ?? {}) as { threadId?: string; message?: string; agent?: 'wealth' | 'expense' };
+    const body = (req.body ?? {}) as { threadId?: string; message?: string; agent?: 'wealth' | 'expense' | 'investment' };
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     if (!message) {
       throw badRequest('message is required');
