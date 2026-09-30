@@ -11,8 +11,8 @@ describe('buildProvider', () => {
     const p = buildProvider({ dialect: 'bedrock', model: 'us.anthropic.claude-haiku', config: { region: 'us-east-1', profile: 'dev' } });
     expect(typeof p.complete).toBe('function');
   });
-  it('openai-compatible still not implemented → provider_not_configured on use', async () => {
-    const p = buildProvider({ dialect: 'openai-compatible', model: 'x', apiKey: 'k' });
+  it('openai-compatible without a key → provider_not_configured on use', async () => {
+    const p = buildProvider({ dialect: 'openai-compatible', model: 'x' });
     await expect(p.complete({ prompt: 'x', jsonSchema: {} })).rejects.toBeInstanceOf(LlmError);
   });
 });
