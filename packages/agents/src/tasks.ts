@@ -33,6 +33,11 @@ export const AI_TASKS = {
     description: 'The investment specialist: analyzes MF holdings health (overlap, concentration, cost, goal-fit)',
     defaultDialect: 'gemini',
   },
+  investment_review: {
+    label: 'Investment Portfolio Review',
+    description: 'Monthly review of mutual-fund performance vs benchmark and category; writes the dragging/working/consider cards from a verified fact sheet',
+    defaultDialect: 'gemini',
+  },
 } as const;
 
 export type AiTaskId = keyof typeof AI_TASKS;

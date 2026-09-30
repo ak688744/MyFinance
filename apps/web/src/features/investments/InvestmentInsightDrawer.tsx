@@ -2,16 +2,16 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgentChat } from '../assistant/useAgentChat';
 import { ChatPanel } from '../assistant/ChatPanel';
-import { buildInvestmentInsightSeed } from './investmentInsightSeed';
-import type { InvestmentInsight } from '../../types';
 
 type InvestmentInsightDrawerProps = {
-  insight: InvestmentInsight;
-  fundNames: string[];
+  title: string;
+  detail: string;
+  /** First message sent to the investment agent when the drawer opens. */
+  seed: string;
   onClose: () => void;
 };
 
-export function InvestmentInsightDrawer({ insight, fundNames, onClose }: InvestmentInsightDrawerProps) {
+export function InvestmentInsightDrawer({ title, detail, seed, onClose }: InvestmentInsightDrawerProps) {
   const queryClient = useQueryClient();
   const chat = useAgentChat({ agent: 'investment', persist: false, storageKey: 'myfinance.investment.insight.chat' });
   const fired = useRef(false);
@@ -19,13 +19,14 @@ export function InvestmentInsightDrawer({ insight, fundNames, onClose }: Investm
   useEffect(() => {
     if (!fired.current) {
       fired.current = true;
-      void chat.send(buildInvestmentInsightSeed(insight, fundNames));
+      void chat.send(seed);
     }
   }, []);
 
   const handleClose = () => {
     queryClient.invalidateQueries({ queryKey: ['investments'] });
     queryClient.invalidateQueries({ queryKey: ['investmentInsights'] });
+    queryClient.invalidateQueries({ queryKey: ['investmentReview'] });
     queryClient.invalidateQueries({ queryKey: ['networth'] });
     onClose();
   };
@@ -40,8 +41,8 @@ export function InvestmentInsightDrawer({ insight, fundNames, onClose }: Investm
       <div className="fixed inset-y-0 right-0 w-[420px] bg-white shadow-2xl z-50 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <div>
-            <h2 className="font-heading text-lg">{insight.title}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{insight.detail}</p>
+            <h2 className="font-heading text-lg">{title}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{detail}</p>
           </div>
           <button
             onClick={handleClose}

@@ -16,6 +16,8 @@ import {
   makeLiabilityRepo,
   makeSchemeFundamentalsRepo,
   makeSchemeHoldingsRepo,
+  makePerformanceUniverseRepo,
+  makeCandidateDetailsRepo,
   getLatestNAV,
   getNAVForDate,
   getNAVHistory,
@@ -44,6 +46,9 @@ import {
   type LiabilityRepo,
   type SchemeFundamentalsRepo,
   type SchemeHoldingsRepo,
+  type PerformanceUniverseRepo,
+  type CandidateDetailsRepo,
+  type FetchedFundData,
 } from '@myfinance/core';
 
 // Derived from core's runMigrations return type to avoid a direct better-sqlite3
@@ -70,6 +75,10 @@ export type FundData = {
   ) => Promise<FundDataIngestResult>;
 };
 
+export type FundDetails = {
+  fetch: (amfiCode: string, schemeName: string) => Promise<FetchedFundData>;
+};
+
 export type McpRepos = {
   investmentTxRepo: InvestmentTxRepo;
   schemeRepo: SchemeRepo;
@@ -86,6 +95,8 @@ export type McpRepos = {
   liabilityRepo: LiabilityRepo;
   schemeFundamentalsRepo: SchemeFundamentalsRepo;
   schemeHoldingsRepo: SchemeHoldingsRepo;
+  performanceUniverseRepo: PerformanceUniverseRepo;
+  candidateDetailsRepo: CandidateDetailsRepo;
 };
 
 export type McpContext = {
@@ -95,6 +106,7 @@ export type McpContext = {
   nav: NavLookup;
   marketData: MarketData;
   fundData: FundData;
+  fundDetails: FundDetails;
   /** RESERVED write seam (D8) — built, unused in L3. */
   runInTransaction: <T>(fn: () => T) => T;
   close: () => void;
@@ -105,6 +117,11 @@ const realMarketData: MarketData = {
   searchSchemes: (q) => searchSchemes(q),
   getLatestNAV: (code) => getLatestNAV(code),
   getNAVHistory: (code, start, end) => getNAVHistory(code, start, end),
+};
+
+// Real tier-C fetcher: Groww fund page for any AMFI code (owned or candidate).
+const realFundDetails: FundDetails = {
+  fetch: (code, schemeName) => fetchGrowwFundData(code, { schemeName }),
 };
 
 function makeRealFundData(
@@ -135,7 +152,7 @@ function makeRealFundData(
 }
 
 export function buildContext(
-  opts: { dbPath?: string; marketData?: MarketData; fundData?: FundData } = {},
+  opts: { dbPath?: string; marketData?: MarketData; fundData?: FundData; fundDetails?: FundDetails } = {},
 ): McpContext {
   const { db, sqlite } = runMigrations(opts.dbPath ?? ':memory:');
   seedDatabase(db);
@@ -156,6 +173,8 @@ export function buildContext(
     liabilityRepo: makeLiabilityRepo(db),
     schemeFundamentalsRepo: makeSchemeFundamentalsRepo(db),
     schemeHoldingsRepo: makeSchemeHoldingsRepo(db),
+    performanceUniverseRepo: makePerformanceUniverseRepo(db),
+    candidateDetailsRepo: makeCandidateDetailsRepo(db),
   };
 
   const nav: NavLookup = {
@@ -172,6 +191,7 @@ export function buildContext(
     nav,
     marketData: opts.marketData ?? realMarketData,
     fundData: opts.fundData ?? makeRealFundData(repos, runInTransaction),
+    fundDetails: opts.fundDetails ?? realFundDetails,
     runInTransaction,
     close: () => sqlite.close(),
   };

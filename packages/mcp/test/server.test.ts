@@ -27,6 +27,13 @@ const EXPECTED_READ_TOOLS = [
   'analyze_concentration',
   'detect_redundancy',
   'check_goal_fit',
+  'get_fund_performance',
+  'compare_to_benchmark',
+  'get_category_stats',
+  'screen_category',
+  'replay_cashflows',
+  'get_lots_and_tax',
+  'estimate_switch_cost',
 ];
 
 const EXPECTED_WRITE_TOOLS = [
@@ -38,6 +45,7 @@ const EXPECTED_WRITE_TOOLS = [
   'add_asset_contribution', 'add_asset_valuation', 'add_asset_rate', 'delete_asset',
   'add_liability', 'update_liability', 'delete_liability',
   'refresh_fund_data',
+  'fetch_fund_details',
 ];
 
 const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];

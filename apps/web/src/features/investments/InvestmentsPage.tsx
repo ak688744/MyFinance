@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights } from '../../lib/hooks';
+import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights, useInvestmentReview } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat, Badge } from '../../components/ui/primitives';
 import { formatINR, formatPercent } from '../../lib/format';
 import { classLabel } from '../../lib/transforms';
-import type { ValuedAsset, InvestmentInsight } from '../../types';
+import type { ValuedAsset, ReviewCard } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
-import { InvestmentInsightCards } from './InvestmentInsightCards';
+import { PortfolioReview } from './PortfolioReview';
+import { UniverseStatusLine } from './UniverseStatusLine';
+import { buildReviewSeed } from './reviewLanes';
+import { buildInvestmentInsightSeed } from './investmentInsightSeed';
 import { FundDataStatus } from './FundDataStatus';
 import { InvestmentInsightDrawer } from './InvestmentInsightDrawer';
 import { useInvestmentInsightDismissal } from './useInvestmentInsightDismissal';
@@ -18,7 +21,8 @@ const delta = (n: number | null | undefined) =>
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
-  const [activeInsight, setActiveInsight] = useState<InvestmentInsight | null>(null);
+  const [discussion, setDiscussion] = useState<{ title: string; detail: string; seed: string } | null>(null);
+  const review = useInvestmentReview(account);
 
   const summary = useInvestmentSummary(account);
   const insights = useInvestmentInsights(account);
@@ -33,6 +37,7 @@ export function InvestmentsPage() {
   const assets = useAssets(selectedAccountId !== undefined ? String(selectedAccountId) : undefined);
 
   const mf = holdings.data ?? [];
+  const namesFor = (ids: number[]) => mf.filter((h) => ids.includes(h.schemeId ?? -1)).map((h) => h.schemeName);
   // Generic (non-MF) assets grouped by class. /assets also projects MF — drop it
   // here (MF is rendered from /investments/holdings above). See BUG-002.
   const genericGroups = useMemo(() => {
@@ -99,12 +104,19 @@ export function InvestmentsPage() {
 
       <FundDataStatus account={account} />
 
-      <InvestmentInsightCards
+      <UniverseStatusLine />
+
+      <PortfolioReview
+        review={review.data}
+        loading={review.isLoading || review.isFetching}
         insights={insights.data ?? []}
-        loading={insights.isLoading || insights.isFetching}
+        insightsLoading={insights.isLoading || insights.isFetching}
         isDismissed={isDismissed}
         onDismiss={dismiss}
-        onDiscuss={setActiveInsight}
+        onDiscussCard={(c: ReviewCard) =>
+          setDiscussion({ title: c.title, detail: c.detail, seed: buildReviewSeed(c, namesFor(c.fundIds)) })}
+        onDiscussInsight={(i) =>
+          setDiscussion({ title: i.title, detail: i.detail, seed: buildInvestmentInsightSeed(i, namesFor(i.schemeIds)) })}
       />
 
       <DataState
@@ -203,14 +215,8 @@ export function InvestmentsPage() {
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
 
-      {activeInsight && (
-        <InvestmentInsightDrawer
-          insight={activeInsight}
-          fundNames={mf
-            .filter((h) => activeInsight.schemeIds.includes(h.schemeId ?? -1))
-            .map((h) => h.schemeName)}
-          onClose={() => setActiveInsight(null)}
-        />
+      {discussion && (
+        <InvestmentInsightDrawer {...discussion} onClose={() => setDiscussion(null)} />
       )}
     </div>
   );

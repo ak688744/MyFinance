@@ -3,6 +3,7 @@ import type {
   TransactionWithSchemeMeta,
   Account, AccountDomain, Asset, AssetContribution, AssetRate, AssetValuation,
   Liability, SchemeFundamentals, StoredFundHolding,
+  UniverseFund, FundPerformanceRow, CategoryStatRow, NavPoint,
 } from '../types';
 import type { Tag } from '../domain/tags';
 
@@ -449,4 +450,47 @@ export interface SchemeHoldingsRepo {
   getLatestSnapshot(schemeId: number): StoredFundHolding[];
   listAsOfDates(schemeId: number): string[];
   prune(schemeId: number, keep: number): number;
+}
+
+// ── Performance universe repo ──────────────────────────
+
+export type UniverseSnapshot = {
+  builtAt: string;
+  asOf: string;
+  funds: UniverseFund[];
+  monthlyNav: { amfiCode: string; monthEnd: string; nav: number }[];
+  performance: FundPerformanceRow[];
+  categoryStats: CategoryStatRow[];
+};
+export type UniverseMeta = { builtAt: string; asOf: string | null };
+export type PerformanceWithName = FundPerformanceRow & { schemeName: string; rankable: boolean };
+export interface PerformanceUniverseRepo {
+  /** Delete every universe row and insert the snapshot. Callers wrap this in runInTransaction. */
+  replaceAll(snapshot: UniverseSnapshot): void;
+  getMeta(): UniverseMeta | null;
+  getFund(amfiCode: string): UniverseFund | null;
+  listFunds(filter?: { category?: string; rankableOnly?: boolean }): UniverseFund[];
+  /** Month-end NAV points, ascending. */
+  getMonthlyNav(amfiCode: string): NavPoint[];
+  getPerformance(amfiCodes: string[]): FundPerformanceRow[];
+  listPerformanceByCategory(category: string): PerformanceWithName[];
+  getCategoryStats(category: string): CategoryStatRow[];
+  listAllCategoryStats(): CategoryStatRow[];
+  listCategories(): string[];
+}
+
+// ── Investment review caching and candidate details ──────────────────────
+
+export type InvestmentReviewCacheRow = { signature: string; reviewJson: string; model: string | null; createdAt: string };
+export interface InvestmentReviewCacheRepo {
+  get(signature: string): InvestmentReviewCacheRow | null;
+  put(row: { signature: string; reviewJson: string; model?: string | null }): void;
+}
+
+export type CandidateDetailsRow = { amfiCode: string; detailsJson: string; fetchedAt: string };
+export interface CandidateDetailsRepo {
+  get(amfiCode: string): CandidateDetailsRow | null;
+  upsert(row: { amfiCode: string; detailsJson: string }): void;
+  /** Delete rows fetched before `isoDate` (YYYY-MM-DD). Returns the number deleted. */
+  pruneOlderThan(isoDate: string): number;
 }

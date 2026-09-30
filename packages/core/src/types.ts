@@ -302,3 +302,50 @@ export type FetchedFundData = {
   asOfDate: string;
   source: FundDataSource;
 };
+
+/** One NAV observation. Series are always sorted ascending by date (YYYY-MM-DD). */
+export type NavPoint = { date: string; nav: number };
+
+/** A Direct-Growth fund in the monthly-rebuilt performance universe (tier A). */
+export type UniverseFund = {
+  amfiCode: string;
+  schemeName: string;
+  amc: string;
+  /** Normalised AMFI category, e.g. 'Equity: Small Cap'. */
+  category: string;
+  latestNav: number | null;
+  latestNavDate: string | null;
+  historyStart: string | null;
+  /** True when the fund has at least 3 years of history at the universe as-of date. */
+  rankable: boolean;
+  builtAt: string;
+};
+
+/** Tier-B stats for one fund. Every return/ratio is a FRACTION (0.114 = 11.4%). */
+export type FundPerformanceRow = {
+  amfiCode: string;
+  asOf: string;
+  benchmarkCode: string | null;
+  r1y: number | null;
+  r3y: number | null;
+  r5y: number | null;
+  r10y: number | null;
+  vol3y: number | null;
+  maxDrawdown5y: number | null;
+  rolling3yBeatPct: number | null;
+  rolling3yMedianExcess: number | null;
+  upCapture3y: number | null;
+  downCapture3y: number | null;
+  categoryPctile3y: number | null;
+  categoryPctile5y: number | null;
+};
+
+export type CategoryStatRow = {
+  category: string;
+  metric: string;
+  p25: number;
+  median: number;
+  p75: number;
+  n: number;
+  asOf: string;
+};
