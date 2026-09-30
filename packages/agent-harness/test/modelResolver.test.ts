@@ -33,6 +33,15 @@ describe('resolveWealthRoute', () => {
     expect(r.providerId).toBe('p1');
   });
 
+  it('resolves an openai-compatible route with a custom baseURL (OpenRouter) keeping the raw model id', () => {
+    const model = { id: 'm1', providerId: 'p1', modelString: 'anthropic/claude-sonnet-4.5', label: 'Sonnet', inputPerM: 3, outputPerM: 15, createdAt: 't' };
+    const provider = { id: 'p1', dialect: 'openai-compatible', label: 'OpenRouter', secretEnc: 'ENC', configJson: '{"baseURL":"https://openrouter.ai/api/v1"}', createdAt: 't' };
+    const r = resolveWealthRoute(fakeDeps({ model, provider }));
+    expect(r.modelString).toBe('anthropic/claude-sonnet-4.5');
+    expect(r.baseURL).toBe('https://openrouter.ai/api/v1');
+    expect(r.apiKey).toBe('plain-key');
+  });
+
   it('throws not_configured when no route exists', () => {
     try {
       resolveWealthRoute(fakeDeps({ route: null }));
