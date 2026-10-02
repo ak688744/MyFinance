@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapChunk, toFriendlyToolLabel, type HarnessEvent } from '../src/streamEvents';
+import { mapChunk, toFriendlyToolLabel, createEventMapper, RUN_PYTHON_STEP_LABEL, type HarnessEvent } from '../src/streamEvents';
 import { ASK_USER_TOOL_NAME } from '../src/askUserTool';
 
 // Chunk shapes captured verbatim from a live Bedrock fullStream run.
@@ -103,5 +103,67 @@ describe('mapChunk — ask_user question events', () => {
       },
     };
     expect(mapChunk(chunk)).toEqual({ type: 'question', question: 'Pick one', options: [{ label: 'A' }] });
+  });
+});
+
+describe('createEventMapper', () => {
+  it('turns a run_python call + result into a step then a computation carrying the code', () => {
+    const map = createEventMapper();
+    expect(map({ type: 'tool-call', payload: { toolCallId: 'c1', toolName: 'run_python', args: { code: 'print(1)', datasets: [] } } }))
+      .toEqual({ type: 'step', label: RUN_PYTHON_STEP_LABEL });
+    expect(map({ type: 'tool-result', payload: { toolCallId: 'c1', toolName: 'run_python', result: { stdout: '1\n', result: 2, durationMs: 5 } } }))
+      .toEqual({ type: 'computation', code: 'print(1)', stdout: '1\n', result: 2, durationMs: 5 });
+  });
+  it('keeps the error field and tolerates a missing call record', () => {
+    const map = createEventMapper();
+    expect(map({ type: 'tool-result', payload: { toolCallId: 'zz', toolName: 'run_python', result: { stdout: '', result: null, error: 'boom', durationMs: 1 } } }))
+      .toEqual({ type: 'computation', code: '', stdout: '', result: null, error: 'boom', durationMs: 1 });
+  });
+  it('delegates everything else to mapChunk and never throws on malformed chunks', () => {
+    const map = createEventMapper();
+    expect(map({ type: 'text-delta', payload: { text: 'hi' } })).toEqual({ type: 'text', text: 'hi' });
+    expect(map({ type: 'tool-result', payload: { toolCallId: 't', toolName: 'finance_get_fund_performance', result: {} } })).toBeNull();
+    expect(map(null)).toBeNull();
+    expect(map({ type: 'tool-result', payload: { toolName: 'run_python', result: 'weird' } })).toMatchObject({ type: 'computation', stdout: '' });
+  });
+});
+
+describe('createEventMapper hardening', () => {
+  const call = (id: string, code: string) => ({ type: 'tool-call', payload: { toolCallId: id, toolName: 'run_python', args: { code } } });
+  const res = (id: string, result: unknown) => ({ type: 'tool-result', payload: { toolCallId: id, toolName: 'run_python', result } });
+  it('caps oversized code, stdout and result', () => {
+    const map = createEventMapper();
+    map(call('a', 'x'.repeat(30000)));
+    const ev = map(res('a', { stdout: 'y'.repeat(30000), result: 'z'.repeat(30000), durationMs: 1 })) as Extract<HarnessEvent, { type: 'computation' }>;
+    expect(ev.code.length).toBeLessThan(20500);
+    expect(ev.stdout.length).toBeLessThan(20500);
+    expect(ev.result).toMatch(/^\[result truncated: \d+ chars\]$/);
+  });
+  it('survives a BigInt/circular result', () => {
+    const map = createEventMapper();
+    expect(map(res('b', { stdout: '', result: 10n, durationMs: 1 }))).toMatchObject({ type: 'computation', result: '[result not serializable]' });
+  });
+  it('maps tool-error to a computation with the stored code', () => {
+    const map = createEventMapper();
+    map(call('e', 'boom()'));
+    expect(map({ type: 'tool-error', payload: { toolCallId: 'e', toolName: 'run_python', error: new Error('bad') } }))
+      .toEqual({ type: 'computation', code: 'boom()', stdout: '', result: null, error: 'bad', durationMs: 0 });
+  });
+  it('a duplicate tool-result has empty code', () => {
+    const map = createEventMapper();
+    map(call('d', 'print(1)'));
+    map(res('d', { stdout: '', result: 1, durationMs: 1 }));
+    expect(map(res('d', { stdout: '', result: 1, durationMs: 1 }))).toMatchObject({ code: '' });
+  });
+  it('does not share state between mappers', () => {
+    const m1 = createEventMapper();
+    const m2 = createEventMapper();
+    m1(call('s', 'print(1)'));
+    expect(m2(res('s', { stdout: '', result: 1, durationMs: 1 }))).toMatchObject({ code: '' });
+  });
+  it('ignores a call without toolCallId (no empty key)', () => {
+    const map = createEventMapper();
+    map({ type: 'tool-call', payload: { toolName: 'run_python', args: { code: 'a' } } });
+    expect(map({ type: 'tool-result', payload: { toolName: 'run_python', result: { stdout: '', result: 1, durationMs: 1 } } })).toMatchObject({ code: '' });
   });
 });

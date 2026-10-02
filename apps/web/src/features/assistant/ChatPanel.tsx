@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Markdown } from './Markdown';
 import { StepsTrail } from './StepsTrail';
 import { QuestionChips } from './QuestionChips';
+import { ComputationTrail } from './ComputationTrail';
+import type { Computation } from './useAgentChat';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
   text: string;
   error?: boolean;
   steps?: string[];
+  computations?: Computation[];
   question?: { question: string; options: { label: string }[] };
 };
 
@@ -93,6 +96,9 @@ export function ChatPanel({ chat, emptyState, placeholder = 'Ask your wealth man
                       <span className="animate-pulse delay-75">…</span>
                     </span>
                   ) : '')
+                )}
+                {m.role === 'assistant' && !isError && m.computations && m.computations.length > 0 && (
+                  <ComputationTrail computations={m.computations} />
                 )}
                 {m.role === 'assistant' && !isError && m.question && (
                   <QuestionChips

@@ -32,6 +32,8 @@ export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness
           reply.raw.write(sse({ type: 'step', label: ev.label }));
         } else if (ev.type === 'question') {
           reply.raw.write(sse({ type: 'question', question: ev.question, options: ev.options }));
+        } else if (ev.type === 'computation') {
+          reply.raw.write(sse({ type: 'computation', code: ev.code, stdout: ev.stdout, result: ev.result, ...(ev.error ? { error: ev.error } : {}), durationMs: ev.durationMs }));
         }
       }
       const fin = await chat.done;

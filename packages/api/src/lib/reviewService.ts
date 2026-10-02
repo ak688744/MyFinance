@@ -19,6 +19,7 @@ import {
   tokenOverlap,
   LIQUID_CATEGORY,
   type Holding,
+  type FactSheet,
   type NavLookup,
   type NavPoint,
   type FactSheetInput,
@@ -198,6 +199,22 @@ async function assembleFactSheetInput(
   };
 }
 
+async function factSheetFor(
+  repos: Repos,
+  deps: ReviewDeps,
+  meta: { builtAt: string; asOf: string | null },
+  positions: Position[],
+  account: string | undefined,
+  funds: Awaited<ReturnType<typeof buildOwnedFunds>>,
+  profile: InferredProfile | null,
+  holdings: Holding[],
+): Promise<FactSheet> {
+  const portfolioInsights = computeInvestmentInsights({ funds, profile: null })
+    .filter((i) => i.kind !== 'portfolio_profile')
+    .map(({ kind, title, detail }) => ({ kind, title, detail }));
+  return buildFactSheet(await assembleFactSheetInput(repos, deps, meta, positions, account, profile, portfolioInsights, heldAccountsByScheme(holdings)));
+}
+
 export async function getInvestmentReview(
   repos: Repos,
   gateway: Gateway | undefined,
@@ -239,10 +256,7 @@ export async function getInvestmentReview(
   if (hit) return { ...(JSON.parse(hit.reviewJson) as InvestmentReviewResponse), cached: true };
   if (!gateway) return unavailable('ai_not_configured', meta.asOf);
 
-  const portfolioInsights = computeInvestmentInsights({ funds, profile: null })
-    .filter((i) => i.kind !== 'portfolio_profile')
-    .map(({ kind, title, detail }) => ({ kind, title, detail }));
-  const factSheet = buildFactSheet(await assembleFactSheetInput(repos, deps, meta, positions, account, profile, portfolioInsights, heldAccountsByScheme(holdings)));
+  const factSheet = await factSheetFor(repos, deps, meta, positions, account, funds, profile, holdings);
 
   let outcome;
   try {
@@ -265,4 +279,15 @@ export async function getInvestmentReview(
   };
   repos.investmentReviewCacheRepo.put({ signature, reviewJson: JSON.stringify(response) });
   return response;
+}
+
+/** The same fact sheet the review uses, for the run_python `fact_sheet` dataset. */
+export async function buildCurrentFactSheet(repos: Repos, deps: ReviewDeps, account?: string): Promise<FactSheet | { unavailable: string }> {
+  const meta = repos.performanceUniverseRepo.getMeta();
+  if (!meta) return { unavailable: 'universe_not_built' };
+  const holdings = await getHoldings({ txRepo: repos.txRepo, holdingsRepo: repos.holdingsRepo, nav: deps.nav }, account ? { account } : {});
+  const positions = aggregatePositions(holdings);
+  if (positions.length === 0) return { unavailable: 'no_holdings' };
+  const funds = await buildOwnedFunds(repos, account, deps.nav);
+  return factSheetFor(repos, deps, meta, positions, account, funds, inferPortfolioProfile(funds), holdings);
 }

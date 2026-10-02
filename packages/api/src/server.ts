@@ -21,6 +21,8 @@ import { networthRoutes } from './routes/networth';
 import { aiSettingsRoutes } from './routes/aiSettings';
 import { aiUsageRoutes } from './routes/aiUsage';
 import { agentRoutes } from './routes/agent';
+import { makeSandboxDatasetResolver } from './lib/sandboxDatasets';
+import { makeReviewDeps } from './lib/reviewDeps';
 import { makeHarness, memoryUrlFor, type Harness } from './plugins/harness';
 
 export type BuildServerOpts = {
@@ -73,7 +75,11 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
 
   const gateway: Gateway = opts.gateway ?? makeGateway(app.repos);
 
-  const harness: Harness = opts.harness ?? makeHarness(app.repos, { dbPath, memoryUrl: memoryUrlFor(dbPath) });
+  const harness: Harness = opts.harness ?? makeHarness(app.repos, {
+    dbPath, memoryUrl: memoryUrlFor(dbPath),
+    resolveDataset: makeSandboxDatasetResolver(app.repos, makeReviewDeps(opts.reviewDeps)),
+  });
+  app.addHook('onClose', async () => { harness.close?.(); });
 
   await app.register(healthRoutes);
   await app.register(transactionRoutes, { gateway });
@@ -99,4 +105,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const app = await buildServer();
   const { port } = loadConfig();
   await app.listen({ port, host: '0.0.0.0' });
+  // Graceful shutdown so onClose hooks (harness.close -> sandbox children) run.
+  for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(sig, () => { void app.close().finally(() => process.exit(0)); });
+  }
 }

@@ -1,11 +1,14 @@
 import { useCallback, useRef, useState } from 'react';
 import { streamAgentChat } from '../../lib/apiStream';
 
+export type Computation = { code: string; stdout: string; result: unknown; error?: string; durationMs: number };
+
 export type ChatMessage = {
   role: 'user' | 'assistant';
   text: string;
   error?: boolean;
   steps?: string[];
+  computations?: Computation[];
   question?: { question: string; options: { label: string }[] };
 };
 
@@ -109,6 +112,14 @@ export function useAgentChat(opts?: {
             if (last && last.role === 'assistant') {
               next[next.length - 1] = { ...last, role: 'assistant', steps: [...(last.steps ?? []), ev.label] };
             }
+            return next;
+          });
+        } else if (ev.type === 'computation') {
+          const c: Computation = { code: ev.code, stdout: ev.stdout, result: ev.result, durationMs: ev.durationMs, ...(ev.error ? { error: ev.error } : {}) };
+          setMessages((m) => {
+            const next = m.slice();
+            const last = next[next.length - 1];
+            if (last?.role === 'assistant') next[next.length - 1] = { ...last, computations: [...(last.computations ?? []), c] };
             return next;
           });
         } else if (ev.type === 'question') {

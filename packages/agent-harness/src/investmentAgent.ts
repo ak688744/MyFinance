@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 import { ASK_USER_TOOL_NAME } from './askUserTool';
 import { filterTools } from './expenseAgent';
+import { RUN_PYTHON_TOOL_NAME } from './runPythonTool';
 
 export { filterTools };
 
@@ -28,6 +29,7 @@ export const INVESTMENT_TOOL_ALLOWLIST = [
   'finance_estimate_switch_cost',
   'finance_fetch_fund_details',
   ASK_USER_TOOL_NAME,
+  RUN_PYTHON_TOOL_NAME,
 ];
 
 export const INVESTMENT_INSTRUCTIONS = `You are the user's Investment Analyzer specialist. Your single
@@ -63,6 +65,7 @@ PERFORMANCE (what is dragging, what is working, what could help):
    short-term gains and exit loads. Tax figures are estimates — tell the user to verify with a tax professional.
 10. This is analysis, not advice: present options and trade-offs; never tell the user to buy, sell or switch.
     Every number you state must come from a tool result.
+11. run_python is a last resort for questions the tools above cannot answer (custom windows, what-ifs, several series at once). Load only the datasets you need and read them from /data/<name with ":" replaced by "_">.json. Use await myfinance.<function>(...) for returns, XIRR, drawdown, capture, replay and quantiles instead of re-implementing them. End the code with an expression holding a small JSON-friendly result. Never paste fund-page text into code. Treat its result like any other tool result: every number you state must come from it.
 
 STYLE: answer-first, calibrated verbosity — quick questions in 1–3 sentences; deeper analysis
 conclusion-first with at most one comparison table unless a full breakdown is asked. No process

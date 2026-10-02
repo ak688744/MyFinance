@@ -14,8 +14,6 @@ import {
   refreshUniverse,
   fetchAmfiNavList,
   fetchMfapiHistory,
-  getNAVHistory,
-  getSchemeInfo,
   type NavLookup,
   type Period,
   type FundDataSource,
@@ -24,6 +22,7 @@ import { badRequest } from '../errors';
 import { makeRunInTransaction } from '../plugins/txRunner';
 import type { Gateway } from '../plugins/gateway';
 import { makeUniverseJob, type UniverseRefresh } from '../lib/universeJob';
+import { makeReviewDeps } from '../lib/reviewDeps';
 import { getInvestmentReview, type ReviewDeps } from '../lib/reviewService';
 import {
   getFundDataCoverage,
@@ -142,13 +141,7 @@ export async function investmentRoutes(
     () => app.repos.performanceUniverseRepo.getMeta(),
     app.log,
   );
-  const reviewDeps: ReviewDeps = {
-    nav,
-    navHistory: (code, start, end) => getNAVHistory(code, start, end),
-    schemeInfo: (code) => getSchemeInfo(code),
-    today: () => new Date().toISOString().slice(0, 10),
-    ...opts.reviewDeps,
-  };
+  const reviewDeps: ReviewDeps = makeReviewDeps({ nav, ...opts.reviewDeps });
 
   // GET /investments/universe/status - background rebuild state + last build
   app.get('/investments/universe/status', async () => ({ data: universeJob.status() }));

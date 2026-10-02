@@ -40,3 +40,11 @@ describe('performance tools and instructions', () => {
     expect(INVESTMENT_INSTRUCTIONS).toMatch(/recency/i);
   });
 });
+
+describe('run_python in the investment agent', () => {
+  it('is allowlisted and taught as a last resort', () => {
+    expect(INVESTMENT_TOOL_ALLOWLIST).toContain('run_python');
+    expect(INVESTMENT_INSTRUCTIONS).toMatch(/run_python is a last resort/);
+    expect(INVESTMENT_INSTRUCTIONS).toMatch(/await myfinance\./);
+  });
+});

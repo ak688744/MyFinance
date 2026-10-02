@@ -79,3 +79,6 @@ agent_buildup.txt
 # Throwaway spike/verify scripts (not product code)
 packages/*/spike-*.mts
 packages/*/verify-*.mts
+
+# Pyodide wheel cache for the run_python sandbox (filled by pnpm sandbox:prepare)
+packages/agent-harness/.pyodide-cache/
