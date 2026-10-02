@@ -4,7 +4,7 @@ import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
-  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight,
+  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight, ThreadSummary,
 } from '../types';
 import type {
   AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
@@ -32,6 +32,12 @@ export const useExpenseSummary = (params: Record<string, string | undefined>) =>
   useQuery({ queryKey: qk.expenseSummary(params), queryFn: () => apiGet<ExpenseSummary>('/expenses/summary', params) });
 export const useExpenseInsights = (month: string) =>
   useQuery({ queryKey: qk.expenseInsights(month), queryFn: () => apiGet<Insight[]>('/expenses/insights', { month }), enabled: !!month });
+export const useAgentThreads = (agent: 'wealth' | 'expense', enabled = true) =>
+  useQuery({
+    queryKey: qk.agentThreads(agent),
+    queryFn: () => apiGet<ThreadSummary[]>('/agent/threads', { agent, limit: 30 }),
+    enabled,
+  });
 export const useCategories = () => useQuery({ queryKey: qk.categories(), queryFn: () => apiGet<Category[]>('/categories') });
 export const useAccounts = (domain?: string) => useQuery({ queryKey: qk.accounts(domain), queryFn: () => apiGet<Account[]>('/accounts', domain ? { domain } : undefined) });
 

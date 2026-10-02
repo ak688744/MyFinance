@@ -7,6 +7,9 @@ import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
 import { buildExpenseAgent, filterTools, EXPENSE_TOOL_ALLOWLIST } from './expenseAgent';
 import { buildAskUserTool } from './askUserTool';
+import { toHistoryMessages, summarizeThread, type HistoryMessage, type ThreadSummary } from './threadHistory';
+
+export type AgentKind = 'wealth' | 'expense';
 
 export type UsageInsert = {
   ts: string; task: string; providerId: string; dialect: string; model: string;
@@ -33,6 +36,11 @@ export type ChatResult = {
 
 const RESOURCE_ID = 'user';
 
+/** Memory resource id that scopes an agent's threads. */
+export function resourceIdFor(agent: AgentKind): string {
+  return agent === 'expense' ? 'expense-agent' : RESOURCE_ID;
+}
+
 let threadCounter = 0;
 function mintThreadId(now: () => string): string {
   threadCounter += 1;
@@ -43,13 +51,46 @@ export function makeWealthHarness(deps: HarnessDeps) {
   const now = deps.now ?? (() => new Date().toISOString());
   const makeModel = deps.makeModel ?? ((route: ResolvedRoute) => buildAgentModel(route));
 
+  let historyMemory: ReturnType<typeof buildWealthMemory> | undefined;
+  const getHistoryMemory = () => (historyMemory ??= buildWealthMemory({ storeUrl: deps.memoryUrl }));
+
   return {
-    async runChat(args: { threadId?: string; message: string; agent?: 'wealth' | 'expense' }): Promise<ChatResult> {
+    async listThreads(args: { agent?: AgentKind; limit?: number } = {}): Promise<ThreadSummary[]> {
+      const resourceId = resourceIdFor(args.agent ?? 'wealth');
+      const limit = Math.min(Math.max(Math.trunc(args.limit ?? 30) || 30, 1), 100);
+      const memory = getHistoryMemory();
+      const { threads } = await memory.listThreads({
+        filter: { resourceId },
+        perPage: limit,
+        page: 0,
+        orderBy: { field: 'updatedAt', direction: 'DESC' },
+      });
+      const out: ThreadSummary[] = [];
+      for (const t of threads) {
+        const { messages } = await memory.recall({ threadId: t.id, resourceId, perPage: false });
+        out.push(summarizeThread(t, toHistoryMessages(messages as any)));
+      }
+      return out;
+    },
+
+    async getThread(args: { agent?: AgentKind; threadId: string }): Promise<
+      { id: string; title: string; messages: HistoryMessage[] } | null
+    > {
+      const resourceId = resourceIdFor(args.agent ?? 'wealth');
+      const memory = getHistoryMemory();
+      const thread = await memory.getThreadById({ threadId: args.threadId });
+      if (!thread || thread.resourceId !== resourceId) return null;
+      const { messages } = await memory.recall({ threadId: thread.id, resourceId, perPage: false });
+      const history = toHistoryMessages(messages as any);
+      return { id: thread.id, title: summarizeThread(thread, history).title, messages: history };
+    },
+
+    async runChat(args: { threadId?: string; message: string; agent?: AgentKind }): Promise<ChatResult> {
       const agentKind = args.agent ?? 'wealth';
       const task = agentKind === 'expense' ? 'expense_agent' : 'wealth_chat';
       const route = resolveRoute(deps, task);
       const threadId = args.threadId ?? mintThreadId(now);
-      const resourceId = agentKind === 'expense' ? 'expense-agent' : RESOURCE_ID;
+      const resourceId = resourceIdFor(agentKind);
 
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const financeTools = await getFinanceTools(mcpClient);
@@ -70,6 +111,10 @@ export function makeWealthHarness(deps: HarnessDeps) {
       const done = new Promise<{ usage: { inputTokens: number; outputTokens: number }; threadId: string }>((res, rej) => {
         resolveDone = res; rejectDone = rej;
       });
+      // A failed turn rejects `done` while callers are still draining `events` (which throws
+      // first). Mark it handled so that doesn't become a process-killing unhandled rejection;
+      // anyone who awaits `done` still observes the rejection.
+      done.catch(() => {});
 
       // Prefer fullStream (text + tool-call step markers). Fall back to a
       // text-only stream when a mock model doesn't expose fullStream.
@@ -78,6 +123,12 @@ export function makeWealthHarness(deps: HarnessDeps) {
           const full = (stream as any).fullStream;
           if (full) {
             for await (const chunk of full) {
+              // Mastra reports model/credential failures as an in-band error chunk; without
+              // this the turn would end "successfully" with an empty reply.
+              if ((chunk as { type?: string })?.type === 'error') {
+                const err = (chunk as { payload?: { error?: unknown } }).payload?.error;
+                throw err instanceof Error ? err : new Error(String(err ?? 'Model call failed'));
+              }
               const ev = mapChunk(chunk);
               if (ev) yield ev;
             }

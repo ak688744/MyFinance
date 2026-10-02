@@ -1,5 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { streamAgentChat } from '../../lib/apiStream';
+import { apiGet } from '../../lib/apiClient';
+import { qk } from '../../lib/queryKeys';
+import type { ThreadDetail } from '../../types';
 
 export type ChatMessage = {
   role: 'user' | 'assistant';
@@ -45,7 +49,10 @@ export function useAgentChat(opts?: {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(initial.threadId);
+  const [loading, setLoading] = useState(false);
   const threadRef = useRef<string | null>(initial.threadId);
+  const queryClient = useQueryClient();
+  const agent = opts?.agent ?? 'wealth';
 
   // Persist the full transcript + threadId whenever either settles. Uses a ref
   // snapshot inside the state updater so we always save the freshest arrays.
@@ -124,6 +131,7 @@ export function useAgentChat(opts?: {
           threadRef.current = ev.threadId;
           setThreadId(ev.threadId);
           setMessages((m) => { save(m, ev.threadId); return m; });
+          void queryClient.invalidateQueries({ queryKey: qk.agentThreads(agent) });
         } else if (ev.type === 'error') {
           setAssistantError(ev.message);
         }
@@ -133,7 +141,7 @@ export function useAgentChat(opts?: {
     } finally {
       setIsStreaming(false);
     }
-  }, [isStreaming, save, setAssistantError]);
+  }, [isStreaming, save, setAssistantError, queryClient, agent]);
 
   const clearChat = useCallback(() => {
     threadRef.current = null;
@@ -149,5 +157,21 @@ export function useAgentChat(opts?: {
     }
   }, [shouldPersist, storageKey]);
 
-  return { messages, send, isStreaming, error, threadId, clearChat };
+  const loadThread = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const t = await apiGet<ThreadDetail>(`/agent/threads/${encodeURIComponent(id)}`, { agent });
+      threadRef.current = t.id;
+      setThreadId(t.id);
+      setMessages(t.messages);
+      save(t.messages, t.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load chat');
+    } finally {
+      setLoading(false);
+    }
+  }, [agent, save]);
+
+  return { messages, send, isStreaming, error, threadId, clearChat, loadThread, loading };
 }

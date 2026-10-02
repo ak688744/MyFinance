@@ -7,6 +7,7 @@ import { formatINR, formatPercent } from '../../lib/format';
 import { classLabel } from '../../lib/transforms';
 import type { ValuedAsset } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
+import { AskAiFab } from '../assistant/AskAiFab';
 
 const delta = (n: number | null | undefined) =>
   n == null ? 'text-gray-700' : n >= 0 ? 'text-gain' : 'text-loss';
@@ -185,6 +186,19 @@ export function InvestmentsPage() {
       </DataState>
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <AskAiFab
+        agent="wealth"
+        storageKey="myfinance.investments.chat.v1"
+        title="Ask AI"
+        ariaLabel="Ask AI about investments"
+        placeholder="Ask about your investments…"
+        suggestions={[
+          `How is my portfolio performing${account ? ` in ${account}` : ''}?`,
+          'Which funds are dragging my returns?',
+          'Do my funds overlap or am I too concentrated?',
+        ]}
+        invalidateOnClose={[['investments'], ['assets'], ['networth']]}
+      />
     </div>
   );
 }
