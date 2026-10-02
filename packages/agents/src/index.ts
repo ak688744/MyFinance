@@ -19,3 +19,6 @@ export { CADENCE_VOCAB } from './insights/schema';
 
 export { parseCcStatement } from './ccStatement/parseCcStatement';
 export { type CcLineItem, type CcStatementParse, CcStatementParseSchema } from './ccStatement/schema';
+export { runInvestmentReview, ReviewFailedError, type ReviewOutcome } from './review/runInvestmentReview';
+export { REVIEW_PROMPT_VERSION } from './review/prompt';
+export { type InvestmentReview, type ReviewCard, REVIEW_CARD_KINDS } from './review/schema';

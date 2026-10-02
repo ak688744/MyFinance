@@ -13,7 +13,9 @@ import { registerAccountWriteTools } from './tools/write/accounts';
 import { registerAssetWriteTools } from './tools/write/assets';
 import { registerLiabilityWriteTools } from './tools/write/liabilities';
 import { registerFundDataWriteTools } from './tools/write/fundData';
+import { registerFundDetailsTools } from './tools/write/fundDetails';
 import { registerInvestmentAnalysisTools } from './tools/read/investmentAnalysis';
+import { registerPerformanceTools } from './tools/read/performance';
 
 /**
  * Build the MyFinance MCP server and register all read + write tools.
@@ -34,6 +36,7 @@ export function buildServer(ctx: McpContext): McpServer {
   registerMarketTools(server, ctx);
   registerCategoriesReadTool(server, ctx);
   registerInvestmentAnalysisTools(server, ctx);
+  registerPerformanceTools(server, ctx);
 
   registerTransactionWriteTools(server, ctx);
   registerCategoryWriteTools(server, ctx);
@@ -41,6 +44,7 @@ export function buildServer(ctx: McpContext): McpServer {
   registerAssetWriteTools(server, ctx);
   registerLiabilityWriteTools(server, ctx);
   registerFundDataWriteTools(server, ctx);
+  registerFundDetailsTools(server, ctx);
 
   return server;
 }

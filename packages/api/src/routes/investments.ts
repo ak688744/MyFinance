@@ -11,12 +11,20 @@ import {
   fetchGrowwFundData,
   fetchTickertapeFundData,
   fetchKuveraFundData,
+  refreshUniverse,
+  fetchAmfiNavList,
+  fetchMfapiHistory,
+  getNAVHistory,
+  getSchemeInfo,
   type NavLookup,
   type Period,
   type FundDataSource,
 } from '@myfinance/core';
 import { badRequest } from '../errors';
 import { makeRunInTransaction } from '../plugins/txRunner';
+import type { Gateway } from '../plugins/gateway';
+import { makeUniverseJob, type UniverseRefresh } from '../lib/universeJob';
+import { getInvestmentReview, type ReviewDeps } from '../lib/reviewService';
 import {
   getFundDataCoverage,
   getInvestmentInsights,
@@ -59,7 +67,24 @@ export type FundData = (
   ctx: { isin?: string | null; schemeName?: string },
 ) => Promise<FundDataIngestResult>;
 
-export type InvestmentRoutesOpts = { fundData?: FundData };
+export type InvestmentRoutesOpts = {
+  fundData?: FundData;
+  gateway?: Gateway;
+  universeRefresh?: UniverseRefresh;
+  reviewDeps?: Partial<ReviewDeps>;
+};
+
+function makeDefaultUniverseRefresh(app: FastifyInstance): UniverseRefresh {
+  const runInTransaction = makeRunInTransaction(app.sqlite);
+  return (onProgress) =>
+    refreshUniverse({
+      fetchNavList: () => fetchAmfiNavList(),
+      fetchHistory: (code) => fetchMfapiHistory(code),
+      repo: app.repos.performanceUniverseRepo,
+      runInTransaction,
+      onProgress,
+    });
+}
 
 function makeDefaultFundData(app: FastifyInstance): FundData {
   const runInTransaction = makeRunInTransaction(app.sqlite);
@@ -111,6 +136,30 @@ export async function investmentRoutes(
   opts: InvestmentRoutesOpts = {},
 ): Promise<void> {
   const fundData = opts.fundData ?? makeDefaultFundData(app);
+
+  const universeJob = makeUniverseJob(
+    opts.universeRefresh ?? makeDefaultUniverseRefresh(app),
+    () => app.repos.performanceUniverseRepo.getMeta(),
+    app.log,
+  );
+  const reviewDeps: ReviewDeps = {
+    nav,
+    navHistory: (code, start, end) => getNAVHistory(code, start, end),
+    schemeInfo: (code) => getSchemeInfo(code),
+    today: () => new Date().toISOString().slice(0, 10),
+    ...opts.reviewDeps,
+  };
+
+  // GET /investments/universe/status - background rebuild state + last build
+  app.get('/investments/universe/status', async () => ({ data: universeJob.status() }));
+
+  // POST /investments/universe/refresh - start the monthly rebuild in the background
+  app.post('/investments/universe/refresh', async () => ({ data: universeJob.start() }));
+
+  // GET /investments/review?account= - cached LLM portfolio review (or a reviewUnavailable fallback)
+  app.get<{ Querystring: { account?: string } }>('/investments/review', async (req) => ({
+    data: await getInvestmentReview(app.repos, opts.gateway, reviewDeps, req.query.account, app.log),
+  }));
 
   // GET /investments/summary?account= — lifetime portfolio summary (optional account filter).
   app.get<{ Querystring: { account?: string } }>('/investments/summary', async (req) => {

@@ -3,6 +3,7 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -538,3 +539,76 @@ export const aiUsageEvents = sqliteTable(
     taskIdx: index('ai_usage_task_idx').on(t.task),
   }),
 );
+
+export const fundUniverse = sqliteTable(
+  'fund_universe',
+  {
+    amfiCode: text('amfi_code').primaryKey(),
+    schemeName: text('scheme_name').notNull(),
+    amc: text('amc').notNull(),
+    category: text('category').notNull(),
+    latestNav: real('latest_nav'),
+    latestNavDate: text('latest_nav_date'),
+    historyStart: text('history_start'),
+    rankable: integer('rankable', { mode: 'boolean' }).notNull().default(false),
+    builtAt: text('built_at').notNull(),
+  },
+  (table) => ({
+    idxFundUniverseCategory: index('idx_fund_universe_category').on(table.category),
+  }),
+);
+
+export const fundMonthlyNav = sqliteTable(
+  'fund_monthly_nav',
+  {
+    amfiCode: text('amfi_code').notNull(),
+    monthEnd: text('month_end').notNull(),
+    nav: real('nav').notNull(),
+  },
+  (table) => ({ pk: primaryKey({ columns: [table.amfiCode, table.monthEnd] }) }),
+);
+
+export const fundPerformance = sqliteTable('fund_performance', {
+  amfiCode: text('amfi_code').primaryKey(),
+  asOf: text('as_of').notNull(),
+  benchmarkCode: text('benchmark_code'),
+  r1y: real('r1y'),
+  r3y: real('r3y'),
+  r5y: real('r5y'),
+  r10y: real('r10y'),
+  vol3y: real('vol_3y'),
+  maxDrawdown5y: real('max_drawdown_5y'),
+  rolling3yBeatPct: real('rolling3y_beat_pct'),
+  rolling3yMedianExcess: real('rolling3y_median_excess'),
+  upCapture3y: real('up_capture_3y'),
+  downCapture3y: real('down_capture_3y'),
+  categoryPctile3y: real('category_pctile_3y'),
+  categoryPctile5y: real('category_pctile_5y'),
+});
+
+export const categoryStats = sqliteTable(
+  'category_stats',
+  {
+    category: text('category').notNull(),
+    metric: text('metric').notNull(),
+    p25: real('p25').notNull(),
+    median: real('median').notNull(),
+    p75: real('p75').notNull(),
+    n: integer('n').notNull(),
+    asOf: text('as_of').notNull(),
+  },
+  (table) => ({ pk: primaryKey({ columns: [table.category, table.metric] }) }),
+);
+
+export const investmentReviewCache = sqliteTable('investment_review_cache', {
+  signature: text('signature').primaryKey(),
+  reviewJson: text('review_json').notNull(),
+  model: text('model'),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const candidateDetails = sqliteTable('candidate_details', {
+  amfiCode: text('amfi_code').primaryKey(),
+  detailsJson: text('details_json').notNull(),
+  fetchedAt: text('fetched_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});

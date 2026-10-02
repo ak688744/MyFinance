@@ -46,17 +46,17 @@ function daysSince(isoDate: string): number {
   return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86_400_000);
 }
 
-function portfolioDeps(repos: Repos) {
+function portfolioDeps(repos: Repos, navLookup: NavLookup = nav) {
   return {
     txRepo: repos.txRepo,
     holdingsRepo: repos.holdingsRepo,
-    nav,
+    nav: navLookup,
   };
 }
 
-export async function buildOwnedFunds(repos: Repos, account?: string): Promise<OwnedFund[]> {
+export async function buildOwnedFunds(repos: Repos, account?: string, navLookup: NavLookup = nav): Promise<OwnedFund[]> {
   const filters = account ? { account } : {};
-  const holdings = await getHoldings(portfolioDeps(repos), filters);
+  const holdings = await getHoldings(portfolioDeps(repos, navLookup), filters);
 
   const byScheme = new Map<number, (typeof holdings)[number]>();
   for (const h of holdings) {

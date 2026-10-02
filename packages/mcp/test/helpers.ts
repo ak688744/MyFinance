@@ -1,4 +1,4 @@
-import { buildContext, type McpContext, type MarketData, type FundData } from '../src/context';
+import { buildContext, type McpContext, type MarketData, type FundData, type FundDetails } from '../src/context';
 import type { SchemeInfo, NAVData } from '@myfinance/core';
 
 /** A non-throwing fake marketData with sensible empty defaults; override per test. */
@@ -24,7 +24,23 @@ export function fakeFundData(overrides: Partial<FundData> = {}): FundData {
   };
 }
 
+
+/** Offline tier-C fetcher; override per test. */
+export function fakeFundDetails(overrides: Partial<FundDetails> = {}): FundDetails {
+  return {
+    fetch: async () => ({
+      fundamentals: { expenseRatioDirect: 0.5, expenseRatioRegular: null, planType: 'direct', aum: 1000, benchmarkName: 'Nifty 500 TRI',
+        stdDev: null, sharpe: null, beta: null, alpha: null, source: 'groww' },
+      holdings: [{ securityName: 'HDFC Bank', isin: null, weightPct: 8, sector: 'Financials', marketCapBucket: 'large' }],
+      asOfDate: '2026-08-31',
+      source: 'groww',
+    }),
+    ...overrides,
+  };
+}
+
 export type SeedContextOpts = {
+  fundDetails?: Partial<FundDetails>;
   marketData?: Partial<MarketData>;
   fundData?: Partial<FundData>;
 };
@@ -35,5 +51,6 @@ export function seedContext(opts: SeedContextOpts = {}): McpContext {
     dbPath: ':memory:',
     marketData: fakeMarketData(opts.marketData),
     fundData: fakeFundData(opts.fundData),
+    fundDetails: fakeFundDetails(opts.fundDetails),
   });
 }

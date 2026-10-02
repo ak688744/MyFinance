@@ -33,6 +33,9 @@ export { makeAiUsageRepo } from './repositories/aiUsageRepo';
 export { makeExpenseInsightTriageRepo } from './repositories/expenseInsightTriageRepo';
 export { makeSchemeFundamentalsRepo } from './repositories/schemeFundamentalsRepo';
 export { makeSchemeHoldingsRepo } from './repositories/schemeHoldingsRepo';
+export { makePerformanceUniverseRepo } from './repositories/performanceUniverseRepo';
+export { makeInvestmentReviewCacheRepo } from './repositories/investmentReviewCacheRepo';
+export { makeCandidateDetailsRepo } from './repositories/candidateDetailsRepo';
 
 export type {
   InvestmentTxRepo,
@@ -64,6 +67,14 @@ export type {
   ExpenseInsightTriageRepo,
   SchemeFundamentalsRepo,
   SchemeHoldingsRepo,
+  PerformanceUniverseRepo,
+  UniverseSnapshot,
+  UniverseMeta,
+  PerformanceWithName,
+  InvestmentReviewCacheRepo,
+  InvestmentReviewCacheRow,
+  CandidateDetailsRepo,
+  CandidateDetailsRow,
 } from './repositories/types';
 
 // ---------------------------------------------------------------------------
@@ -246,6 +257,12 @@ export type {
 } from './domain/investmentAnalysis';
 
 // ---------------------------------------------------------------------------
+// Domain — performance review (L4.1 step 2)
+// ---------------------------------------------------------------------------
+export * from './domain/performance';
+export { nameTokens, tokenOverlap } from './domain/fundData/resolve';
+
+// ---------------------------------------------------------------------------
 // Import — parsers
 // ---------------------------------------------------------------------------
 export {
@@ -329,4 +346,8 @@ export type {
   SchemeFundamentals,
   StoredFundHolding,
   FetchedFundData,
+  UniverseFund,
+  FundPerformanceRow,
+  CategoryStatRow,
+  NavPoint,
 } from './types';

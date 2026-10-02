@@ -10,6 +10,8 @@ import { healthRoutes } from './routes/health';
 import { transactionRoutes } from './routes/transactions';
 import { expenseRoutes } from './routes/expenses';
 import { investmentRoutes, type FundData } from './routes/investments';
+import type { UniverseRefresh } from './lib/universeJob';
+import type { ReviewDeps } from './lib/reviewService';
 import { importRoutes, type AmfiMatch } from './routes/imports';
 import { categoryRoutes } from './routes/categories';
 import { accountRoutes } from './routes/accounts';
@@ -34,6 +36,10 @@ export type BuildServerOpts = {
   harness?: Harness;
   /** Injected fund-data ingest (tests pass a fake). Falls back to real ingestFundData. */
   fundData?: FundData;
+  /** Injected universe rebuild (tests pass a fake). Falls back to the real AMFI + mfapi rebuild. */
+  universeRefresh?: UniverseRefresh;
+  /** Overrides for the review's network deps (tests pass fakes). */
+  reviewDeps?: Partial<ReviewDeps>;
   /**
    * Fastify logger option. Defaults to `true` (request logging on) for real runs;
    * tests pass `false` to keep output quiet.
@@ -72,7 +78,9 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
   await app.register(healthRoutes);
   await app.register(transactionRoutes, { gateway });
   await app.register(expenseRoutes, { gateway });
-  await app.register(investmentRoutes, { fundData: opts.fundData });
+  await app.register(investmentRoutes, {
+    fundData: opts.fundData, gateway, universeRefresh: opts.universeRefresh, reviewDeps: opts.reviewDeps,
+  });
   await app.register(categoryRoutes, { gateway });
   await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
   await app.register(accountRoutes);
