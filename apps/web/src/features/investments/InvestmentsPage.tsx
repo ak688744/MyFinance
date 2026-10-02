@@ -11,7 +11,6 @@ import { AddInvestmentModal } from './AddInvestmentModal';
 import { PortfolioReview } from './PortfolioReview';
 import { UniverseStatusLine } from './UniverseStatusLine';
 import { buildReviewSeed } from './reviewLanes';
-import { buildInvestmentInsightSeed } from './investmentInsightSeed';
 import { FundDataStatus } from './FundDataStatus';
 import { useInvestmentInsightDismissal } from './useInvestmentInsightDismissal';
 import { Drawer } from '../../components/ui/Drawer';
