@@ -126,6 +126,9 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
       const stream = await agent.stream(args.message, {
         memory: { resource: resourceId, thread: threadId },
+        // Mastra's default is 5 steps; multi-tool analyses (status, lookthrough, run_python...) hit
+        // it and the turn ends mid-tool-use with no answer text.
+        maxSteps: 25,
       });
 
       let resolveDone!: (v: { usage: { inputTokens: number; outputTokens: number }; threadId: string }) => void;
