@@ -12,7 +12,7 @@ export type DatasetResolver = (name: string) => Promise<unknown>;
 export type RunPythonOutput = { stdout: string; result: unknown; error?: string; durationMs: number };
 
 // Security-relevant allowlist: only these shapes may ever become a file name in the sandbox.
-const NAME_RE = /^(nav:\d{3,8}|transactions:\d{1,9}|universe_stats|category_stats|fact_sheet)$/;
+const NAME_RE = /^(nav:\d{3,8}|transactions:\d{1,9}|expense_transactions:\d{4}-(0[1-9]|1[0-2])|universe_stats|category_stats|fact_sheet|expense_summary|categories|accounts|holdings|networth|liabilities)$/;
 
 export function datasetFileName(name: string): string | null {
   return NAME_RE.test(name) ? `${name.replace(':', '_')}.json` : null;
@@ -50,7 +50,7 @@ export async function runPython(o: Deps, input: { code: string; datasets?: strin
   let total = 0;
   for (const name of names) {
     const file = datasetFileName(name);
-    if (!file) return fail(`Unknown dataset name "${name}". Use nav:<amfiCode>, transactions:<schemeId>, universe_stats, category_stats or fact_sheet.`);
+    if (!file) return fail(`Unknown dataset name "${name}". Use one of the dataset names listed in the run_python tool description.`);
     try {
       const json: string | undefined = JSON.stringify(await o.resolveDataset(name));
       if (typeof json !== 'string') return fail(`Dataset ${name}: resolver returned no data`);
@@ -71,13 +71,18 @@ export async function runPython(o: Deps, input: { code: string; datasets?: strin
   }
 }
 
-const DESCRIPTION = `Run Python 3 (numpy, pandas) in an isolated sandbox with no network and no file access beyond /data. Use only when the other investment tools cannot answer (custom windows, what-ifs, comparing several series).
+const DESCRIPTION = `Run Python 3 (numpy, pandas) in an isolated sandbox with no network and no file access beyond /data. Use it when the other tools cannot answer: multi-step arithmetic, custom windows, what-ifs, projections, or comparing several series. Do not do multi-step maths in your head.
 Datasets (pass names in "datasets"; each is written as JSON to /data/<name with ":" replaced by "_">.json):
 - nav:<amfiCode> -> /data/nav_<code>.json {"code","frequency":"daily"|"monthly","points":[{"date","nav"}]}
 - transactions:<schemeId> -> /data/transactions_<id>.json {"schemeId","schemeName","amfiCode","transactions":[{"date","type","units","nav","amountInr"}]}
 - universe_stats -> /data/universe_stats.json (every universe fund with its performance stats)
 - category_stats -> /data/category_stats.json (p25/median/p75 per category and metric)
 - fact_sheet -> /data/fact_sheet.json (the portfolio review fact sheet)
+- expense_transactions:<YYYY-MM> -> /data/expense_transactions_<YYYY-MM>.json (one month of bank transactions: date, description, amount, direction, categoryId, tags, note, accountId)
+- expense_summary -> /data/expense_summary.json (all-time spent/income/invested, byCategory, byMonth; investment and self-transfer categories are excluded from spent)
+- categories -> /data/categories.json, accounts -> /data/accounts.json, liabilities -> /data/liabilities.json
+- holdings -> /data/holdings.json (mutual fund holdings with value, returns and XIRR percent)
+- networth -> /data/networth.json (total assets, liabilities, net worth, class breakdown)
 Deterministic calculators (use these instead of re-implementing; call with await):
 ${BRIDGE_DOCS}
 Variables persist between calls in the same chat. The value of the last expression is returned as "result" (keep it small and JSON-friendly); print() output is "stdout". Limits: 30 s, 512 MB, 20 KB output.`;

@@ -1,8 +1,24 @@
-import { proxyCodes, performanceView } from '@myfinance/core';
+import {
+  proxyCodes, performanceView, getHoldings, getNetWorth, getLatestNAV, getNAVForDate, type NavLookup,
+} from '@myfinance/core';
 import type { Repos } from '../plugins/db';
 import { buildCurrentFactSheet, type ReviewDeps } from './reviewService';
 
 const HISTORY_START = '2000-01-01';
+// Same defaults as GET /expenses/summary: money moved, not consumed, stays out of "spent".
+const EXCLUDE_FROM_SPEND = ['investment', 'self_transfer'];
+const INVESTMENT_CATEGORIES = ['investment'];
+const MONTH_ROW_LIMIT = 20_000;
+const nav: NavLookup = {
+  getNAVForDate: (code, date) => getNAVForDate(code, date),
+  getLatestNAV: (code) => getLatestNAV(code),
+};
+
+function monthBounds(month: string): { from: string; to: string } {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
+}
 
 /**
  * Resolves run_python dataset names (spec section 8) from the same repos and fetchers
@@ -41,6 +57,35 @@ export function makeSandboxDatasetResolver(repos: Repos, deps: ReviewDeps): (nam
         .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate))
         .map((t) => ({ date: t.transactionDate, type: t.transactionType, units: t.units, nav: t.nav, amountInr: t.amount }));
       return { schemeId, schemeName: scheme.schemeName, amfiCode: scheme.amfiCode ?? null, transactions };
+    }
+    const expMatch = /^expense_transactions:(\d{4}-(?:0[1-9]|1[0-2]))$/.exec(name);
+    if (expMatch) {
+      const month = expMatch[1]!;
+      const rows = repos.expenseTxRepo.query({ ...monthBounds(month), limit: MONTH_ROW_LIMIT });
+      return { month, transactions: rows };
+    }
+    if (name === 'expense_summary') {
+      return repos.expenseTxRepo.summary({
+        excludeFromSpend: EXCLUDE_FROM_SPEND,
+        investmentCategories: INVESTMENT_CATEGORIES,
+      });
+    }
+    if (name === 'categories') return repos.categoryRepo.list();
+    if (name === 'accounts') return repos.accountRepo.list();
+    if (name === 'liabilities') return repos.liabilityRepo.list();
+    if (name === 'holdings') {
+      return getHoldings({ txRepo: repos.txRepo, holdingsRepo: repos.holdingsRepo, nav }, {});
+    }
+    if (name === 'networth') {
+      return getNetWorth({
+        assetRepo: repos.assetRepo,
+        contributionRepo: repos.assetContributionRepo,
+        rateRepo: repos.assetRateRepo,
+        valuationRepo: repos.assetValuationRepo,
+        liabilityRepo: repos.liabilityRepo,
+        getMfHoldings: (filters: { account?: string }) =>
+          getHoldings({ txRepo: repos.txRepo, holdingsRepo: repos.holdingsRepo, nav }, filters),
+      });
     }
     if (name === 'universe_stats') {
       if (!repos.performanceUniverseRepo.getMeta()) throw new Error('the fund universe has not been built yet');

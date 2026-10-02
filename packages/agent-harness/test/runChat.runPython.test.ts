@@ -55,16 +55,30 @@ describe('runChat run_python wiring', () => {
     expect(events).toContainEqual({ type: 'step', label: 'Running a calculation' });
   }, 30000);
 
-  it('wealth and expense agents do not get run_python', async () => {
+  it.each(['wealth', 'expense'] as const)('the %s agent can also run Python', async (agent) => {
     const sandboxCalls: any[] = [];
-    for (const agent of ['wealth', 'expense'] as const) {
-      const h = makeWealthHarness(deps(sandboxCalls, []));
+    const datasetCalls: string[] = [];
+    const h = makeWealthHarness(deps(sandboxCalls, datasetCalls));
+    const r = await h.runChat({ message: 'what is 1+1', agent, threadId: `thread-${agent}` });
+    const events: any[] = [];
+    for await (const ev of r.events) events.push(ev);
+    await r.done;
+    expect(sandboxCalls).toHaveLength(1);
+    expect(sandboxCalls[0].threadId).toBe(`thread-${agent}`);
+    expect(events).toContainEqual({ type: 'step', label: 'Running a calculation' });
+  }, 30000);
+
+  it('no agent has run_python when no dataset resolver is wired', async () => {
+    const sandboxCalls: any[] = [];
+    for (const agent of ['wealth', 'expense', 'investment'] as const) {
+      const d = { ...deps(sandboxCalls, []), resolveDataset: undefined } as HarnessDeps;
+      const h = makeWealthHarness(d);
       const r = await h.runChat({ message: 'hi', agent });
-      try { for await (const _ of r.events) { /* drain */ } } catch { /* expected */ }
+      try { for await (const _ of r.events) { /* drain */ } } catch { /* expected: unknown tool */ }
       await r.done.catch(() => {});
     }
     expect(sandboxCalls).toHaveLength(0);
-  }, 60000);
+  }, 90000);
 
   it('close() closes the sandbox runtime', () => {
     let closed = false;

@@ -52,6 +52,33 @@ describe('makeSandboxDatasetResolver', () => {
     await app.close();
   });
 
+  it('expense_transactions:<month> returns only that month, with category and amount', async () => {
+    const { app, resolve } = await setup();
+    const tx = (transactionDate: string, description: string, amount: number) =>
+      app.repos.expenseTxRepo.insertManual({ transactionDate, description, amount, direction: 'debit', categoryId: null });
+    tx('2026-08-01', 'first', 100); tx('2026-08-31', 'last', 250); tx('2026-07-31', 'prev', 5); tx('2026-09-01', 'next', 7);
+    const r = await resolve('expense_transactions:2026-08') as { month: string; transactions: { description: string; amount: number }[] };
+    expect(r.month).toBe('2026-08');
+    expect(r.transactions.map((t) => t.description).sort()).toEqual(['first', 'last']);
+    await app.close();
+  });
+
+  it('expense_summary, categories, accounts and liabilities return data without the network', async () => {
+    const { app, resolve } = await setup();
+    expect(await resolve('expense_summary')).toHaveProperty('totalSpent');
+    expect((await resolve('categories') as unknown[]).length).toBeGreaterThan(0);
+    expect(await resolve('accounts')).toEqual([]);
+    expect(await resolve('liabilities')).toEqual([]);
+    await app.close();
+  });
+
+  it('holdings is empty and networth is zero on an empty database', async () => {
+    const { app, resolve } = await setup();
+    expect(await resolve('holdings')).toEqual([]);
+    expect(await resolve('networth')).toMatchObject({ totalAssets: 0 });
+    await app.close();
+  });
+
   it('category_stats returns an array (empty when unbuilt)', async () => {
     const { app, resolve } = await setup();
     expect(await resolve('category_stats')).toEqual([]);

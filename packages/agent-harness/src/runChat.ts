@@ -26,7 +26,7 @@ export type HarnessDeps = ResolverDeps & {
   dbPath: string;
   memoryUrl: string;
   makeModel?: (route: ResolvedRoute) => unknown | Promise<unknown>;
-  /** Resolves run_python datasets (api-provided). Without it the investment agent has no run_python. */
+  /** Resolves run_python datasets (api-provided). Without it no agent has run_python. */
   resolveDataset?: DatasetResolver;
   /** Injected sandbox runtime (tests). Defaults to the real hardened Pyodide runtime, started lazily. */
   sandbox?: SandboxRuntime;
@@ -107,7 +107,7 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const financeTools = await getFinanceTools(mcpClient);
-      const pythonTools = agentKind === 'investment' && deps.resolveDataset
+      const pythonTools = deps.resolveDataset
         ? buildRunPythonTool({ threadId, sandbox, resolveDataset: deps.resolveDataset })
         : {};
       const allTools = { ...financeTools, ...buildAskUserTool(), ...pythonTools };

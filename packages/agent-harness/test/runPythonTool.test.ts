@@ -15,8 +15,11 @@ describe('datasetFileName', () => {
   it.each([
     ['nav:120716', 'nav_120716.json'], ['transactions:12', 'transactions_12.json'],
     ['universe_stats', 'universe_stats.json'], ['category_stats', 'category_stats.json'], ['fact_sheet', 'fact_sheet.json'],
+    ['expense_transactions:2026-08', 'expense_transactions_2026-08.json'], ['expense_summary', 'expense_summary.json'],
+    ['categories', 'categories.json'], ['accounts', 'accounts.json'], ['holdings', 'holdings.json'],
+    ['networth', 'networth.json'], ['liabilities', 'liabilities.json'],
   ])('%s -> %s', (n, f) => expect(datasetFileName(n)).toBe(f));
-  it.each(['nav:../../etc', 'nav:', 'transactions:abc', 'fact-sheet', 'NAV:1', 'nav:1/2', '', 'nav:123\n', 'nav:12\n3', 'nav:\u0661\u0662\u0663', 'nav:12', 'nav:123456789', 'transactions:1234567890'])('rejects %s', (n) => expect(datasetFileName(n)).toBeNull());
+  it.each(['nav:../../etc', 'nav:', 'transactions:abc', 'fact-sheet', 'NAV:1', 'nav:1/2', '', 'nav:123\n', 'nav:12\n3', 'nav:\u0661\u0662\u0663', 'nav:12', 'nav:123456789', 'transactions:1234567890', 'expense_transactions:2026-13', 'expense_transactions:2026-00', 'expense_transactions:2026-8', 'expense_transactions:../x', 'expense_transactions:2026-08\n', 'Holdings'])('rejects %s', (n) => expect(datasetFileName(n)).toBeNull());
 });
 
 describe('runPython', () => {
