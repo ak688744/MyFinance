@@ -261,6 +261,12 @@ export interface ExpenseTransactionRepo {
   }): number;
   /** All child transactions of a split parent, ordered by transaction_date. */
   listChildren(parentId: number): ExpenseTransactionRow[];
+  /**
+   * Opening/closing statement balance over a date window, from the imported running
+   * `balance` column. Only top-level rows with a non-null balance count. opening is
+   * the balance before the first row; closing is the last row's balance. null if none.
+   */
+  balanceRange(filters: { from?: string; to?: string }): { opening: number; closing: number } | null;
   /** Full row by id (same shape as query rows). */
   getFullById(id: number): ExpenseTransactionRow | null;
   /** Parse the JSON tags column for one transaction. [] when null. */

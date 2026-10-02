@@ -56,3 +56,30 @@ export const UploadIcon = (p: IconProps) => (
     <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
   </svg>
 );
+export const SparkleIcon = ({ small = false, ...p }: IconProps & { small?: boolean }) => (
+  <svg {...base(p)} aria-hidden>
+    <path d="M12 3l1.9 4.9L19 9.8l-5.1 1.9L12 16.6l-1.9-4.9L5 9.8l5.1-1.9L12 3z" />
+    {small && <path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />}
+  </svg>
+);
+export const HistoryIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+);
+export const PlusIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+);
+export const SendIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+);
+export const ChevronDownIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+);
+export const CheckIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M4 12l5 5L20 7" /></svg>
+);
+export const ArrowRightIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+);
+export const CloseIcon = (p: IconProps) => (
+  <svg {...base(p)} aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+);

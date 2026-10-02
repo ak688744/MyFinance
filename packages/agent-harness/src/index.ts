@@ -1,5 +1,7 @@
 export { makeWealthHarness } from './runChat';
-export type { HarnessDeps, ChatResult, UsageInsert } from './runChat';
+export type { HarnessDeps, ChatResult, UsageInsert, AgentKind } from './runChat';
+export { toHistoryMessages, summarizeThread } from './threadHistory';
+export type { HistoryMessage, ThreadSummary } from './threadHistory';
 export { resolveRoute, resolveWealthRoute, AgentConfigError, toMastraModelString } from './modelResolver';
 export type { ResolverDeps, ResolvedRoute, BedrockConfig } from './modelResolver';
 export { buildAgentModel } from './agentModel';

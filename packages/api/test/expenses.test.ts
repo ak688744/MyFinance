@@ -60,4 +60,14 @@ describe('expense reads', () => {
     expect(d.totalSpent).toBe(5450); // SIP now counted
     expect(d.invested).toBe(0);
   });
+
+  it('GET /expenses/summary balance is null without balances, present with them', async () => {
+    const none = await app.inject({ method: 'GET', url: '/expenses/summary' });
+    expect(none.json().data.balance).toBeNull();
+    app.sqlite.prepare(`UPDATE transactions SET balance = 550 WHERE dedupe_key = 'd1'`).run();
+    app.sqlite.prepare(`UPDATE transactions SET balance = 100550 WHERE dedupe_key = 'd2'`).run();
+    const res = await app.inject({ method: 'GET', url: '/expenses/summary' });
+    // d1 (debit 450, bal 550) is first => opening 1000; last is d2 closing 100550
+    expect(res.json().data.balance).toEqual({ opening: 1000, closing: 100550, net: 99550 });
+  });
 });

@@ -16,6 +16,7 @@ export const qk = {
   fundDataCoverage: (account?: string) => ['investments', 'fund-data', 'coverage', account ?? 'all'] as const,
   investmentReview: (account?: string) => ['investmentReview', account ?? 'all'] as const,
   universeStatus: () => ['investments', 'universe', 'status'] as const,
+  agentThreads: (agent: string) => ['agentThreads', agent] as const,
   categories: () => ['categories'] as const,
   rules: () => ['categories', 'rules'] as const,
   accounts: (domain?: string) => ['accounts', domain ?? 'all'] as const,

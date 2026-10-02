@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Markdown } from './Markdown';
 import { StepsTrail } from './StepsTrail';
 import { QuestionChips } from './QuestionChips';
+import { SparkleIcon, SendIcon } from '../../components/ui/icons';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
@@ -11,7 +12,7 @@ type ChatMessage = {
   question?: { question: string; options: { label: string }[] };
 };
 
-type ChatPanelProps = {
+export type ChatPanelProps = {
   chat: {
     messages: ChatMessage[];
     send: (text: string) => Promise<void>;
@@ -22,95 +23,111 @@ type ChatPanelProps = {
   };
   emptyState?: React.ReactNode;
   placeholder?: string;
+  suggestions?: string[];
 };
 
-export function ChatPanel({ chat, emptyState, placeholder = 'Ask your wealth manager…' }: ChatPanelProps) {
-  const { messages, send, isStreaming, clearChat } = chat;
+const THINKING = (
+  <span className="inline-flex gap-1 text-ink-muted">
+    <span className="animate-pulse">Thinking</span>
+    <span className="animate-pulse delay-75">…</span>
+  </span>
+);
+
+export function ChatPanel({ chat, emptyState, placeholder = 'Ask your wealth manager…', suggestions }: ChatPanelProps) {
+  const { messages, send, isStreaming } = chat;
   const [draft, setDraft] = useState('');
 
   async function onSend(text?: string) {
     const payload = (text ?? draft).trim();
-    if (!payload) return;
+    if (!payload || isStreaming) return;
     setDraft('');
     await send(payload);
   }
 
+  const hasUserMessage = messages.some((m) => m.role === 'user');
+  const showSuggestions = !!suggestions?.length && !hasUserMessage;
+
   return (
-    <div className="flex flex-col h-full">
-      {messages.length > 0 && (
-        <div className="flex justify-end px-1 pb-2">
-          <button
-            type="button"
-            onClick={() => clearChat()}
-            disabled={isStreaming}
-            className="text-xs px-3 py-1.5 rounded-full border border-border text-ink-muted hover:bg-surface hover:text-ink transition-colors duration-200 cursor-pointer disabled:opacity-50"
-          >
-            New chat
-          </button>
-        </div>
-      )}
-      <div className="flex-1 overflow-y-auto space-y-4 p-1">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto space-y-3 p-4">
         {messages.length === 0 && emptyState}
         {messages.map((m, i) => {
-          const isError = m.role === 'assistant' && m.error;
-          const bubbleClass =
-            m.role === 'user'
-              ? 'max-w-[85%] rounded-2xl rounded-br-md bg-brand text-white px-4 py-2.5 text-sm shadow-sm'
-              : isError
-                ? 'max-w-[85%] rounded-2xl rounded-bl-md bg-red-50 border border-red-200 text-loss px-4 py-2.5 text-sm whitespace-pre-wrap shadow-card'
-                : 'max-w-[85%] rounded-2xl rounded-bl-md bg-surface border border-border px-4 py-2.5 text-sm whitespace-pre-wrap shadow-card';
+          const isLast = i === messages.length - 1;
+          if (m.role === 'user') {
+            return (
+              <div key={i} className="flex justify-end">
+                <div className="max-w-[85%] rounded-[10px] rounded-br-sm bg-brand text-white px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap">
+                  {m.text || (isStreaming && isLast ? THINKING : '')}
+                </div>
+              </div>
+            );
+          }
+          const isError = !!m.error;
+          const nextUser = messages.slice(i + 1).find((x) => x.role === 'user');
           return (
-            <div
-              key={i}
-              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={bubbleClass} {...(isError ? { role: 'alert' } : {})}>
-                {m.role === 'assistant' && (
-                  <div className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${isError ? 'text-loss' : 'text-ai'}`}>
-                    {isError ? 'Assistant · Error' : 'Assistant'}
-                  </div>
-                )}
-                {m.role === 'assistant' && !isError && m.steps && m.steps.length > 0 && (
-                  <StepsTrail
-                    steps={m.steps}
-                    streaming={isStreaming && i === messages.length - 1}
-                    hasText={!!m.text}
-                  />
-                )}
-                {m.role === 'assistant' && !isError ? (
-                  m.text ? (
+            <div key={i} className="flex gap-2 items-start">
+              <div className="w-6 h-6 shrink-0 rounded-full bg-[#F5F3FF] text-ai flex items-center justify-center">
+                <SparkleIcon width={13} height={13} />
+              </div>
+              <div className="max-w-[calc(100%-2rem)] min-w-0">
+                <div
+                  className={
+                    isError
+                      ? 'rounded-[10px] rounded-bl-sm bg-red-50 border border-red-200 text-loss px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap'
+                      : 'rounded-[10px] rounded-bl-sm bg-[#F5F3FF] text-ink px-3 py-2 text-[13px] leading-relaxed'
+                  }
+                  {...(isError ? { role: 'alert' } : {})}
+                >
+                  {isError && (
+                    <div className="text-[10px] font-semibold uppercase tracking-wide mb-1 text-loss">Assistant · Error</div>
+                  )}
+                  {!isError && m.steps && m.steps.length > 0 && (
+                    <StepsTrail steps={m.steps} streaming={isStreaming && isLast} hasText={!!m.text} />
+                  )}
+                  {isError ? (
+                    m.text
+                  ) : m.text ? (
                     <Markdown>{m.text}</Markdown>
-                  ) : (isStreaming && i === messages.length - 1 && !(m.steps && m.steps.length > 0) ? (
-                    <span className="inline-flex gap-1 text-ink-muted">
-                      <span className="animate-pulse">Thinking</span>
-                      <span className="animate-pulse delay-75">…</span>
-                    </span>
-                  ) : '')
-                ) : (
-                  m.text || (isStreaming && i === messages.length - 1 ? (
-                    <span className="inline-flex gap-1 text-ink-muted">
-                      <span className="animate-pulse">Thinking</span>
-                      <span className="animate-pulse delay-75">…</span>
-                    </span>
-                  ) : '')
-                )}
-                {m.role === 'assistant' && !isError && m.question && (
-                  <QuestionChips
-                    question={m.question.question}
-                    options={m.question.options}
-                    onSelect={(label) => void onSend(label)}
-                    disabled={isStreaming}
-                  />
-                )}
+                  ) : isStreaming && isLast && !(m.steps && m.steps.length > 0) ? (
+                    THINKING
+                  ) : (
+                    ''
+                  )}
+                  {!isError && m.question && (
+                    <QuestionChips
+                      question={m.question.question}
+                      options={m.question.options}
+                      onSelect={(label) => void onSend(label)}
+                      disabled={isStreaming}
+                      answeredWith={nextUser ? nextUser.text : undefined}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="flex gap-2 p-2 border-t border-border bg-surface/80 backdrop-blur rounded-b-card">
+      {showSuggestions && (
+        <div className="flex flex-wrap gap-2 px-4 pb-2">
+          {suggestions!.map((s) => (
+            <button
+              key={s}
+              type="button"
+              disabled={isStreaming}
+              onClick={() => void onSend(s)}
+              className="text-xs px-3 py-1.5 rounded-full bg-[#F1F5F9] text-ink-muted hover:bg-slate-200 transition-colors duration-200 cursor-pointer disabled:opacity-50"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 p-3 border-t border-border">
         <input
-          className="input-field flex-1"
+          className="flex-1 min-w-0 rounded-[10px] border border-border px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ai/40"
           placeholder={placeholder}
           value={draft}
           disabled={isStreaming}
@@ -119,11 +136,12 @@ export function ChatPanel({ chat, emptyState, placeholder = 'Ask your wealth man
         />
         <button
           type="button"
-          className="btn-primary shrink-0"
+          aria-label="Send"
+          className="w-[38px] h-[38px] shrink-0 rounded-[10px] bg-ai text-white flex items-center justify-center hover:opacity-90 disabled:opacity-50 cursor-pointer"
           disabled={isStreaming || !draft.trim()}
           onClick={() => void onSend()}
         >
-          {isStreaming ? 'Thinking…' : 'Send'}
+          <SendIcon width={16} height={16} />
         </button>
       </div>
     </div>

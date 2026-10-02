@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatINR, formatCompactINR, formatCompactShort, formatPercent, formatDate,
   currentMonth, addMonths, monthBounds, formatMonthLong, monthWindow,
-  deriveMerchantName,
+  deriveMerchantName, formatRelativeDate,
 } from './format';
 
 describe('formatINR', () => {
@@ -121,5 +121,21 @@ describe('deriveMerchantName', () => {
   it('returns null for empty input', () => {
     expect(deriveMerchantName('')).toBeNull();
     expect(deriveMerchantName('   ')).toBeNull();
+  });
+});
+
+describe('formatRelativeDate', () => {
+  const now = new Date(2026, 9, 1, 15, 0, 0);
+  it('today / yesterday / days ago', () => {
+    expect(formatRelativeDate(new Date(2026, 9, 1, 1, 0, 0).toISOString(), now)).toBe('Today');
+    expect(formatRelativeDate(new Date(2026, 8, 30, 23, 0, 0).toISOString(), now)).toBe('Yesterday');
+    expect(formatRelativeDate(new Date(2026, 8, 28, 10, 0, 0).toISOString(), now)).toBe('3d ago');
+  });
+  it('older dates use day + month, with year when not current', () => {
+    expect(formatRelativeDate(new Date(2026, 7, 12, 10, 0, 0).toISOString(), now)).toBe('12 Aug');
+    expect(formatRelativeDate(new Date(2025, 7, 12, 10, 0, 0).toISOString(), now)).toBe('12 Aug 2025');
+  });
+  it('returns input on garbage', () => {
+    expect(formatRelativeDate('nope', now)).toBe('nope');
   });
 });
