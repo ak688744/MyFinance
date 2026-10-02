@@ -3,7 +3,7 @@ import { decryptSecret } from '@myfinance/core';
 import type { DatasetResolver } from '@myfinance/agent-harness';
 import type { Repos } from './db';
 
-export type Harness = Pick<ReturnType<typeof makeWealthHarness>, 'runChat'> & { close?: () => void };
+export type Harness = Omit<ReturnType<typeof makeWealthHarness>, 'close'> & { close?: () => void };
 
 export function memoryUrlFor(dbPath: string): string {
   return dbPath === ':memory:' ? ':memory:' : `file:${dbPath}.memory.db`;

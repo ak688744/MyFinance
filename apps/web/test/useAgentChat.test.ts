@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook as rtlRenderHook, act, waitFor } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(QueryClientProvider, { client: new QueryClient() }, children);
+const renderHook = <T,>(fn: () => T) => rtlRenderHook(fn, { wrapper });
 
 const streamMock = vi.hoisted(() => ({ impl: async function* () {} as any }));
 
@@ -9,7 +15,7 @@ vi.mock('../src/lib/apiStream', () => ({
 
 import { useAgentChat, CHAT_STORAGE_KEY } from '../src/features/assistant/useAgentChat';
 
-function setStream(gen: () => AsyncGenerator<any>) {
+function setStream(gen: (...args: any[]) => AsyncGenerator<any>) {
   streamMock.impl = gen;
 }
 
@@ -171,5 +177,23 @@ describe('useAgentChat', () => {
       question: 'Prepay or invest?',
       options: [{ label: 'Prepay' }, { label: 'Invest' }],
     });
+  });
+
+  it('loadThread replaces messages + threadId from GET /agent/threads/:id', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      data: {
+        id: 'th9', title: 'Old chat',
+        messages: [{ role: 'user', text: 'q' }, { role: 'assistant', text: 'a', steps: ['s1'] }],
+      },
+    }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useAgentChat({ agent: 'expense', storageKey: 'k-load' }));
+    await act(async () => { await result.current.loadThread('th9'); });
+    expect(String((fetchMock.mock.calls[0] as any[])[0])).toContain('/agent/threads/th9?agent=expense');
+    expect(result.current.threadId).toBe('th9');
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].steps).toEqual(['s1']);
+    expect(JSON.parse(localStorage.getItem('k-load')!).threadId).toBe('th9');
+    vi.unstubAllGlobals();
   });
 });

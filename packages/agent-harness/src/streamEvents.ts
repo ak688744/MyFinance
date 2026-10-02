@@ -38,7 +38,7 @@ export function toFriendlyToolLabel(toolName: string): string {
 }
 
 /** Extract a clean `{ question, options[] }` from an ask_user tool-call's args. */
-function toQuestionEvent(args: unknown): HarnessEvent | null {
+export function toQuestionEvent(args: unknown): Extract<HarnessEvent, { type: 'question' }> | null {
   const a = (args ?? {}) as { question?: unknown; options?: unknown };
   const question = typeof a.question === 'string' ? a.question.trim() : '';
   if (!question) return null; // no usable question → ignore the chunk

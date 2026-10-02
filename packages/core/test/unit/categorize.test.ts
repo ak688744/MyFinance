@@ -282,6 +282,9 @@ function makeFakeTxRepo(
     listChildren() {
       throw new Error('not used');
     },
+    balanceRange() {
+      return null;
+    },
     getFullById() {
       return null;
     },

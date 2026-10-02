@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useExpenses, useExpenseSummary, useCategories, useAccounts, useAiSuggest, useUpdateTransaction, useDeleteTransaction, useCreateTransaction, useSetTxTags, useRemoveTxTag, useExpenseInsights, useResolveInsight } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat } from '../../components/ui/primitives';
@@ -15,15 +16,18 @@ import { ImportModal } from '../imports/ImportModal';
 import { Modal } from '../../components/ui/Modal';
 import { InsightCards } from './InsightCards';
 import { useInsightDismissal } from './useInsightDismissal';
-import { ExpensesInsightDrawer } from './ExpensesInsightDrawer';
+import { BalanceCard } from './BalanceCard';
+import { TypeSegmentedControl, CategoryFilterButton, type DirectionFilter } from './TransactionFilters';
+import { buildInsightSeed } from './insightSeed';
+import { Drawer } from '../../components/ui/Drawer';
+import { ChatWorkspace } from '../assistant/ChatWorkspace';
+import { useAgentChat } from '../assistant/useAgentChat';
 import { SplitStatementModal } from './SplitStatementModal';
 import { SplitPanel } from './SplitPanel';
-import { ExpensesIcon, UploadIcon } from '../../components/ui/icons';
+import { ExpensesIcon, UploadIcon, SparkleIcon, SearchIcon } from '../../components/ui/icons';
 import type { ExpenseRow, Insight, SplitResult } from '../../types';
 
 const PAGE_SIZE = 25;
-
-type DirectionFilter = '' | 'debit' | 'credit' | 'transfer';
 
 export function isCreditCardBill(row: ExpenseRow): boolean {
   return row.categoryId === 'credit_card_bill'
@@ -66,8 +70,7 @@ export function ExpensesPage() {
   const [aiKeywordById, setAiKeywordById] = useState<Record<number, string>>({});
   const [aiBanner, setAiBanner] = useState<null | { suggested: number; skipped: number; total: number; usage: { inputTokens: number; outputTokens: number }; warnings: string[] }>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-  const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
-  const [insightSeedText, setInsightSeedText] = useState<string | undefined>(undefined);
+  const [aiOpen, setAiOpen] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   // Events resolved this session: hide them immediately (optimistic) — the rule that
   // flagged them may still fire until the ~background re-triage suppresses the event,
@@ -77,6 +80,8 @@ export function ExpensesPage() {
   const [splitResult, setSplitResult] = useState<SplitResult | null>(null);
   const [expandedContainers, setExpandedContainers] = useState<Set<number>>(new Set());
 
+  const queryClient = useQueryClient();
+  const aiChat = useAgentChat({ agent: 'expense', storageKey: 'myfinance.expense.chat.v1' });
   const bounds = monthBounds(month);
   const categories = useCategories();
   const accounts = useAccounts('expense');
@@ -211,6 +216,7 @@ export function ExpensesPage() {
     return displayedRows.filter((r) => r.parentTransactionId == null);
   }, [displayedRows, uncategorizedOnly]);
 
+  const anyFilterActive = categoryFilters.length > 0 || !!directionFilter || !!searchText;
   const resetFilters = () => { setCategoryFilters([]); setDirectionFilter(''); setSearchText(''); setPage(0); };
 
   // Reset optimistic-hide when the month changes (fresh set of events).
@@ -231,9 +237,21 @@ export function ExpensesPage() {
 
   // Free-text answers open the Discuss drawer seeded with the user's explanation —
   // the expense agent interprets it and writes the tags (the messy ~10% path).
-  const handleResolveText = (insight: Insight, text: string) => {
-    setInsightSeedText(text);
-    setActiveInsight(insight);
+  const handleResolveText = (insight: Insight, text: string) => openDiscuss(insight, text);
+
+  // Discuss: open the shared AI Insights drawer on a NEW thread and send the seed once.
+  // Runs from a click handler (not an effect), so StrictMode cannot double-send.
+  const openDiscuss = (insight: Insight, seedText?: string) => {
+    setAiOpen(true);
+    if (aiChat.isStreaming) return;
+    aiChat.clearChat();
+    void aiChat.send(buildInsightSeed(insight, rowsForIds(insight.txnIds), seedText));
+  };
+
+  const closeAi = () => {
+    setAiOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['expenseInsights'] });
   };
 
   // Build transaction details for the insight drawer
@@ -360,7 +378,7 @@ export function ExpensesPage() {
       {/* KPI strip */}
       <DataState isLoading={summary.isLoading} error={summary.error} onRetry={summary.refetch}>
         {summary.data && (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KPIStat label="Total Spent" value={formatINR(summary.data.totalSpent)} />
             <KPIStat label="Income" value={formatINR(summary.data.totalIncome)} />
             <Card>
@@ -380,6 +398,7 @@ export function ExpensesPage() {
                 </div>
               </div>
             </Card>
+            <BalanceCard balance={summary.data.balance} />
           </div>
         )}
       </DataState>
@@ -392,7 +411,7 @@ export function ExpensesPage() {
         onDismiss={dismiss}
         onResolveOption={handleResolveOption}
         onResolveText={handleResolveText}
-        onDiscuss={(i) => { setInsightSeedText(undefined); setActiveInsight(i); }}
+        onDiscuss={(i) => openDiscuss(i)}
         resolvingId={resolvingId}
       />
 
@@ -407,58 +426,37 @@ export function ExpensesPage() {
         </Card>
       </div>
 
-      {/* Insight drawer */}
-      {activeInsight && (
-        <ExpensesInsightDrawer
-          insight={activeInsight}
-          txns={rowsForIds(activeInsight.txnIds)}
-          seedText={insightSeedText}
-          onClose={() => { setActiveInsight(null); setInsightSeedText(undefined); }}
-        />
-      )}
-
       {/* Filters bar */}
       <Card>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <div className="text-sm font-semibold mr-2">Transactions · {formatMonthLong(month)}</div>
-
-          {/* Search */}
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => { setSearchText(e.target.value); setPage(0); }}
-            placeholder="Search transactions…"
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white w-48"
-          />
-
-          {/* Direction filter */}
-          <select
-            value={directionFilter}
-            onChange={(e) => { setDirectionFilter(e.target.value as DirectionFilter); setPage(0); }}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white"
-          >
-            <option value="">All types</option>
-            <option value="debit">Debit only</option>
-            <option value="credit">Credit only</option>
-            <option value="transfer">Transfers</option>
-          </select>
-
-          {/* Multi-category filter */}
-          <MultiCategorySelect
-            categories={categories.data ?? []}
-            selected={categoryFilters}
-            onChange={(v) => { setCategoryFilters(v); setPage(0); }}
-          />
-
-          {(categoryFilters.length > 0 || directionFilter || searchText) && (
-            <button onClick={resetFilters} className="text-xs text-gray-500 hover:text-gray-700 underline ml-1">
-              Clear filters
-            </button>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="text-sm font-semibold">Transactions · {formatMonthLong(month)}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <SearchIcon width={14} height={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => { setSearchText(e.target.value); setPage(0); }}
+                placeholder="Search transactions…"
+                className="text-sm border border-gray-300 rounded-lg pl-8 pr-3 py-1.5 bg-white w-[190px]"
+              />
+            </div>
+            <TypeSegmentedControl value={directionFilter} onChange={(v) => { setDirectionFilter(v); setPage(0); }} />
+            <CategoryFilterButton
+              categories={categories.data ?? []}
+              selected={categoryFilters}
+              onChange={(v) => { setCategoryFilters(v); setPage(0); }}
+            />
+            {anyFilterActive && (
+              <button onClick={resetFilters} className="text-xs text-gray-500 hover:text-gray-700 underline">
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter total */}
-        {(categoryFilters.length > 0 || directionFilter || searchText) && txns.data && (
+        {anyFilterActive && txns.data && (
           <div className="mb-3 text-sm text-gray-600 bg-gray-50 rounded px-3 py-1.5 inline-block">
             Filtered total: <span className={`font-semibold tabular ${filteredTotal >= 0 ? 'text-gain' : 'text-loss'}`}>
               {filteredTotal >= 0 ? '+' : ''}{formatINR(Math.abs(filteredTotal))}
@@ -467,7 +465,7 @@ export function ExpensesPage() {
           </div>
         )}
 
-        <DataState isLoading={txns.isLoading} error={txns.error} isEmpty={rowCount === 0 && page === 0} emptyMessage="No transactions this month." onRetry={txns.refetch}>
+        <DataState isLoading={txns.isLoading} error={txns.error} isEmpty={rowCount === 0 && page === 0} emptyMessage={anyFilterActive ? "No transactions match your filters." : "No transactions this month."} onRetry={txns.refetch}>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[11px] uppercase text-gray-400 text-left">
@@ -523,6 +521,25 @@ export function ExpensesPage() {
           </div>
         </DataState>
       </Card>
+
+      <button
+        type="button"
+        aria-label="Open AI Insights"
+        onClick={() => setAiOpen(true)}
+        className="fixed bottom-6 right-6 z-50 w-[52px] h-[52px] rounded-full bg-ai text-white flex items-center justify-center shadow-[0_8px_20px_rgba(124,92,252,0.35)] hover:opacity-90 cursor-pointer"
+      >
+        <SparkleIcon width={24} height={24} />
+      </button>
+      <Drawer open={aiOpen} onClose={closeAi} ariaLabel="AI Insights">
+        <ChatWorkspace
+          agent="expense"
+          chat={aiChat}
+          title="AI Insights"
+          placeholder="Ask about your spending…"
+          suggestions={[`Why did I spend more in ${formatMonthLong(month)}?`, `Find unusual transactions in ${formatMonthLong(month)}`]}
+          onClose={closeAi}
+        />
+      </Drawer>
 
       {splitTargetId != null && (
         <SplitStatementModal
@@ -815,64 +832,6 @@ function MonthPicker({ current, onSelect, onClose }: { current: string; onSelect
 }
 
 // ── Multi-Category Select ───────────────────────────────────────────────────
-
-function MultiCategorySelect({ categories, selected, onChange }: {
-  categories: { id: string; name: string }[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const toggle = (id: string) => {
-    if (selected.includes(id)) {
-      onChange(selected.filter(s => s !== id));
-    } else {
-      onChange([...selected, id]);
-    }
-  };
-
-  const label = selected.length === 0
-    ? 'All categories'
-    : selected.length === 1
-      ? (selected[0] === '__ai__' ? 'AI suggested' : selected[0] === '__uncategorized__' ? 'Uncategorized' : categories.find(c => c.id === selected[0])?.name ?? selected[0])
-      : `${selected.length} categories`;
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white flex items-center gap-1 min-w-[140px]"
-      >
-        <span className="truncate">{label}</span>
-        <span className="text-[10px] text-gray-400 ml-auto">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-20 w-56 max-h-64 overflow-auto py-1">
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
-            <input type="checkbox" checked={selected.includes('__ai__')} onChange={() => toggle('__ai__')} className="rounded" />
-            <span className="text-violet-700">AI suggested</span>
-          </label>
-          <label className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
-            <input type="checkbox" checked={selected.includes('__uncategorized__')} onChange={() => toggle('__uncategorized__')} className="rounded" />
-            <span className="text-amber-700">Uncategorized</span>
-          </label>
-          <div className="border-t my-1" />
-          {categories.map(c => (
-            <label key={c.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-sm">
-              <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} className="rounded" />
-              {c.name}
-            </label>
-          ))}
-          <div className="border-t my-1" />
-          <button onClick={() => { onChange([]); setOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">
-            Clear all
-          </button>
-        </div>
-      )}
-      {open && <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />}
-    </div>
-  );
-}
 
 // ── Add Transaction Modal ───────────────────────────────────────────────────
 

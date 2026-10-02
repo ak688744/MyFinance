@@ -31,6 +31,9 @@ export type ResolvedRoute = {
   providerId: string;
   /** Present only for the bedrock dialect (SSO — no apiKey). */
   bedrock?: BedrockConfig;
+  /** Custom endpoint for openai-compatible providers (e.g. OpenRouter). When set,
+   *  modelString is the raw provider model id (not 'openai/'-prefixed). */
+  baseURL?: string;
 };
 
 export class AgentConfigError extends Error {
@@ -125,6 +128,21 @@ export function resolveRoute(deps: ResolverDeps, task: string): ResolvedRoute {
         ? 'The wealth agent\'s provider has no API key. Add one in AI Settings.'
         : `The "${task}" task\'s provider has no API key. Add one in AI Settings.`,
     );
+  }
+  const baseURL =
+    provider.dialect === 'openai-compatible' && provider.configJson
+      ? ((JSON.parse(provider.configJson) as { baseURL?: string }).baseURL || undefined)
+      : undefined;
+  if (baseURL) {
+    return {
+      modelString: model.modelString,
+      apiKey,
+      dialect: provider.dialect,
+      inputPerM: model.inputPerM,
+      outputPerM: model.outputPerM,
+      providerId: provider.id,
+      baseURL,
+    };
   }
   return {
     modelString: toMastraModelString(provider.dialect, model.modelString),

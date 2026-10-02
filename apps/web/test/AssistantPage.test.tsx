@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+
+const render = (ui: ReactNode) =>
+  rtlRender(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>);
 
 const hookState = vi.hoisted(() => ({
   value: {
@@ -12,6 +17,8 @@ const hookState = vi.hoisted(() => ({
     error: null as string | null,
     threadId: 't1' as string | null,
     clearChat: vi.fn(),
+    loadThread: vi.fn(async () => {}),
+    loading: false,
   },
 }));
 
@@ -61,5 +68,20 @@ describe('AssistantPage', () => {
     const chip = screen.getByRole('button', { name: 'Prepay' });
     chip.click();
     expect(send).toHaveBeenCalledWith('Prepay');
+  });
+
+  it('History toggle lists past threads and clicking one loads it', async () => {
+    const loadThread = vi.fn(async () => {});
+    hookState.value = { ...hookState.value, loadThread };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      data: [{ id: 'th1', title: 'Net worth check', snippet: 'You have 10L', createdAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:00:00Z' }],
+    }), { status: 200 })));
+    render(<AssistantPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Chat history' }));
+    const row = await screen.findByText('Net worth check');
+    expect(screen.getByText('You have 10L')).toBeTruthy();
+    fireEvent.click(row);
+    await waitFor(() => expect(loadThread).toHaveBeenCalledWith('th1'));
+    vi.unstubAllGlobals();
   });
 });

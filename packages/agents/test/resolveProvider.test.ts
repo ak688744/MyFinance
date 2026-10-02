@@ -3,8 +3,8 @@ import { resolveProvider } from '../src/llm/index';
 import { LlmError } from '../src/llm/types';
 
 describe('resolveProvider', () => {
-  it('openai-compatible stub throws provider_not_configured', async () => {
-    const p = resolveProvider({ dialect: 'openai-compatible', model: 'x', apiKey: 'k' });
+  it('openai-compatible without a key throws provider_not_configured', async () => {
+    const p = resolveProvider({ dialect: 'openai-compatible', model: 'x', apiKey: '' });
     await expect(p.complete({ prompt: 'hi', jsonSchema: {} })).rejects.toMatchObject({
       name: 'LlmError', kind: 'provider_not_configured',
     });

@@ -27,6 +27,22 @@ describe('buildAgentModel', () => {
     expect(m).toEqual({ id: 'google/gemini-2.5-flash', apiKey: 'plain-key' });
   });
 
+  it('routes an OpenRouter baseURL through Mastra\'s built-in openrouter provider (slashed model ids, ignores base URL typos)', () => {
+    const m = buildAgentModel({
+      modelString: 'stealth/space-bunny-alpha', apiKey: 'k', dialect: 'openai-compatible',
+      inputPerM: 3, outputPerM: 15, providerId: 'p1', baseURL: 'https://openrouter.ai/api',
+    });
+    expect(m).toEqual({ id: 'openrouter/stealth/space-bunny-alpha', apiKey: 'k' });
+  });
+
+  it('uses providerId/modelId + url for other custom openai-compatible endpoints', () => {
+    const m = buildAgentModel({
+      modelString: 'deepseek-chat', apiKey: 'k', dialect: 'openai-compatible',
+      inputPerM: 1, outputPerM: 2, providerId: 'p1', baseURL: 'https://api.deepseek.com/v1',
+    });
+    expect(m).toEqual({ providerId: 'openai', modelId: 'deepseek-chat', url: 'https://api.deepseek.com/v1', apiKey: 'k' });
+  });
+
   it('builds a bedrock model instance via the injected provider factory + SSO creds', async () => {
     const calls: any = {};
     const fakeModelInstance = { __isModel: true };

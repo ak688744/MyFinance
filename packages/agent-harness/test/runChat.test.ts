@@ -110,4 +110,18 @@ describe('makeWealthHarness.runChat', () => {
     expect(q.question).toBe('Prepay or invest?');
     expect(q.options).toEqual([{ label: 'Prepay' }, { label: 'Invest' }]);
   }, 30000);
+
+  it('fails the turn (and records ok=0) when the model stream emits an error chunk', async () => {
+    const errModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [{ type: 'error', error: new Error('Token is expired. aws sso login') }],
+        }),
+      }),
+    } as any);
+    const h = makeWealthHarness({ ...deps(), makeModel: () => errModel } as HarnessDeps);
+    const r = await h.runChat({ message: 'hi', threadId: 'thread-err' });
+    await expect((async () => { for await (const _ of r.events) { /* drain */ } })()).rejects.toThrow(/expired/i);
+    expect(inserted.at(-1)?.ok).toBe(0);
+  }, 30000);
 });

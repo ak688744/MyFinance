@@ -36,6 +36,16 @@ async function defaultSsoCredentials(opts: { profile?: string }) {
 }
 
 export function buildAgentModel(route: ResolvedRoute, deps: AgentModelDeps = {}): unknown {
+  if (route.dialect === 'openai-compatible' && route.baseURL) {
+    // OpenRouter: Mastra's built-in 'openrouter' provider keeps slashed model ids
+    // ('vendor/model') intact and knows the correct endpoint — no custom url needed
+    // (which also avoids a mistyped base URL, e.g. missing /v1).
+    if (/(^|\.)openrouter\.ai(\/|$)/i.test(route.baseURL.replace(/^https?:\/\//i, ''))) {
+      return { id: `openrouter/${route.modelString}`, apiKey: route.apiKey };
+    }
+    // Other custom endpoints (DeepSeek, Ollama…): generic OpenAI-compatible form.
+    return { providerId: 'openai', modelId: route.modelString, url: route.baseURL, apiKey: route.apiKey };
+  }
   if (route.dialect !== 'bedrock') {
     return { id: route.modelString, apiKey: route.apiKey };
   }

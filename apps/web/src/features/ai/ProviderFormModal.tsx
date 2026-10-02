@@ -19,6 +19,13 @@ export function ProviderFormModal({ open, onClose, onSubmit }: Props) {
   const [profile, setProfile] = useState('dev');
   const [err, setErr] = useState<string | null>(null);
 
+  const applyOpenRouterPreset = () => {
+    setDialect('openai-compatible');
+    setBaseURL('https://openrouter.ai/api/v1');
+    if (!id) setId('openrouter');
+    if (!label) setLabel('OpenRouter');
+  };
+
   const showKeyFields = dialect === 'gemini' || dialect === 'openai-compatible';
   const showBedrockFields = dialect === 'bedrock';
 
@@ -58,6 +65,13 @@ export function ProviderFormModal({ open, onClose, onSubmit }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Add Provider">
       <div className="flex flex-col gap-3">
+        <div className="text-xs text-gray-600">
+          Quick setup:{' '}
+          <button type="button" onClick={applyOpenRouterPreset} className="text-blue-600 underline">
+            OpenRouter
+          </button>{' '}
+          (OpenAI-compatible, base URL prefilled)
+        </div>
         <label className="text-sm">
           ID
           <input
