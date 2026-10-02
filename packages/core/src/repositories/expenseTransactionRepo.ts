@@ -317,6 +317,26 @@ export function makeExpenseTransactionRepo(db: Db): ExpenseTransactionRepo {
       return Number(result.lastInsertRowid);
     },
 
+    balanceRange(filters) {
+      const conds = [sql`${transactions.balance} IS NOT NULL`, isNull(transactions.parentTransactionId)];
+      if (filters.from) conds.push(gte(transactions.transactionDate, filters.from));
+      if (filters.to) conds.push(lte(transactions.transactionDate, filters.to));
+      const where = and(...conds);
+      const cols = {
+        balance: transactions.balance,
+        amount: transactions.amount,
+        direction: transactions.direction,
+      };
+      const first = db.select(cols).from(transactions).where(where)
+        .orderBy(asc(transactions.transactionDate), asc(transactions.id)).limit(1).all()[0];
+      if (!first) return null;
+      const last = db.select(cols).from(transactions).where(where)
+        .orderBy(desc(transactions.transactionDate), desc(transactions.id)).limit(1).all()[0];
+      const firstBalance = first.balance as number;
+      const opening = firstBalance - (first.direction === 'credit' ? first.amount : -first.amount);
+      return { opening, closing: last.balance as number };
+    },
+
     listChildren(parentId) {
       const rows = db
         .select({
