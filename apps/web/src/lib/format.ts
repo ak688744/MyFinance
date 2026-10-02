@@ -142,3 +142,17 @@ export function monthWindow(allMonths: string[], selected: string, span = 3): st
   if (start < 0) start = 0;
   return months.slice(start, end + 1);
 }
+
+/** Relative label for a past date: Today / Yesterday / 3d ago (<7d) / '12 Aug' (+ year if not current). */
+export function formatRelativeDate(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(d)) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const base = `${d.getDate()} ${MON[d.getMonth()]}`;
+  return d.getFullYear() === now.getFullYear() ? base : `${base} ${d.getFullYear()}`;
+}

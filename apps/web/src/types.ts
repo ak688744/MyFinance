@@ -29,6 +29,7 @@ export type ExpenseSummary = {
   totalSpent: number; totalIncome: number; saved: number; invested: number;
   byCategory: { categoryId: string | null; amount: number }[];
   byMonth: { month: string; spent: number }[];
+  balance?: { opening: number; closing: number; net: number } | null;
 };
 
 export type Category = { id: string; name: string; icon: string | null };
@@ -77,3 +78,12 @@ export type Insight = {
   reason: string;
   txnIds: number[];
 };
+
+export type ThreadSummary = { id: string; title: string; snippet: string; createdAt: string; updatedAt: string };
+export type HistoryMessage = {
+  role: 'user' | 'assistant';
+  text: string;
+  steps?: string[];
+  question?: { question: string; options: { label: string }[] };
+};
+export type ThreadDetail = { id: string; title: string; messages: HistoryMessage[] };
