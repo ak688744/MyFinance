@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights } from '../../lib/hooks';
+import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights, useInvestmentReview } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
 import { Card, KPIStat, Badge } from '../../components/ui/primitives';
 import { formatINR, formatPercent } from '../../lib/format';
 import { classLabel } from '../../lib/transforms';
-import type { ValuedAsset, InvestmentInsight } from '../../types';
+import type { ValuedAsset, ReviewCard } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
-import { InvestmentInsightCards } from './InvestmentInsightCards';
+import { PortfolioReview } from './PortfolioReview';
+import { UniverseStatusLine } from './UniverseStatusLine';
+import { buildReviewSeed } from './reviewLanes';
 import { FundDataStatus } from './FundDataStatus';
-import { buildInvestmentInsightSeed } from './investmentInsightSeed';
 import { useInvestmentInsightDismissal } from './useInvestmentInsightDismissal';
 import { Drawer } from '../../components/ui/Drawer';
 import { SparkleIcon } from '../../components/ui/icons';
@@ -23,6 +24,7 @@ const delta = (n: number | null | undefined) =>
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
+  const review = useInvestmentReview(account);
   const [aiOpen, setAiOpen] = useState(false);
   const aiChat = useAgentChat({ agent: 'investment', storageKey: 'myfinance.investments.chat.v2' });
   const queryClient = useQueryClient();
@@ -40,17 +42,15 @@ export function InvestmentsPage() {
   const assets = useAssets(selectedAccountId !== undefined ? String(selectedAccountId) : undefined);
 
   const mf = holdings.data ?? [];
+  const namesFor = (ids: number[]) => mf.filter((h) => ids.includes(h.schemeId ?? -1)).map((h) => h.schemeName);
 
   // Discuss: open the Investment Analyzer workspace on a NEW thread and send the seed once.
   // Runs from a click handler (not an effect), so StrictMode cannot double-send.
-  const openDiscuss = (insight: InvestmentInsight) => {
+  const openDiscuss = (seed: string) => {
     setAiOpen(true);
     if (aiChat.isStreaming) return;
     aiChat.clearChat();
-    const fundNames = mf
-      .filter((h) => insight.schemeIds.includes(h.schemeId ?? -1))
-      .map((h) => h.schemeName);
-    void aiChat.send(buildInvestmentInsightSeed(insight, fundNames));
+    void aiChat.send(seed);
   };
 
   const closeAi = () => {
@@ -125,12 +125,17 @@ export function InvestmentsPage() {
 
       <FundDataStatus account={account} />
 
-      <InvestmentInsightCards
+      <UniverseStatusLine />
+
+      <PortfolioReview
+        review={review.data}
+        loading={review.isLoading || review.isFetching}
         insights={insights.data ?? []}
-        loading={insights.isLoading || insights.isFetching}
+        insightsLoading={insights.isLoading || insights.isFetching}
         isDismissed={isDismissed}
         onDismiss={dismiss}
-        onDiscuss={openDiscuss}
+        onDiscussCard={(c: ReviewCard) => openDiscuss(buildReviewSeed(c, namesFor(c.fundIds)))}
+        onDiscussInsight={(i) => openDiscuss(buildInvestmentInsightSeed(i, namesFor(i.schemeIds)))}
       />
 
       <DataState

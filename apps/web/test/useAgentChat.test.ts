@@ -43,6 +43,19 @@ describe('useAgentChat', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('attaches computation events to the assistant message', async () => {
+    setStream(async function* () {
+      yield { type: 'start', threadId: 't' };
+      yield { type: 'computation', code: 'x', stdout: '', result: 1, durationMs: 2 };
+      yield { type: 'token', text: 'ok' };
+      yield { type: 'done', threadId: 't', usage: { inputTokens: 1, outputTokens: 1 } };
+    });
+    const { result } = renderHook(() => useAgentChat());
+    await act(async () => { await result.current.send('hi'); });
+    await waitFor(() => expect(result.current.isStreaming).toBe(false));
+    expect(result.current.messages.at(-1)?.computations).toEqual([{ code: 'x', stdout: '', result: 1, durationMs: 2 }]);
+  });
+
   it('collects step events into the assistant message steps trail', async () => {
     setStream(async function* () {
       yield { type: 'start', threadId: 't1' };

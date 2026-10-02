@@ -1,6 +1,7 @@
 import { Agent } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 import { ASK_USER_TOOL_NAME } from './askUserTool';
+import { RUN_PYTHON_TOOL_NAME } from './runPythonTool';
 
 export const EXPENSE_TOOL_ALLOWLIST = [
   'finance_list_transactions',
@@ -10,6 +11,7 @@ export const EXPENSE_TOOL_ALLOWLIST = [
   'finance_tag_transaction',
   'finance_create_category',
   'finance_create_rule',
+  RUN_PYTHON_TOOL_NAME,
   ASK_USER_TOOL_NAME,
 ];
 
@@ -42,7 +44,9 @@ WORKFLOW when reviewing flagged transactions:
 STYLE: answer-first, concise, no process narration ("Let me pull…", "Perfect!"). Do not dump
 everything; work through the flagged items efficiently. When you ask a clarifying question via
 ask_user, STOP and wait — do not also write a long speculative answer. Reply in GitHub-flavoured
-Markdown; bold key facts; tables only when comparing rows.`;
+Markdown; bold key facts; tables only when comparing rows.
+
+CALCULATIONS: for arithmetic across many transactions (monthly trends, recurring-spend detection, totals by tag, averages) use run_python instead of adding numbers yourself. Load only what you need, for example expense_transactions:<YYYY-MM> (one call per month), expense_summary, categories, accounts. Read each file from /data/<name with ":" replaced by "_">.json and end the code with a small JSON-friendly expression. Every number you state must come from a tool result.`;
 
 export function buildExpenseAgent(opts: { model: unknown; memory: Memory; tools: Record<string, unknown> }): Agent {
   return new Agent({

@@ -97,6 +97,20 @@ export type InvestmentInsight = {
   detail: string;
   schemeIds: number[];
 };
+
+export type ReviewCardKind = 'dragging' | 'working' | 'consider' | 'data_quality';
+export type ReviewCard = {
+  id: string; kind: ReviewCardKind; title: string; detail: string; fundIds: number[];
+  impactInr?: number | null; evidence: string[]; discussPrompt: string;
+};
+export type InvestmentReview = {
+  cards: ReviewCard[]; summary: string; asOf: string | null; cached: boolean;
+  reviewUnavailable?: boolean; reason?: string;
+};
+export type UniverseStatus = {
+  state: 'idle' | 'running' | 'failed'; startedAt: string | null; finishedAt: string | null;
+  lastError: string | null; progress: { done: number; total: number } | null; builtAt: string | null; asOf: string | null;
+};
 export type ThreadSummary = { id: string; title: string; snippet: string; createdAt: string; updatedAt: string };
 export type HistoryMessage = {
   role: 'user' | 'assistant';

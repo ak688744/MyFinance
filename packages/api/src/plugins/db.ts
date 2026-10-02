@@ -21,6 +21,9 @@ import {
   makeExpenseInsightTriageRepo,
   makeSchemeFundamentalsRepo,
   makeSchemeHoldingsRepo,
+  makePerformanceUniverseRepo,
+  makeInvestmentReviewCacheRepo,
+  makeCandidateDetailsRepo,
   seedDatabase,
   type Db,
   type InvestmentTxRepo,
@@ -43,6 +46,9 @@ import {
   type ExpenseInsightTriageRepo,
   type SchemeFundamentalsRepo,
   type SchemeHoldingsRepo,
+  type PerformanceUniverseRepo,
+  type InvestmentReviewCacheRepo,
+  type CandidateDetailsRepo,
 } from '@myfinance/core';
 
 // Derived from core's runMigrations return type to avoid a direct
@@ -70,6 +76,9 @@ export type Repos = {
   expenseInsightTriageRepo: ExpenseInsightTriageRepo;
   schemeFundamentalsRepo: SchemeFundamentalsRepo;
   schemeHoldingsRepo: SchemeHoldingsRepo;
+  performanceUniverseRepo: PerformanceUniverseRepo;
+  investmentReviewCacheRepo: InvestmentReviewCacheRepo;
+  candidateDetailsRepo: CandidateDetailsRepo;
 };
 
 // Module augmentation so app.db / app.sqlite / app.repos are typed everywhere.
@@ -114,6 +123,9 @@ export async function registerDb(app: FastifyInstance, dbPath: string): Promise<
     expenseInsightTriageRepo: makeExpenseInsightTriageRepo(db),
     schemeFundamentalsRepo: makeSchemeFundamentalsRepo(db),
     schemeHoldingsRepo: makeSchemeHoldingsRepo(db),
+    performanceUniverseRepo: makePerformanceUniverseRepo(db),
+    investmentReviewCacheRepo: makeInvestmentReviewCacheRepo(db),
+    candidateDetailsRepo: makeCandidateDetailsRepo(db),
   };
 
   app.decorate('db', db);

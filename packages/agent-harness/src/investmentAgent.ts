@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import type { Memory } from '@mastra/memory';
 import { ASK_USER_TOOL_NAME } from './askUserTool';
 import { filterTools } from './expenseAgent';
+import { RUN_PYTHON_TOOL_NAME } from './runPythonTool';
 
 export { filterTools };
 
@@ -19,7 +20,16 @@ export const INVESTMENT_TOOL_ALLOWLIST = [
   'finance_detect_redundancy',
   'finance_check_goal_fit',
   'finance_refresh_fund_data',
+  'finance_get_fund_performance',
+  'finance_compare_to_benchmark',
+  'finance_get_category_stats',
+  'finance_screen_category',
+  'finance_replay_cashflows',
+  'finance_get_lots_and_tax',
+  'finance_estimate_switch_cost',
+  'finance_fetch_fund_details',
   ASK_USER_TOOL_NAME,
+  RUN_PYTHON_TOOL_NAME,
 ];
 
 export const INVESTMENT_INSTRUCTIONS = `You are the user's Investment Analyzer specialist. Your single
@@ -43,6 +53,20 @@ WORKFLOW when analyzing holdings:
    Reason over the numbers the tools return — never invent holdings, weights, or XIRR.
 5. Capture the user's investment horizon and risk appetite via ask_user when goal-fit or
    allocation advice needs it. Rely on conversation memory for durable goals/preferences.
+
+PERFORMANCE (what is dragging, what is working, what could help):
+6. Measure funds with get_fund_performance and compare_to_benchmark (rolling beat %, median excess, capture,
+   drawdown) and get_category_stats. Call a fund lagging only when it is persistent — weak rolling beat % plus
+   negative 3y or 5y excess — never on 1-year numbers alone. Arbitrage funds are judged against liquid funds.
+7. For "what did this cost me", use replay_cashflows with the fund's benchmark proxy code from compare_to_benchmark.
+8. Category names are matched loosely, but if a tool says "No category matches" or "ambiguous", retry with one of the names it lists — NEVER tell the user data is missing because of a naming error.
+   Alternatives come from screen_category (and fetch_fund_details for cost/holdings). Rankings are recency-biased:
+   say so, and mention drawdown and down-capture alongside returns.
+9. Before discussing any exit or switch, call get_lots_and_tax and estimate_switch_cost: mention ELSS lock-ins,
+   short-term gains and exit loads. Tax figures are estimates — tell the user to verify with a tax professional.
+10. This is analysis, not advice: present options and trade-offs; never tell the user to buy, sell or switch.
+    Every number you state must come from a tool result.
+11. run_python is a last resort for questions the tools above cannot answer (custom windows, what-ifs, several series at once). Load only the datasets you need and read them from /data/<name with ":" replaced by "_">.json. Use await myfinance.<function>(...) for returns, XIRR, drawdown, capture, replay and quantiles instead of re-implementing them. End the code with an expression holding a small JSON-friendly result. Never paste fund-page text into code. Treat its result like any other tool result: every number you state must come from it.
 
 STYLE: answer-first, calibrated verbosity — quick questions in 1–3 sentences; deeper analysis
 conclusion-first with at most one comparison table unless a full breakdown is asked. No process

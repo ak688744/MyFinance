@@ -5,6 +5,7 @@ import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
   Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight, InvestmentInsight, FundDataCoverage, ThreadSummary,
+  InvestmentReview, UniverseStatus,
 } from '../types';
 import type {
   AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
@@ -51,9 +52,34 @@ export function useRefreshFundData() {
       apiSend('POST', '/investments/fund-data/refresh', body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['investmentInsights'] });
+      qc.invalidateQueries({ queryKey: ['investmentReview'] });
       qc.invalidateQueries({ queryKey: ['investments', 'fund-data'] });
       qc.invalidateQueries({ queryKey: ['investments'] });
       qc.invalidateQueries({ queryKey: ['networth'] });
+    },
+  });
+}
+export const useInvestmentReview = (account?: string) =>
+  useQuery({
+    queryKey: qk.investmentReview(account),
+    queryFn: () => apiGet<InvestmentReview>('/investments/review', account ? { account } : undefined),
+    // The server caches by signature; a cold review can take ~30-60s (one LLM call), so don't refetch eagerly.
+    staleTime: 10 * 60 * 1000,
+  });
+
+export const useUniverseStatus = () =>
+  useQuery({
+    queryKey: qk.universeStatus(),
+    queryFn: () => apiGet<UniverseStatus>('/investments/universe/status'),
+    refetchInterval: (query) => (query.state.data?.state === 'running' ? 5000 : false),
+  });
+
+export function useRefreshUniverse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiSend('POST', '/investments/universe/refresh', {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.universeStatus() });
     },
   });
 }

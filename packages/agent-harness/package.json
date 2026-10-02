@@ -6,7 +6,8 @@
   "main": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sandbox:prepare": "tsx scripts/prepareSandbox.ts"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.142",
@@ -19,6 +20,7 @@
     "@myfinance/agents": "workspace:*",
     "@myfinance/core": "workspace:*",
     "ai": "^7.0.31",
+    "pyodide": "314.0.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {

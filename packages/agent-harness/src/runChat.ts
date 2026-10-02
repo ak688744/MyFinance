@@ -1,7 +1,9 @@
 import { costUsd } from '@myfinance/agents';
 import { resolveRoute, type ResolverDeps, type ResolvedRoute } from './modelResolver';
 import { buildAgentModel } from './agentModel';
-import { mapChunk, type HarnessEvent } from './streamEvents';
+import { createEventMapper, type HarnessEvent } from './streamEvents';
+import { buildRunPythonTool, type DatasetResolver } from './runPythonTool';
+import { createSandboxRuntime, type SandboxRuntime } from './sandbox';
 import { buildFinanceMcpClient, getFinanceTools } from './mcpClient';
 import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
@@ -24,6 +26,10 @@ export type HarnessDeps = ResolverDeps & {
   dbPath: string;
   memoryUrl: string;
   makeModel?: (route: ResolvedRoute) => unknown | Promise<unknown>;
+  /** Resolves run_python datasets (api-provided). Without it no agent has run_python. */
+  resolveDataset?: DatasetResolver;
+  /** Injected sandbox runtime (tests). Defaults to the real hardened Pyodide runtime, started lazily. */
+  sandbox?: SandboxRuntime;
 };
 
 export type ChatResult = {
@@ -51,6 +57,8 @@ function mintThreadId(now: () => string): string {
 export function makeWealthHarness(deps: HarnessDeps) {
   const now = deps.now ?? (() => new Date().toISOString());
   const makeModel = deps.makeModel ?? ((route: ResolvedRoute) => buildAgentModel(route));
+  // Spawns nothing until the first run_python call.
+  const sandbox = deps.sandbox ?? createSandboxRuntime();
 
   let historyMemory: ReturnType<typeof buildWealthMemory> | undefined;
   const getHistoryMemory = () => (historyMemory ??= buildWealthMemory({ storeUrl: deps.memoryUrl }));
@@ -99,7 +107,10 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const financeTools = await getFinanceTools(mcpClient);
-      const allTools = { ...financeTools, ...buildAskUserTool() };
+      const pythonTools = deps.resolveDataset
+        ? buildRunPythonTool({ threadId, sandbox, resolveDataset: deps.resolveDataset })
+        : {};
+      const allTools = { ...financeTools, ...buildAskUserTool(), ...pythonTools };
       const tools = agentKind === 'expense'
         ? filterTools(allTools, EXPENSE_TOOL_ALLOWLIST)
         : agentKind === 'investment'
@@ -115,6 +126,9 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
       const stream = await agent.stream(args.message, {
         memory: { resource: resourceId, thread: threadId },
+        // Mastra's default is 5 steps; multi-tool analyses (status, lookthrough, run_python...) hit
+        // it and the turn ends mid-tool-use with no answer text.
+        maxSteps: 25,
       });
 
       let resolveDone!: (v: { usage: { inputTokens: number; outputTokens: number }; threadId: string }) => void;
@@ -129,6 +143,7 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
       // Prefer fullStream (text + tool-call step markers). Fall back to a
       // text-only stream when a mock model doesn't expose fullStream.
+      const mapEvent = createEventMapper();
       const events = (async function* (): AsyncGenerator<HarnessEvent> {
         try {
           const full = (stream as any).fullStream;
@@ -140,7 +155,7 @@ export function makeWealthHarness(deps: HarnessDeps) {
                 const err = (chunk as { payload?: { error?: unknown } }).payload?.error;
                 throw err instanceof Error ? err : new Error(String(err ?? 'Model call failed'));
               }
-              const ev = mapChunk(chunk);
+              const ev = mapEvent(chunk);
               if (ev) yield ev;
             }
           } else {
@@ -183,6 +198,9 @@ export function makeWealthHarness(deps: HarnessDeps) {
       })();
 
       return { threadId, textStream, events, done };
+    },
+    close(): void {
+      sandbox.close();
     },
   };
 }

@@ -81,6 +81,27 @@ describe('POST /agent/chat', () => {
     expect(res.body).toContain('Prepay');
     expect(res.body).toContain('Invest');
   });
+
+  it('streams a computation event as an SSE frame', async () => {
+    const harness = {
+      runChat: async () => ({
+        threadId: 't1',
+        textStream: (async function* () {})(),
+        events: (async function* () {
+          yield { type: 'computation' as const, code: 'print(1)', stdout: '1\n', result: 1, durationMs: 4 };
+          yield { type: 'text' as const, text: 'done' };
+        })(),
+        done: Promise.resolve({ usage: { inputTokens: 1, outputTokens: 1 }, threadId: 't1' }),
+      }),
+    };
+    app = await buildServer({ dbPath: ':memory:', harness: harness as never });
+    const res = await app.inject({
+      method: 'POST', url: '/agent/chat',
+      payload: { message: 'x', agent: 'investment' },
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(res.body).toContain(`data: ${JSON.stringify({ type: 'computation', code: 'print(1)', stdout: '1\n', result: 1, durationMs: 4 })}`);
+  });
 });
 
 describe('GET /agent/threads', () => {

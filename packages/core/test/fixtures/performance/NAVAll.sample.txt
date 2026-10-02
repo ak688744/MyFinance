@@ -1,0 +1,40 @@
+Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Net Asset Value;Date
+
+Open Ended Schemes(Equity Scheme - Large Cap Fund)
+
+Axis Mutual Fund
+
+120465;INF846K01DP8;-;Axis Large Cap Fund;Direct Plan;Growth Option;66.54;29-Sep-2026
+112277;INF846K01164;-;Axis Large Cap Fund;Regular Plan;Growth Option;58.10;29-Sep-2026
+120466;INF846K01DQ6;INF846K01DR4;Axis Large Cap Fund;Direct Plan;IDCW;20.11;29-Sep-2026
+
+Open Ended Schemes(Equity Schemes - ELSS- Tax Saver Fund)
+
+Aditya Birla Sun Life Mutual Fund
+
+119544;INF209K01VA6;-;Aditya Birla Sun Life ELSS Tax Saver Fund - Direct Plan - GROWTH;66.32;29-Sep-2026
+107745;INF209K01108;-;Aditya Birla Sun Life ELSS Tax Saver Fund - Regular Plan - GROWTH;58.91;29-Sep-2026
+
+Open Ended Schemes(Hybrid Scheme - Arbitrage Fund)
+
+Invesco Mutual Fund
+
+120401;INF205K01MZ7;-;Invesco India Arbitrage Fund;Direct Plan;Growth Option;33.10;29-Sep-2026
+
+Open Ended Schemes(Debt Scheme - Credit Risk Fund)
+
+Franklin Templeton Mutual Fund
+
+999001;INF090I01XX1;-;Franklin India Credit Risk Fund Segregated Portfolio 1 - Direct - Growth;1.00;29-Sep-2026
+
+Open Ended Schemes(Exchange Traded Funds (ETFs) - Other ETF)
+
+Nippon India Mutual Fund
+
+999002;INF204KB14I2;-;Nippon India ETF Nifty 50 BeES;Direct Plan;Growth Option;270.00;29-Sep-2026
+
+Close Ended Schemes(Debt Scheme - FMP)
+
+SBI Mutual Fund
+
+999003;INF200KA1XX1;-;SBI Fixed Maturity Plan Series 1;Direct Plan;Growth Option;11.00;29-Sep-2026
