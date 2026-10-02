@@ -1,5 +1,5 @@
 import { useAgentChat } from './useAgentChat';
-import { ChatPanel } from './ChatPanel';
+import { ChatWorkspace } from './ChatWorkspace';
 
 const SUGGESTED_PROMPTS = [
   'What is my current net worth breakdown?',
@@ -20,25 +20,19 @@ export function AssistantPage() {
       <p className="text-sm text-ink-muted mt-2 max-w-md mx-auto leading-relaxed">
         Ask about net worth, investments, spending, or loans. I can also add, categorize, or update transactions — I&apos;ll confirm before anything destructive.
       </p>
-      <div className="flex flex-wrap gap-2 justify-center mt-6 max-w-lg mx-auto">
-        {SUGGESTED_PROMPTS.map((prompt) => (
-          <button
-            key={prompt}
-            type="button"
-            onClick={() => void chat.send(prompt)}
-            disabled={chat.isStreaming}
-            className="text-xs px-3 py-2 rounded-full border border-ai/30 bg-ai/5 text-ai hover:bg-ai/10 transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai disabled:opacity-50"
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
     </div>
   );
 
   return (
-    <div className="h-[calc(100vh-7rem)] max-w-3xl mx-auto">
-      <ChatPanel chat={chat} emptyState={emptyState} placeholder="Ask your wealth manager…" />
+    <div className="h-[calc(100vh-7rem)] max-w-3xl mx-auto bg-white rounded-card border border-border shadow-card overflow-hidden">
+      <ChatWorkspace
+        agent="wealth"
+        chat={chat}
+        title="Wealth Assistant"
+        suggestions={SUGGESTED_PROMPTS}
+        emptyState={emptyState}
+        placeholder="Ask your wealth manager…"
+      />
     </div>
   );
 }

@@ -51,7 +51,12 @@ export async function expenseRoutes(app: FastifyInstance, opts: { gateway: Gatew
       excludeFromSpend: parseCsv(q.excludeFromSpend, DEFAULT_EXCLUDE_FROM_SPEND),
       investmentCategories: parseCsv(q.investmentCategories, DEFAULT_INVESTMENT_CATEGORIES),
     });
-    return { data };
+    const range = app.repos.expenseTxRepo.balanceRange({
+      ...(q.from ? { from: q.from } : {}),
+      ...(q.to ? { to: q.to } : {}),
+    });
+    const balance = range ? { ...range, net: range.closing - range.opening } : null;
+    return { data: { ...data, balance } };
   });
 
   // GET /expenses/insights?month=YYYY-MM — deterministic rules → semantic consolidation

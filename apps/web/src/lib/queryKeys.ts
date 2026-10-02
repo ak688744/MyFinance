@@ -14,6 +14,7 @@ export const qk = {
   expenseInsights: (month: string) => ['expenseInsights', month] as const,
   investmentInsights: (account?: string) => ['investmentInsights', account ?? 'all'] as const,
   fundDataCoverage: (account?: string) => ['investments', 'fund-data', 'coverage', account ?? 'all'] as const,
+  agentThreads: (agent: string) => ['agentThreads', agent] as const,
   categories: () => ['categories'] as const,
   rules: () => ['categories', 'rules'] as const,
   accounts: (domain?: string) => ['accounts', domain ?? 'all'] as const,

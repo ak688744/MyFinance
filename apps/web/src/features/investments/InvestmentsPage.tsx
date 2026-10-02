@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useInvestmentSummary, useHoldings, useAssets, useInvestmentAccounts, useAccounts, useInvestmentInsights } from '../../lib/hooks';
 import { DataState } from '../../components/ui/DataState';
@@ -9,8 +10,12 @@ import type { ValuedAsset, InvestmentInsight } from '../../types';
 import { AddInvestmentModal } from './AddInvestmentModal';
 import { InvestmentInsightCards } from './InvestmentInsightCards';
 import { FundDataStatus } from './FundDataStatus';
-import { InvestmentInsightDrawer } from './InvestmentInsightDrawer';
+import { buildInvestmentInsightSeed } from './investmentInsightSeed';
 import { useInvestmentInsightDismissal } from './useInvestmentInsightDismissal';
+import { Drawer } from '../../components/ui/Drawer';
+import { SparkleIcon } from '../../components/ui/icons';
+import { ChatWorkspace } from '../assistant/ChatWorkspace';
+import { useAgentChat } from '../assistant/useAgentChat';
 
 const delta = (n: number | null | undefined) =>
   n == null ? 'text-gray-700' : n >= 0 ? 'text-gain' : 'text-loss';
@@ -18,7 +23,9 @@ const delta = (n: number | null | undefined) =>
 export function InvestmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [account, setAccount] = useState<string | undefined>(undefined);
-  const [activeInsight, setActiveInsight] = useState<InvestmentInsight | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const aiChat = useAgentChat({ agent: 'investment', storageKey: 'myfinance.investments.chat.v2' });
+  const queryClient = useQueryClient();
 
   const summary = useInvestmentSummary(account);
   const insights = useInvestmentInsights(account);
@@ -33,6 +40,25 @@ export function InvestmentsPage() {
   const assets = useAssets(selectedAccountId !== undefined ? String(selectedAccountId) : undefined);
 
   const mf = holdings.data ?? [];
+
+  // Discuss: open the Investment Analyzer workspace on a NEW thread and send the seed once.
+  // Runs from a click handler (not an effect), so StrictMode cannot double-send.
+  const openDiscuss = (insight: InvestmentInsight) => {
+    setAiOpen(true);
+    if (aiChat.isStreaming) return;
+    aiChat.clearChat();
+    const fundNames = mf
+      .filter((h) => insight.schemeIds.includes(h.schemeId ?? -1))
+      .map((h) => h.schemeName);
+    void aiChat.send(buildInvestmentInsightSeed(insight, fundNames));
+  };
+
+  const closeAi = () => {
+    setAiOpen(false);
+    for (const queryKey of [['investments'], ['assets'], ['networth'], ['investmentInsights']]) {
+      queryClient.invalidateQueries({ queryKey });
+    }
+  };
   // Generic (non-MF) assets grouped by class. /assets also projects MF — drop it
   // here (MF is rendered from /investments/holdings above). See BUG-002.
   const genericGroups = useMemo(() => {
@@ -104,7 +130,7 @@ export function InvestmentsPage() {
         loading={insights.isLoading || insights.isFetching}
         isDismissed={isDismissed}
         onDismiss={dismiss}
-        onDiscuss={setActiveInsight}
+        onDiscuss={openDiscuss}
       />
 
       <DataState
@@ -203,15 +229,28 @@ export function InvestmentsPage() {
 
       <AddInvestmentModal open={addOpen} onClose={() => setAddOpen(false)} />
 
-      {activeInsight && (
-        <InvestmentInsightDrawer
-          insight={activeInsight}
-          fundNames={mf
-            .filter((h) => activeInsight.schemeIds.includes(h.schemeId ?? -1))
-            .map((h) => h.schemeName)}
-          onClose={() => setActiveInsight(null)}
+      <button
+        type="button"
+        aria-label="Ask AI about investments"
+        onClick={() => setAiOpen(true)}
+        className="fixed bottom-6 right-6 z-50 w-[52px] h-[52px] rounded-full bg-ai text-white flex items-center justify-center shadow-[0_8px_20px_rgba(124,92,252,0.35)] hover:opacity-90 cursor-pointer"
+      >
+        <SparkleIcon width={24} height={24} />
+      </button>
+      <Drawer open={aiOpen} onClose={closeAi} ariaLabel="Investment Analyzer">
+        <ChatWorkspace
+          agent="investment"
+          chat={aiChat}
+          title="Investment Analyzer"
+          placeholder="Ask about your investments…"
+          suggestions={[
+            `How is my portfolio performing${account ? ` in ${account}` : ''}?`,
+            'Which funds are dragging my returns?',
+            'Do my funds overlap or am I too concentrated?',
+          ]}
+          onClose={closeAi}
         />
-      )}
+      </Drawer>
     </div>
   );
 }

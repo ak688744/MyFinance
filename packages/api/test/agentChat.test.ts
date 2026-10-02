@@ -82,3 +82,45 @@ describe('POST /agent/chat', () => {
     expect(res.body).toContain('Invest');
   });
 });
+
+describe('GET /agent/threads', () => {
+  function threadHarness() {
+    const calls: any[] = [];
+    return {
+      calls,
+      async listThreads(a: any) { calls.push(['list', a]); return [{ id: 't1', title: 'Hi', snippet: 'yo', createdAt: 'c', updatedAt: 'u' }]; },
+      async getThread(a: any) {
+        calls.push(['get', a]);
+        return a.threadId === 't1' ? { id: 't1', title: 'Hi', messages: [{ role: 'user', text: 'Hi' }] } : null;
+      },
+    };
+  }
+
+  it('lists threads with default agent and clamped limit', async () => {
+    const h = threadHarness();
+    app = await buildServer({ dbPath: ':memory:', harness: h as any });
+    const res = await app.inject({ method: 'GET', url: '/agent/threads?limit=500' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data[0].id).toBe('t1');
+    expect(h.calls[0][1]).toEqual({ agent: 'wealth', limit: 100 });
+    await app.inject({ method: 'GET', url: '/agent/threads?agent=expense' });
+    expect(h.calls[1][1]).toEqual({ agent: 'expense', limit: 30 });
+    await app.inject({ method: 'GET', url: '/agent/threads?agent=investment' });
+    expect(h.calls[2][1]).toEqual({ agent: 'investment', limit: 30 });
+    expect((await app.inject({ method: 'GET', url: '/agent/threads/t1?agent=investment' })).statusCode).toBe(200);
+  });
+
+  it('rejects an invalid agent with 400', async () => {
+    app = await buildServer({ dbPath: ':memory:', harness: threadHarness() as any });
+    expect((await app.inject({ method: 'GET', url: '/agent/threads?agent=bogus' })).statusCode).toBe(400);
+    expect((await app.inject({ method: 'GET', url: '/agent/threads/t1?agent=bogus' })).statusCode).toBe(400);
+  });
+
+  it('returns a thread, or 404 when missing', async () => {
+    app = await buildServer({ dbPath: ':memory:', harness: threadHarness() as any });
+    const ok = await app.inject({ method: 'GET', url: '/agent/threads/t1?agent=expense' });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().data).toEqual({ id: 't1', title: 'Hi', messages: [{ role: 'user', text: 'Hi' }] });
+    expect((await app.inject({ method: 'GET', url: '/agent/threads/zzz' })).statusCode).toBe(404);
+  });
+});

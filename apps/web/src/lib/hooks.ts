@@ -4,7 +4,7 @@ import { qk } from './queryKeys';
 import type {
   NetWorthSummary, NetWorthPoint, PortfolioSummary, PeriodReturns, Holding,
   AssetAllocation, ValuedAsset, Account, ExpenseRow, ExpenseSummary,
-  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight, InvestmentInsight, FundDataCoverage,
+  Category, CategoryRule, LiabilityDetail, LiabilityListItem, Insight, InvestmentInsight, FundDataCoverage, ThreadSummary,
 } from '../types';
 import type {
   AiProviderDTO, AiModelDTO, AiTaskDTO, AiUsageSummaryDTO, AiUsageEventDTO, AiPricingHintDTO,
@@ -57,6 +57,12 @@ export function useRefreshFundData() {
     },
   });
 }
+export const useAgentThreads = (agent: 'wealth' | 'expense' | 'investment', enabled = true) =>
+  useQuery({
+    queryKey: qk.agentThreads(agent),
+    queryFn: () => apiGet<ThreadSummary[]>('/agent/threads', { agent, limit: 30 }),
+    enabled,
+  });
 export const useCategories = () => useQuery({ queryKey: qk.categories(), queryFn: () => apiGet<Category[]>('/categories') });
 export const useAccounts = (domain?: string) => useQuery({ queryKey: qk.accounts(domain), queryFn: () => apiGet<Account[]>('/accounts', domain ? { domain } : undefined) });
 
