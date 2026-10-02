@@ -40,7 +40,7 @@ function persist(chat: PersistedChat, storageKey: string): void {
 export function useAgentChat(opts?: {
   storageKey?: string;
   persist?: boolean;
-  agent?: 'wealth' | 'expense';
+  agent?: 'wealth' | 'expense' | 'investment';
 }) {
   const storageKey = opts?.storageKey ?? CHAT_STORAGE_KEY;
   const shouldPersist = opts?.persist !== false;

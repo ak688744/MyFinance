@@ -10,6 +10,10 @@ describe('AI_TASKS registry', () => {
     expect(isAiTask('expense_agent')).toBe(true);
     expect(AI_TASKS.expense_agent.label).toBe('Expense Clarity Agent');
   });
+  it('includes investment_agent', () => {
+    expect(isAiTask('investment_agent')).toBe(true);
+    expect(AI_TASKS.investment_agent.label).toBe('Investment Analyzer Agent');
+  });
   it('isAiTask guards unknown tasks', () => {
     expect(isAiTask('categorization')).toBe(true);
     expect(isAiTask('taxation')).toBe(false);

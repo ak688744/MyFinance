@@ -261,3 +261,44 @@ export type NetWorthPoint = {
   totalAssets: number;
   totalLiabilities: number;
 };
+
+// ---------------------------------------------------------------------------
+// L4.1 Investment Analyzer — fund fundamentals + holdings (additive)
+// ---------------------------------------------------------------------------
+export type MarketCapBucket = 'large' | 'mid' | 'small' | 'other';
+export type FundDataSource = 'groww' | 'tickertape' | 'kuvera';
+export type FundPlanType = 'direct' | 'regular' | 'unknown';
+
+export type SchemeFundamentals = {
+  schemeId: number;
+  expenseRatioDirect: number | null;
+  expenseRatioRegular: number | null;
+  planType: FundPlanType | null;
+  aum: number | null;
+  benchmarkName: string | null;
+  stdDev: number | null;
+  sharpe: number | null;
+  beta: number | null;
+  alpha: number | null;
+  source: string;
+  fetchedAt: string; // ISO
+};
+
+export type StoredFundHolding = {
+  id: number;
+  schemeId: number;
+  asOfDate: string; // ISO — the disclosure month
+  securityName: string;
+  isin: string | null;
+  weightPct: number; // % of the fund's net assets
+  sector: string | null;
+  marketCapBucket: MarketCapBucket | null;
+};
+
+/** Normalized output of a fetch adapter (before it has a schemeId). */
+export type FetchedFundData = {
+  fundamentals: Omit<SchemeFundamentals, 'schemeId' | 'fetchedAt'>;
+  holdings: Array<Omit<StoredFundHolding, 'id' | 'schemeId' | 'asOfDate'>>;
+  asOfDate: string;
+  source: FundDataSource;
+};

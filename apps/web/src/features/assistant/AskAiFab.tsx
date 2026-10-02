@@ -6,7 +6,7 @@ import { ChatWorkspace } from './ChatWorkspace';
 import { useAgentChat } from './useAgentChat';
 
 type AskAiFabProps = {
-  agent: 'wealth' | 'expense';
+  agent: 'wealth' | 'expense' | 'investment';
   /** localStorage key for this surface's open chat (keeps it separate from other pages). */
   storageKey: string;
   title: string;

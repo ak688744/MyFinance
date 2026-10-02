@@ -19,6 +19,8 @@ import {
   makeAiTaskRouteRepo,
   makeAiUsageRepo,
   makeExpenseInsightTriageRepo,
+  makeSchemeFundamentalsRepo,
+  makeSchemeHoldingsRepo,
   seedDatabase,
   type Db,
   type InvestmentTxRepo,
@@ -39,6 +41,8 @@ import {
   type AiTaskRouteRepo,
   type AiUsageRepo,
   type ExpenseInsightTriageRepo,
+  type SchemeFundamentalsRepo,
+  type SchemeHoldingsRepo,
 } from '@myfinance/core';
 
 // Derived from core's runMigrations return type to avoid a direct
@@ -64,6 +68,8 @@ export type Repos = {
   aiTaskRouteRepo: AiTaskRouteRepo;
   aiUsageRepo: AiUsageRepo;
   expenseInsightTriageRepo: ExpenseInsightTriageRepo;
+  schemeFundamentalsRepo: SchemeFundamentalsRepo;
+  schemeHoldingsRepo: SchemeHoldingsRepo;
 };
 
 // Module augmentation so app.db / app.sqlite / app.repos are typed everywhere.
@@ -106,6 +112,8 @@ export async function registerDb(app: FastifyInstance, dbPath: string): Promise<
     aiTaskRouteRepo: makeAiTaskRouteRepo(db),
     aiUsageRepo: makeAiUsageRepo(db),
     expenseInsightTriageRepo: makeExpenseInsightTriageRepo(db),
+    schemeFundamentalsRepo: makeSchemeFundamentalsRepo(db),
+    schemeHoldingsRepo: makeSchemeHoldingsRepo(db),
   };
 
   app.decorate('db', db);

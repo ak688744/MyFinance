@@ -5,13 +5,16 @@ let ctx: McpContext | undefined;
 afterEach(() => { ctx?.close(); ctx = undefined; });
 
 describe('buildContext', () => {
-  it('builds an in-memory context with repos, nav, marketData, and a tx runner', () => {
+  it('builds an in-memory context with repos, nav, marketData, fundData, and a tx runner', () => {
     ctx = buildContext({ dbPath: ':memory:' });
     expect(ctx.repos.liabilityRepo).toBeDefined();
     expect(ctx.repos.expenseTxRepo).toBeDefined();
     expect(ctx.repos.accountRepo).toBeDefined();
+    expect(ctx.repos.schemeFundamentalsRepo).toBeDefined();
+    expect(ctx.repos.schemeHoldingsRepo).toBeDefined();
     expect(typeof ctx.nav.getLatestNAV).toBe('function');
     expect(typeof ctx.marketData.searchSchemes).toBe('function');
+    expect(typeof ctx.fundData.ingest).toBe('function');
     // reserved write seam is present but unused
     expect(ctx.runInTransaction(() => 42)).toBe(42);
   });

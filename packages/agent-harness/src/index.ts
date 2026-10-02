@@ -11,3 +11,4 @@ export type { HarnessEvent } from './streamEvents';
 export { WEALTH_INSTRUCTIONS } from './wealthAgent';
 export { buildAskUserTool, ASK_USER_TOOL_NAME } from './askUserTool';
 export { buildExpenseAgent, EXPENSE_INSTRUCTIONS, EXPENSE_TOOL_ALLOWLIST, filterTools } from './expenseAgent';
+export { buildInvestmentAgent, INVESTMENT_INSTRUCTIONS, INVESTMENT_TOOL_ALLOWLIST } from './investmentAgent';

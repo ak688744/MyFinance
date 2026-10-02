@@ -28,6 +28,11 @@ export const AI_TASKS = {
     description: 'Extract itemized line items from an uploaded credit-card statement PDF',
     defaultDialect: 'gemini',
   },
+  investment_agent: {
+    label: 'Investment Analyzer Agent',
+    description: 'The investment specialist: analyzes MF holdings health (overlap, concentration, cost, goal-fit)',
+    defaultDialect: 'gemini',
+  },
 } as const;
 
 export type AiTaskId = keyof typeof AI_TASKS;

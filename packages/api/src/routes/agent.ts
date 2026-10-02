@@ -3,10 +3,10 @@ import { AgentConfigError } from '@myfinance/agent-harness';
 import type { Harness } from '../plugins/harness';
 import { badRequest, notFound } from '../errors';
 
-function parseAgent(v: unknown): 'wealth' | 'expense' {
+function parseAgent(v: unknown): 'wealth' | 'expense' | 'investment' {
   if (v === undefined || v === '') return 'wealth';
-  if (v === 'wealth' || v === 'expense') return v;
-  throw badRequest("agent must be 'wealth' or 'expense'");
+  if (v === 'wealth' || v === 'expense' || v === 'investment') return v;
+  throw badRequest("agent must be 'wealth', 'expense' or 'investment'");
 }
 
 function sse(data: unknown): string {
@@ -29,7 +29,7 @@ export async function agentRoutes(app: FastifyInstance, opts: { harness: Harness
   });
 
   app.post('/agent/chat', async (req, reply) => {
-    const body = (req.body ?? {}) as { threadId?: string; message?: string; agent?: 'wealth' | 'expense' };
+    const body = (req.body ?? {}) as { threadId?: string; message?: string; agent?: 'wealth' | 'expense' | 'investment' };
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     if (!message) {
       throw badRequest('message is required');

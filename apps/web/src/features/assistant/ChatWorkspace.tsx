@@ -10,7 +10,7 @@ type WorkspaceChat = ChatPanelProps['chat'] & {
 };
 
 export type ChatWorkspaceProps = {
-  agent: 'wealth' | 'expense';
+  agent: 'wealth' | 'expense' | 'investment';
   chat: WorkspaceChat;
   title: string;
   suggestions?: string[];

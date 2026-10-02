@@ -20,6 +20,13 @@ const EXPECTED_READ_TOOLS = [
   'search_schemes',
   'get_scheme_nav',
   'list_categories',
+  'get_fund_fundamentals',
+  'get_portfolio_holdings_status',
+  'analyze_fund_overlap',
+  'get_portfolio_lookthrough',
+  'analyze_concentration',
+  'detect_redundancy',
+  'check_goal_fit',
 ];
 
 const EXPECTED_WRITE_TOOLS = [
@@ -30,6 +37,7 @@ const EXPECTED_WRITE_TOOLS = [
   'add_asset', 'update_asset', 'close_asset',
   'add_asset_contribution', 'add_asset_valuation', 'add_asset_rate', 'delete_asset',
   'add_liability', 'update_liability', 'delete_liability',
+  'refresh_fund_data',
 ];
 
 const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
@@ -44,7 +52,7 @@ async function connectedClient(): Promise<Client> {
 }
 
 describe('MCP server (protocol smoke)', () => {
-  it('registers all 11 read tools and 23 write tools', async () => {
+  it('registers all read tools and write tools', async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();

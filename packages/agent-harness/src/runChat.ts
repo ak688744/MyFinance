@@ -6,10 +6,11 @@ import { buildFinanceMcpClient, getFinanceTools } from './mcpClient';
 import { buildWealthMemory } from './memory';
 import { buildWealthAgent } from './wealthAgent';
 import { buildExpenseAgent, filterTools, EXPENSE_TOOL_ALLOWLIST } from './expenseAgent';
+import { buildInvestmentAgent, INVESTMENT_TOOL_ALLOWLIST } from './investmentAgent';
 import { buildAskUserTool } from './askUserTool';
 import { toHistoryMessages, summarizeThread, type HistoryMessage, type ThreadSummary } from './threadHistory';
 
-export type AgentKind = 'wealth' | 'expense';
+export type AgentKind = 'wealth' | 'expense' | 'investment';
 
 export type UsageInsert = {
   ts: string; task: string; providerId: string; dialect: string; model: string;
@@ -38,7 +39,7 @@ const RESOURCE_ID = 'user';
 
 /** Memory resource id that scopes an agent's threads. */
 export function resourceIdFor(agent: AgentKind): string {
-  return agent === 'expense' ? 'expense-agent' : RESOURCE_ID;
+  return agent === 'expense' ? 'expense-agent' : agent === 'investment' ? 'investment-agent' : RESOURCE_ID;
 }
 
 let threadCounter = 0;
@@ -87,7 +88,11 @@ export function makeWealthHarness(deps: HarnessDeps) {
 
     async runChat(args: { threadId?: string; message: string; agent?: AgentKind }): Promise<ChatResult> {
       const agentKind = args.agent ?? 'wealth';
-      const task = agentKind === 'expense' ? 'expense_agent' : 'wealth_chat';
+      const task = agentKind === 'expense'
+        ? 'expense_agent'
+        : agentKind === 'investment'
+          ? 'investment_agent'
+          : 'wealth_chat';
       const route = resolveRoute(deps, task);
       const threadId = args.threadId ?? mintThreadId(now);
       const resourceId = resourceIdFor(agentKind);
@@ -95,12 +100,18 @@ export function makeWealthHarness(deps: HarnessDeps) {
       const mcpClient = buildFinanceMcpClient({ dbPath: deps.dbPath });
       const financeTools = await getFinanceTools(mcpClient);
       const allTools = { ...financeTools, ...buildAskUserTool() };
-      const tools = agentKind === 'expense' ? filterTools(allTools, EXPENSE_TOOL_ALLOWLIST) : allTools;
+      const tools = agentKind === 'expense'
+        ? filterTools(allTools, EXPENSE_TOOL_ALLOWLIST)
+        : agentKind === 'investment'
+          ? filterTools(allTools, INVESTMENT_TOOL_ALLOWLIST)
+          : allTools;
       const memory = buildWealthMemory({ storeUrl: deps.memoryUrl });
       const model = await makeModel(route);
       const agent = agentKind === 'expense'
         ? buildExpenseAgent({ model, memory, tools })
-        : buildWealthAgent({ model, memory, tools });
+        : agentKind === 'investment'
+          ? buildInvestmentAgent({ model, memory, tools })
+          : buildWealthAgent({ model, memory, tools });
 
       const stream = await agent.stream(args.message, {
         memory: { resource: resourceId, thread: threadId },
