@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  parseAmfiDate, normalizeCategory, parseAmfiNavList, selectUniverse, isEquityTaxed, isElssCategory,
+  parseAmfiDate, normalizeCategory, parseAmfiNavList, selectUniverse, isEquityTaxed, isElssCategory, buildIsinIndex,
 } from '../../src/domain/performance/amfiNavList';
 import { parseMfapiHistory } from '../../src/domain/performance/mfapi';
 
@@ -30,6 +30,13 @@ describe('AMFI NAV list', () => {
     expect(rows.find((r) => r.amfiCode === '999003')!.structure).toBe('close');
   });
 
+  it('M3: 6-field rows also read ISINs from fields 1 and 2 when present', () => {
+    const txt = ['Open Ended Schemes(Equity Scheme - Large Cap Fund)', 'Test Mutual Fund',
+      '555001;INF000T01011;INF000T01029;Test Large Cap Fund;12.5000;29-Sep-2026'].join('\n');
+    const [r] = parseAmfiNavList(txt);
+    expect(r).toMatchObject({ amfiCode: '555001', isinGrowth: 'INF000T01011', isinReinvest: 'INF000T01029' });
+  });
+
   it('selects only open-ended Direct-Growth non-ETF non-segregated funds', () => {
     const codes = selectUniverse(parseAmfiNavList(text)).map((r) => r.amfiCode).sort();
     expect(codes).toEqual(['119544', '120401', '120465']);
@@ -44,6 +51,40 @@ describe('AMFI NAV list', () => {
     expect(isEquityTaxed('Hybrid: Arbitrage')).toBe(true);
     expect(isEquityTaxed('Debt: Liquid')).toBe(false);
     expect(isElssCategory('Equity: ELSS')).toBe(true);
+  });
+});
+
+describe('ISIN index', () => {
+  const frag = [
+    'Open Ended Schemes(Equity Scheme - Large Cap Fund)',
+    'Test Mutual Fund',
+    '500001;INF000A01AA1;INF000A01AA2;Test Large Cap Fund Direct Plan;Direct;Growth;10.5;29-Sep-2026',
+    '500002;INF000A01BB1;-;Test Mid Cap Fund Direct Plan;Direct;Growth;20.5;29-Sep-2026',
+    '500003;INF000A01EE1;INF000A01EE2;Test Legacy Fund;11.5;29-Sep-2026',
+    '500004;INF000A01AA1;INF000A01CC2;Test Dup Fund Direct Plan;Direct;Growth;30.5;29-Sep-2026',
+    '500005; inf000a01dd1 ;;Test Padded Fund Direct Plan;Direct;Growth;40.5;29-Sep-2026',
+  ].join('\n');
+
+  it('captures ISINs on rows, null for dash/empty; 6-field lines carry ISINs too (M3)', () => {
+    const rows = parseAmfiNavList(frag);
+    const by = (c: string) => rows.find((r) => r.amfiCode === c)!;
+    expect(by('500001')).toMatchObject({ isinGrowth: 'INF000A01AA1', isinReinvest: 'INF000A01AA2' });
+    expect(by('500002')).toMatchObject({ isinGrowth: 'INF000A01BB1', isinReinvest: null });
+    expect(by('500003')).toMatchObject({ isinGrowth: 'INF000A01EE1', isinReinvest: 'INF000A01EE2' });
+    expect(by('500005')).toMatchObject({ isinGrowth: 'INF000A01DD1', isinReinvest: null });
+  });
+
+  it('indexes both ISINs, skips dashes, keeps first on duplicate, normalises case/space', () => {
+    const idx = buildIsinIndex(parseAmfiNavList(frag));
+    expect(idx.get('INF000A01AA1')).toBe('500001');
+    expect(idx.get('INF000A01AA2')).toBe('500001');
+    expect(idx.get('INF000A01BB1')).toBe('500002');
+    expect(idx.get('INF000A01CC2')).toBe('500004');
+    expect(idx.get('INF000A01DD1')).toBe('500005');
+    expect(idx.has('-')).toBe(false);
+    expect(idx.has('')).toBe(false);
+    expect(idx.get('INF000A01EE2')).toBe('500003');
+    expect(idx.size).toBe(7);
   });
 });
 

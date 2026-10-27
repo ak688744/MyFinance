@@ -2,24 +2,41 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
   importTransactions,
-  importHoldings,
-  importInvestmentTransactions,
-  autoMatchAmfiCodes,
+  buildCasImport,
+  CasImportError,
+  CasParseError,
+  CasServiceError,
+  importCas,
+  fetchAmfiNavList,
+  parseAmfiNavList,
+  buildIsinIndex,
   type ParsedTransaction,
-  type ParsedHoldingsData,
-  type ParsedTransactionData,
   type SchemeRepo,
 } from '@myfinance/core';
 import { makeRunInTransaction } from '../plugins/txRunner';
 import { readMultipart, type ParsedMultipart } from '../lib/multipart';
 import { resolveParser } from '../import/registry';
+import { extractPdfLines, PdfPasswordRequiredError, PdfPasswordIncorrectError } from '../lib/pdfText';
+import { makePanHasher } from '../lib/panHash';
 
 export type AmfiMatch = (deps: { schemeRepo: SchemeRepo }) => Promise<{
   matched: number;
   total: number;
 }>;
 
-export type ImportRoutesOpts = { amfiMatch?: AmfiMatch };
+export type IsinIndexLoader = () => Promise<Map<string, string>>;
+
+export type ImportRoutesOpts = { amfiMatch?: AmfiMatch; isinIndexLoader?: IsinIndexLoader };
+
+/** An empty index means the AMFI list format drifted/errored: fail rather than create null-code schemes. */
+export function makeDefaultIsinIndexLoader(fetchList: () => Promise<string> = fetchAmfiNavList): IsinIndexLoader {
+  return async () => {
+    const idx = buildIsinIndex(parseAmfiNavList(await fetchList()));
+    if (idx.size === 0) throw new Error('AMFI list returned no ISINs');
+    return idx;
+  };
+}
+const defaultIsinIndexLoader = makeDefaultIsinIndexLoader();
 
 function badRequest(message: string): Error & { statusCode?: number } {
   const err = new Error(message) as Error & { statusCode?: number };
@@ -49,12 +66,32 @@ function logImport(
   req.log[level]({ import: event, ...fields }, `import:${event}`);
 }
 
+/** CAS route only: never echo an unexpected error's text (may carry statement content). */
+function maskUnexpected(req: FastifyRequest, accountName: string, e: unknown): Error {
+  logImport(req, 'error', 'cas_unexpected_error', { accountName, errorType: (e as Error)?.constructor?.name });
+  const err = new Error('CAS import failed') as Error & { statusCode?: number };
+  err.statusCode = 500;
+  return err;
+}
+
+/** Reuse an existing investment account's exact spelling when the input differs only by case/whitespace. */
+function canonicalAccountName(app: FastifyInstance, name: string): string {
+  const norm = (x: string) => x.trim().replace(/\s+/g, ' ').toLowerCase();
+  const existing = [...new Set([
+    ...app.repos.txRepo.getAccounts(),
+    ...app.repos.accountRepo.list({ domain: 'investment' }).map((a) => a.label),
+  ])];
+  if (existing.includes(name)) return name;
+  const matches = existing.filter((n) => norm(n) === norm(name));
+  return matches.length === 1 ? matches[0] : name;
+}
+
 export async function importRoutes(
   app: FastifyInstance,
   opts: ImportRoutesOpts,
 ): Promise<void> {
-  const amfiMatch = opts.amfiMatch ?? autoMatchAmfiCodes;
   const runInTransaction = makeRunInTransaction(app.sqlite);
+  const loadIsinIndex = opts.isinIndexLoader ?? defaultIsinIndexLoader;
 
   // POST /imports/expenses
   app.post('/imports/expenses', async (req: FastifyRequest, reply: FastifyReply) => {
@@ -81,147 +118,80 @@ export async function importRoutes(
     return reply.send({ data: result });
   });
 
-  // POST /imports/investments/holdings
-  app.post('/imports/investments/holdings', async (req, reply) => {
+  // POST /imports/investments/cas  (CAMS/KFintech consolidated statement PDF)
+  app.post('/imports/investments/cas', async (req, reply) => {
     const { file, fields } = await requireUpload(req);
-    const accountName = requireField(fields, 'accountName');
-    const investmentApp = requireField(fields, 'investmentApp');
-    const platform = fields.platform?.trim() || 'groww';
+    const accountName = canonicalAccountName(app, requireField(fields, 'accountName'));
+    const password = fields.password ? fields.password : undefined; // verbatim; never logged
+    const confirmPanChange = fields.confirmPanChange?.trim() === 'true';
+    const confirmDroppedHistory = fields.confirmDroppedHistory?.trim() === 'true';
+    const started = Date.now();
 
-    logImport(req, 'info', 'holdings_start', {
-      accountName,
-      investmentApp,
-      platform,
-      fileName: file!.filename,
-      fileBytes: file!.buffer.byteLength,
-    });
+    logImport(req, 'info', 'cas_start', { accountName, fileBytes: file!.buffer.byteLength });
 
-    // Non-financial sync: ensure an investment account exists for this
-    // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
-    const accountId = app.repos.accountRepo.ensureAccount({
-      domain: 'investment',
-      institution: investmentApp,
-      label: accountName,
-    });
-
-    const parse = resolveParser(platform, 'holdings');
-
-    let parsedData: ParsedHoldingsData;
+    let text: string;
     try {
-      parsedData = parse(file!.buffer, file!.filename) as ParsedHoldingsData;
+      text = await extractPdfLines(file!.buffer, password);
     } catch (e) {
-      logImport(req, 'error', 'holdings_parse_failed', {
-        accountName,
-        investmentApp,
-        message: (e as Error).message,
-      });
-      throw badRequest((e as Error).message);
+      if (e instanceof PdfPasswordRequiredError) throw badRequest('This PDF is password protected: password required.');
+      if (e instanceof PdfPasswordIncorrectError) throw badRequest('Incorrect PDF password.');
+      logImport(req, 'warn', 'cas_extract_failed', { accountName });
+      throw badRequest('Could not read the PDF.');
     }
 
-    logImport(req, 'info', 'holdings_parsed', {
-      accountName,
-      investmentApp,
-      asOfDate: parsedData.asOfDate,
-      holdingCount: parsedData.holdings.length,
-      accountId,
-    });
+    let data;
+    try {
+      data = buildCasImport(text);
+    } catch (e) {
+      if (e instanceof CasParseError || e instanceof CasImportError) {
+        const issues = (e as { issues?: string[] }).issues ?? [];
+        logImport(req, 'warn', 'cas_rejected', { accountName, issueCount: issues.length });
+        const err = badRequest(e.message) as Error & { issues?: string[] };
+        err.issues = issues;
+        throw err;
+      }
+      throw maskUnexpected(req, accountName, e);
+    }
 
     try {
-      const result = await importHoldings(
+      const result = await importCas(
         {
           schemeRepo: app.repos.schemeRepo,
+          txRepo: app.repos.txRepo,
           holdingsRepo: app.repos.holdingsRepo,
           importHistoryRepo: app.repos.importHistoryRepo,
           runInTransaction,
-          amfiMatch,
+          loadIsinIndex,
+          panHash: makePanHasher(),
         },
-        { accountName, investmentApp, parsedData, fileName: file!.filename },
+        { accountName, data, fileName: 'CAMS CAS', confirmPanChange, confirmDroppedHistory },
       );
-      logImport(req, 'info', 'holdings_success', {
+      // Only after a successful import, so a rejected one leaves no account row.
+      try {
+        app.repos.accountRepo.ensureAccount({ domain: 'investment', institution: 'CAS', label: accountName });
+      } catch (e) {
+        // The import already committed; do not turn that into a failed request.
+        logImport(req, 'error', 'cas_ensure_account_failed', { accountName, errorType: (e as Error)?.constructor?.name });
+      }
+      logImport(req, 'info', 'cas_success', {
         accountName,
-        investmentApp,
-        ...result,
+        importedCount: result.importedCount,
+        deletedCount: result.deletedCount,
+        schemesCreated: result.schemesCreated.length,
+        panGuard: result.panGuard,
+        durationMs: Date.now() - started,
       });
       return reply.send({ data: result });
     } catch (e) {
-      logImport(req, 'error', 'holdings_failed', {
-        accountName,
-        investmentApp,
-        message: (e as Error).message,
-        stack: (e as Error).stack,
-      });
-      throw e;
+      if (e instanceof CasServiceError) {
+        logImport(req, 'warn', 'cas_service_error', { accountName, statusCode: e.statusCode });
+        const err = new Error(e.message) as Error & { statusCode?: number; code?: string };
+        err.statusCode = e.statusCode;
+        if (e.code) err.code = e.code;
+        throw err;
+      }
+      throw maskUnexpected(req, accountName, e);
     }
-  });
-
-  // POST /imports/investments/transactions
-  app.post('/imports/investments/transactions', async (req, reply) => {
-    const { file, fields } = await requireUpload(req);
-    const accountName = requireField(fields, 'accountName');
-    const investmentApp = requireField(fields, 'investmentApp');
-    const platform = fields.platform?.trim() || 'groww';
-
-    logImport(req, 'info', 'transactions_start', {
-      accountName,
-      investmentApp,
-      platform,
-      fileName: file!.filename,
-      fileBytes: file!.buffer.byteLength,
-    });
-
-    // Non-financial sync: ensure an investment account exists for this
-    // (investmentApp, accountName). Does NOT touch XIRR/portfolio math.
-    const accountId = app.repos.accountRepo.ensureAccount({
-      domain: 'investment',
-      institution: investmentApp,
-      label: accountName,
-    });
-
-    const parse = resolveParser(platform, 'transactions');
-
-    let parsedData: ParsedTransactionData;
-    try {
-      parsedData = parse(file!.buffer) as ParsedTransactionData;
-    } catch (e) {
-      logImport(req, 'error', 'transactions_parse_failed', {
-        accountName,
-        investmentApp,
-        message: (e as Error).message,
-      });
-      throw badRequest((e as Error).message);
-    }
-
-    logImport(req, 'info', 'transactions_parsed', {
-      accountName,
-      investmentApp,
-      startDate: parsedData.startDate,
-      endDate: parsedData.endDate,
-      transactionCount: parsedData.transactions.length,
-      accountId,
-    });
-
-    const result = await importInvestmentTransactions(
-      {
-        schemeRepo: app.repos.schemeRepo,
-        txRepo: app.repos.txRepo,
-        importHistoryRepo: app.repos.importHistoryRepo,
-        runInTransaction,
-      },
-      { accountName, investmentApp, parsedData, fileName: file!.filename },
-    );
-
-    if (result.status === 'success') {
-      logImport(req, 'info', 'transactions_success', {
-        accountName,
-        investmentApp,
-        importedCount: result.importedCount,
-        deletedCount: result.deletedCount,
-        importHistoryId: result.importHistoryId,
-        schemesCreated: result.schemesCreated,
-      });
-    }
-
-    return reply.send({ data: result });
   });
 
   // GET /imports

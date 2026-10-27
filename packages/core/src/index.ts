@@ -351,3 +351,12 @@ export type {
   CategoryStatRow,
   NavPoint,
 } from './types';
+
+export { parseCasText, CasParseError } from './import/casParser';
+export type { ParsedCas, CasFolio, CasRow } from './import/casParser';
+export { classifyCasFolio } from './import/casClassify';
+export type { CasTx } from './import/casClassify';
+export { buildCasImport, CasImportError } from './import/casReconcile';
+export type { ParsedCasImport } from './import/casReconcile';
+export { importCas, inferCategory, cleanSchemeTitle, CasServiceError } from './import/importCas';
+export type { ImportCasDeps, ImportCasResult } from './import/importCas';

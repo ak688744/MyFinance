@@ -1,0 +1,73 @@
+CAMSCASWS-1234567 Version:V3.5 Live-1018
+Consolidated Account Statement
+01-Jan-2018 To 26-Oct-2026
+Page 1 of 2
+Test Investor
+1 Test Street
+Testville - 000000
+INDIA
+This Consolidated Account Statement is brought to you as an investor
+friendly   initiative   by   CAMS   and   KFintech,   and   lists   the   transactions,
+balances   and   valuation   of   Mutual   Funds   in   which   you   are   holding
+investments.
+Mutual Fund
+Cost Value
+(INR)
+Market Value
+(INR)
+PORTFOLIO SUMMARY
+Kestrel Mutual Fund   18,499.98   25,338.70
+Total   18,499.98   25,338.70
+Date   Amount   Price Units Transaction   Unit
+(INR)   (INR)   Balance
+Kestrel Mutual Fund
+PAN: XXXXXXXXXX   KYC: OK   PAN: OK
+KS01 - Kestrel Growth Fund - Direct Growth   ( Non Demat ) -   ISIN :   INF 321 K 01234 ( Advisor :   INZ 000000001 )   Registrar :
+KFINTECH
+Folio No: 7654321
+Test Investor
+Opening Unit Balance: 0.000
+05-Jan-2024   1,999.90   10.0000 199.990 Systematic Purchase (Continuous Offer) Instalment No - 3/600   199.990
+05-Jan-2024   0.10 *** Stamp Duty ***
+06-Jan-2024 ***Updation of KYC***
+06-Jan-2024 ***Invalid Purchase12-JAN-2026_(Reversal - Code 1241)***
+06-Feb-2024   1,999.90   12.5000 159.992 Systematic Purchase (Continuous Offer) Instalment No - 10   359.982
+06-Feb-2024   0.10 *** Stamp Duty ***
+07-Mar-2024   1,999.90   10.0000 199.990 Purchase (Continuous Offer) Instalment No - 5/600   559.972
+07-Mar-2024   0.10 *** Stamp Duty ***
+08-Mar-2024   999.95   10.0000 99.995 Purchase (Continuous Offer)   659.967
+08-Mar-2024   0.05 *** Stamp Duty ***
+09-Mar-2024   999.95   10.0000 99.995 Purchase- Systematic Instalment No - 46/601-Channel   759.962
+09-Mar-2024   0.05 *** Stamp Duty ***
+10-Mar-2024   999.95   10.0000 99.995 Purchase- Systematic Instalment No - 7   859.957
+10-Mar-2024   0.05 *** Stamp Duty ***
+11-Mar-2024   999.95   10.0000 99.995 Purchase - SIP Instalment No - 12/600 Distributor/ETMEOP - CAT-1-EOP-0002   959.952
+11-Mar-2024   0.05 *** Stamp Duty ***
+12-Mar-2024   999.95   10.0000 99.995 Purchase Distributor/ETMEOP - CAT-1-EOP-0002   1,059.947
+12-Mar-2024   0.05 *** Stamp Duty ***
+13-Mar-2024   999.95   10.0000 99.995 Purchase - CAT-1-EOP-0002   1,159.942
+13-Mar-2024   0.05 *** Stamp Duty ***
+14-Mar-2024   999.95   10.0000 99.995 Purchase   1,259.937
+14-Mar-2024   0.05 *** Stamp Duty ***
+15-Mar-2024   999.95   10.0000 99.995 New Purchase   1,359.932
+15-Mar-2024   0.05 *** Stamp Duty ***
+16-Mar-2024   999.95   10.0000 99.995 Additional Purchase   1,459.927
+16-Mar-2024   0.05 *** Stamp Duty ***
+10-Apr-2024   (1,999.90)   10.0000 (199.990) Systematic Purchase (Continuous Offer)Credit Not Recd - HV trxns rejected -
+Instalment No 28
+1,259.937
+10-Apr-2024   (0.10) *** Stamp Duty ***
+10-Apr-2024   1,999.90   10.0000 199.990 Purchase (Continuous Offer) Instalment No - 6/600   1,459.927
+10-Apr-2024   0.10 *** Stamp Duty ***
+12-May-2024   1,999.90   10.0000 199.990 Systematic Purchase (Continuous Offer) Instalment No - 7/600   1,659.917
+12-May-2024   0.10 *** Stamp Duty ***
+12-May-2024   (1,999.90)   10.0000 (199.990) Purchase - SIPAccount Balance is insufficient Distributor/KJJEGANA - CAT-1-EOP-0002   1,459.927
+12-May-2024   (0.10) *** Stamp Duty ***
+05-Jun-2024   1,999.90   10.0000 199.990 Systematic Purchase (Continuous Offer) Instalment No - 8/600   1,659.917
+05-Jun-2024   0.10 *** Stamp Duty ***
+05-Jun-2024   1,999.90   10.0000 199.990 Systematic Purchase (Continuous Offer) Instalment No - 8/600   1,859.907
+05-Jun-2024   0.10 *** Stamp Duty ***
+20-Jun-2024   (1,000.00)   20.0000 (50.000) Redemption   1,809.907
+NAV on 23-Oct-2026: INR 14.0000   Market Value on 23-Oct-2026: INR 25,338.70
+Entry Load: Nil. Exit Load: Nil
+Closing Unit Balance: 1,809.907   Total Cost Value: 18,499.98

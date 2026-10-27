@@ -3,6 +3,7 @@ import type { Db } from '../db/client';
 import {
   investmentHoldings as holdings,
   investmentSchemes as schemes,
+  investmentTransactions as transactions,
 } from '../db/schema';
 import type { Scheme } from '../types';
 import type { SchemeRepo } from './types';
@@ -100,27 +101,34 @@ export function makeSchemeRepo(db: Db): SchemeRepo {
     },
 
     getSchemesWithAmfi(filters) {
-      // SELECT DISTINCT h.scheme_id, s.amfi_code
-      // FROM investment_holdings h JOIN investment_schemes s ON h.scheme_id = s.id
-      // WHERE s.amfi_code IS NOT NULL [AND h.account_name = ?]
-      const conditions = [
-        sql`${schemes.amfiCode} IS NOT NULL`,
-        filters.account !== undefined ? eq(holdings.accountName, filters.account) : undefined,
-      ].filter((c): c is NonNullable<typeof c> => c !== undefined);
-
-      const rows = db
+      // Schemes with an AMFI code that the account holds, from EITHER source:
+      //  - investment_transactions (CAS-imported accounts have no holdings snapshot)
+      //  - investment_holdings (legacy accounts with snapshots)
+      // De-duplicated by scheme id.
+      const fromTx = db
+        .selectDistinct({ schemeId: transactions.schemeId, amfiCode: schemes.amfiCode })
+        .from(transactions)
+        .innerJoin(schemes, eq(transactions.schemeId, schemes.id))
+        .where(and(
+          sql`${schemes.amfiCode} IS NOT NULL`,
+          filters.account !== undefined ? eq(transactions.accountName, filters.account) : undefined,
+        ))
+        .all();
+      const fromHoldings = db
         .selectDistinct({ schemeId: holdings.schemeId, amfiCode: schemes.amfiCode })
         .from(holdings)
         .innerJoin(schemes, eq(holdings.schemeId, schemes.id))
-        .where(and(...conditions))
+        .where(and(
+          sql`${schemes.amfiCode} IS NOT NULL`,
+          filters.account !== undefined ? eq(holdings.accountName, filters.account) : undefined,
+        ))
         .all();
 
-      // amfi_code is guaranteed non-null by the WHERE clause; scheme_id is the
-      // join key so it is non-null for any matched row.
-      return rows.map((r) => ({
-        schemeId: r.schemeId as number,
-        amfiCode: r.amfiCode as string,
-      }));
+      const byId = new Map<number, string>();
+      for (const r of [...fromTx, ...fromHoldings]) {
+        if (r.schemeId !== null && r.amfiCode !== null && !byId.has(r.schemeId)) byId.set(r.schemeId, r.amfiCode);
+      }
+      return [...byId].map(([schemeId, amfiCode]) => ({ schemeId, amfiCode }));
     },
 
     getUnmatchedSchemes(): Scheme[] {
@@ -140,6 +148,49 @@ export function makeSchemeRepo(db: Db): SchemeRepo {
         .set({ amfiCode, updatedAt: sql`CURRENT_TIMESTAMP` })
         .where(eq(schemes.id, schemeId))
         .run();
+    },
+
+    findByIsin(isin: string): Scheme | null {
+      const row = db
+        .select(SCHEME_COLUMNS)
+        .from(schemes)
+        .where(eq(schemes.isin, isin))
+        .get();
+      return row ? mapRowToScheme(row) : null;
+    },
+
+    setIsin(schemeId: number, isin: string): void {
+      db.update(schemes)
+        .set({ isin, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(schemes.id, schemeId))
+        .run();
+    },
+
+    createScheme(p) {
+      const { schemeName, amcName } = p;
+      // Same uniqueness semantics as matchOrCreateScheme: UNIQUE(scheme_name, amc_name).
+      const existing = db
+        .select({ id: schemes.id })
+        .from(schemes)
+        .where(
+          amcName
+            ? and(eq(schemes.schemeName, schemeName), eq(schemes.amcName, amcName))
+            : and(eq(schemes.schemeName, schemeName), isNull(schemes.amcName)),
+        )
+        .get();
+      if (existing) return existing.id;
+
+      return db
+        .insert(schemes)
+        .values({
+          schemeName,
+          amcName: amcName ?? null,
+          isin: p.isin ?? null,
+          amfiCode: p.amfiCode ?? null,
+          category: p.category ?? null,
+        })
+        .returning({ id: schemes.id })
+        .get().id;
     },
 
     matchOrCreateScheme(p) {

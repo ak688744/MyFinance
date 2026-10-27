@@ -8,6 +8,8 @@ export type AmfiNavRow = {
   option: string;
   nav: number | null;
   navDate: string | null;
+  isinGrowth: string | null;
+  isinReinvest: string | null;
 };
 
 const MONTHS: Record<string, string> = {
@@ -35,6 +37,11 @@ export function normalizeCategory(raw: string): string {
   return sub ? `${group}: ${sub}` : group;
 }
 
+function cleanIsin(raw: string | undefined): string | null {
+  const v = (raw ?? '').trim().toUpperCase();
+  return v && v !== '-' ? v : null;
+}
+
 export function parseAmfiNavList(text: string): AmfiNavRow[] {
   const rows: AmfiNavRow[] = [];
   let category: string | null = null;
@@ -56,9 +63,18 @@ export function parseAmfiNavList(text: string): AmfiNavRow[] {
     }
     const f = line.split(';').map((s) => s.trim());
     if (!/^\d+$/.test(f[0]) || !category) continue;
+    let isinGrowth: string | null = null, isinReinvest: string | null = null;
     let name: string, plan = '', option = '', navRaw: string, dateRaw: string;
-    if (f.length >= 8) [name, plan, option, navRaw, dateRaw] = [f[3], f[4], f[5], f[6], f[7]];
-    else if (f.length >= 6) [name, navRaw, dateRaw] = [f[3], f[4], f[5]];
+    if (f.length >= 8) {
+      [name, plan, option, navRaw, dateRaw] = [f[3], f[4], f[5], f[6], f[7]];
+      isinGrowth = cleanIsin(f[1]);
+      isinReinvest = cleanIsin(f[2]);
+    }
+    else if (f.length >= 6) {
+      [name, navRaw, dateRaw] = [f[3], f[4], f[5]];
+      isinGrowth = cleanIsin(f[1]);
+      isinReinvest = cleanIsin(f[2]);
+    }
     else continue;
     const nav = Number(navRaw);
     rows.push({
@@ -71,9 +87,22 @@ export function parseAmfiNavList(text: string): AmfiNavRow[] {
       option,
       nav: Number.isFinite(nav) && nav > 0 ? nav : null,
       navDate: parseAmfiDate(dateRaw),
+      isinGrowth,
+      isinReinvest,
     });
   }
   return rows;
+}
+
+/** ISIN (growth/payout and reinvest) -> AMFI code; first row wins on duplicates. */
+export function buildIsinIndex(rows: AmfiNavRow[]): Map<string, string> {
+  const idx = new Map<string, string>();
+  for (const r of rows) {
+    for (const isin of [r.isinGrowth, r.isinReinvest]) {
+      if (isin && !idx.has(isin)) idx.set(isin, r.amfiCode);
+    }
+  }
+  return idx;
 }
 
 export function isDirectGrowth(row: AmfiNavRow): boolean {

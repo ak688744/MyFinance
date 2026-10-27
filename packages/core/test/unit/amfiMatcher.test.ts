@@ -37,6 +37,7 @@ function makeFakeSchemeRepo(schemes: Scheme[]) {
       if (s) s.amfiCode = amfiCode;
     },
     matchOrCreateScheme: () => 0,
+    findByIsin: () => null, setIsin: () => {}, createScheme: () => 0,
     getUnmatchedSchemes: () => schemes.filter((s) => s.amfiCode === null),
   };
   return { repo, updates };

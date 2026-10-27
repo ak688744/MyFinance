@@ -124,6 +124,9 @@ function makeTxRepo(fixtures: TxFixture[]): InvestmentTxRepo {
     deleteByAccountAppDateRange() {
       throw new Error('not used');
     },
+    deleteByAccountUpToDate() {
+      throw new Error('not used');
+    },
   };
 }
 
@@ -141,6 +144,7 @@ function makeSchemeRepo(schemes: Record<number, Scheme>): SchemeRepo {
       Object.values(schemes).filter((s) => s.amfiCode === null),
     updateAmfiCode: () => {},
     matchOrCreateScheme: () => 0,
+    findByIsin: () => null, setIsin: () => {}, createScheme: () => 0,
   };
 }
 
@@ -149,7 +153,7 @@ function makeHoldingsRepo(value: { currentValue: number; investedValue: number }
     getHoldingsValue: () => value,
     list: () => [],
     insert: () => 0,
-    deleteByAccountAppDate: () => 0,
+    deleteByAccountAppDate: () => 0, deleteByAccount: () => 0,
   };
 }
 

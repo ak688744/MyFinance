@@ -126,3 +126,89 @@ export function makeEncryptedPdf(text = 'SWIGGY 500', password = 'password'): Ar
   const out = Buffer.concat(parts);
   return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
 }
+
+// ── Multi-line, multi-page PDF (optionally RC4-encrypted) ─────────────────────
+// One text line per Y position (separate Tj per line), `perPage` lines per page,
+// so extractPdfLines' Y-grouping is genuinely exercised. Lines may carry
+// `=====PAGE n=====` markers; those are dropped (page breaks come from perPage).
+function pdfEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+export type PdfItem = { text: string; x: number; y: number };
+
+export function makeLinesPdf(lines: string[], opts: { password?: string; perPage?: number } = {}): ArrayBuffer {
+  const perPage = opts.perPage ?? 55;
+  const body = lines.filter((l) => !/^=====PAGE \d+=====$/.test(l) && l.trim() !== '');
+  const pages: PdfItem[][] = [];
+  for (let i = 0; i < body.length; i += perPage) {
+    pages.push(body.slice(i, i + perPage).map((text, k) => ({ text, x: 20, y: 760 - k * 13 })));
+  }
+  return makeItemsPdf(pages.length ? pages : [[]], { password: opts.password });
+}
+
+/** Pages of text items, each drawn at its own (x, y) in the given stream order. */
+export function makeItemsPdf(pages: PdfItem[][], opts: { password?: string } = {}): ArrayBuffer {
+
+  // object numbers: 1 catalog, 2 pages, 3 font, then (page, content) pairs, then encrypt.
+  const pageNum = (k: number) => 4 + 2 * k;
+  const contentNum = (k: number) => 5 + 2 * k;
+  const encNum = 4 + 2 * pages.length;
+
+  let encKey: Buffer | null = null;
+  let O: Buffer = Buffer.alloc(0);
+  let U: Buffer = Buffer.alloc(0);
+  const idHex = '0123456789abcdef0123456789abcdef';
+  const P = -44;
+  if (opts.password !== undefined) {
+    const padded = padPassword(opts.password);
+    O = rc4(createHash('md5').update(padded).digest().subarray(0, 5), padded);
+    const pBuf = Buffer.alloc(4);
+    pBuf.writeInt32LE(P, 0);
+    encKey = createHash('md5')
+      .update(Buffer.concat([padded, O, pBuf, Buffer.from(idHex, 'hex')]))
+      .digest()
+      .subarray(0, 5);
+    U = rc4(encKey, PAD);
+  }
+  const objKey = (num: number): Buffer => {
+    const ext = Buffer.concat([encKey!, Buffer.from([num & 0xff, (num >> 8) & 0xff, (num >> 16) & 0xff, 0, 0])]);
+    return createHash('md5').update(ext).digest().subarray(0, Math.min(encKey!.length + 5, 16));
+  };
+
+  const parts: Buffer[] = [];
+  const offsets: number[] = [];
+  let pos = 0;
+  const push = (b: Buffer) => { parts.push(b); pos += b.length; };
+  const pushObj = (num: number, body: Buffer) => {
+    offsets[num] = pos;
+    push(Buffer.concat([Buffer.from(`${num} 0 obj\n`, 'latin1'), body, Buffer.from('\nendobj\n', 'latin1')]));
+  };
+
+  push(Buffer.from('%PDF-1.4\n', 'latin1'));
+  pushObj(1, Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'));
+  pushObj(2, Buffer.from(`<< /Type /Pages /Kids [${pages.map((_, k) => `${pageNum(k)} 0 R`).join(' ')}] /Count ${pages.length} >>`, 'latin1'));
+  pushObj(3, Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', 'latin1'));
+  pages.forEach((pl, k) => {
+    pushObj(pageNum(k), Buffer.from(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${contentNum(k)} 0 R /Resources << /Font << /F1 3 0 R >> >> >>`, 'latin1'));
+    const content = pl.map((it) => `BT /F1 8 Tf ${it.x} ${it.y} Td (${pdfEscape(it.text)}) Tj ET`).join('\n');
+    let data: Buffer = Buffer.from(content, 'latin1');
+    if (encKey) data = rc4(objKey(contentNum(k)), data);
+    pushObj(contentNum(k), Buffer.concat([
+      Buffer.from(`<< /Length ${data.length} >>\nstream\n`, 'latin1'), data, Buffer.from('\nendstream', 'latin1'),
+    ]));
+  });
+  if (encKey) {
+    pushObj(encNum, Buffer.from(`<< /Filter /Standard /V 1 /R 2 /O <${O.toString('hex')}> /U <${U.toString('hex')}> /P ${P} >>`, 'latin1'));
+  }
+
+  const count = (encKey ? encNum : encNum - 1) + 1;
+  const xrefPos = pos;
+  let xref = `xref\n0 ${count}\n0000000000 65535 f \n`;
+  for (let i = 1; i < count; i += 1) xref += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  xref += `trailer\n<< /Size ${count} /Root 1 0 R${encKey ? ` /Encrypt ${encNum} 0 R /ID [<${idHex}> <${idHex}>]` : ''} >>\nstartxref\n${xrefPos}\n%%EOF`;
+  push(Buffer.from(xref, 'latin1'));
+
+  const out = Buffer.concat(parts);
+  return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
+}

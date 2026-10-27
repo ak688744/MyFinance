@@ -12,7 +12,7 @@ import { expenseRoutes } from './routes/expenses';
 import { investmentRoutes, type FundData } from './routes/investments';
 import type { UniverseRefresh } from './lib/universeJob';
 import type { ReviewDeps } from './lib/reviewService';
-import { importRoutes, type AmfiMatch } from './routes/imports';
+import { importRoutes, type AmfiMatch, type IsinIndexLoader } from './routes/imports';
 import { categoryRoutes } from './routes/categories';
 import { accountRoutes } from './routes/accounts';
 import { liabilityRoutes } from './routes/liabilities';
@@ -32,6 +32,8 @@ export type BuildServerOpts = {
    * the real network matcher (core). Tests pass a no-network stub.
    */
   amfiMatch?: AmfiMatch;
+  /** Injected ISIN->AMFI-code index loader for CAS import (tests pass a no-network stub). */
+  isinIndexLoader?: IsinIndexLoader;
   /** Injected LLM gateway (tests pass a fake). Falls back to real gateway. */
   gateway?: Gateway;
   /** Injected wealth-agent harness (tests pass a fake). Falls back to real harness. */
@@ -88,7 +90,7 @@ export async function buildServer(opts: BuildServerOpts = {}): Promise<FastifyIn
     fundData: opts.fundData, gateway, universeRefresh: opts.universeRefresh, reviewDeps: opts.reviewDeps,
   });
   await app.register(categoryRoutes, { gateway });
-  await app.register(importRoutes, { amfiMatch: opts.amfiMatch });
+  await app.register(importRoutes, { amfiMatch: opts.amfiMatch, isinIndexLoader: opts.isinIndexLoader });
   await app.register(accountRoutes);
   await app.register(liabilityRoutes);
   await app.register(assetRoutes);

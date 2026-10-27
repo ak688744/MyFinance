@@ -11,10 +11,14 @@ export function errorHandler(
   reply: FastifyReply,
 ): void {
   const statusCode = err.statusCode ?? 500;
+  const issues = (err as { issues?: unknown }).issues;
+  const code = (err as { code?: unknown }).code;
   reply.status(statusCode).send({
     error: {
       message: err.message,
       statusCode,
+      ...(Array.isArray(issues) ? { issues } : {}),
+      ...(typeof code === 'string' ? { code } : {}),
     },
   });
 }

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Modal } from '../../components/ui/Modal';
-import { useAccounts, useCreateAccount, useCreateAsset, useImportFile } from '../../lib/hooks';
+import { useAccounts, useCreateAccount, useCreateAsset } from '../../lib/hooks';
+import { CasImportForm } from '../imports/CasImportForm';
 import type { Account } from '../../types';
 
 /**
  * One unified "Add investment" flow. Step 1 picks the investment type; step 2
  * shows only the fields that type needs:
- *  - Mutual Fund  → platform + account label + holdings/transactions file import
+ *  - Mutual Fund  → CAMS/KFintech CAS PDF import
  *  - FD/PPF/EPF/NPS (computed) → platform + label + principal/rate/start date
  *  - Gold/Real estate (manual) → label only + current value (self-held; the
  *    underlying account is stored under institution 'Personal').
@@ -15,7 +16,7 @@ import type { Account } from '../../types';
 type TypeKey = 'mutual_fund' | 'fd' | 'ppf' | 'epf' | 'nps' | 'gold' | 'real_estate';
 
 const TYPES: { key: TypeKey; label: string; hint: string }[] = [
-  { key: 'mutual_fund', label: 'Mutual Fund', hint: 'Import holdings & transactions from your platform' },
+  { key: 'mutual_fund', label: 'Mutual Fund', hint: 'Import your CAMS/KFintech Consolidated Account Statement (PDF)' },
   { key: 'fd', label: 'Fixed Deposit', hint: 'Value computed from interest to date' },
   { key: 'ppf', label: 'PPF', hint: 'Public Provident Fund — computed' },
   { key: 'epf', label: 'EPF', hint: 'Employee Provident Fund — computed' },
@@ -29,22 +30,6 @@ const PERSONAL_INSTITUTION = 'Personal';
 const today = () => new Date().toISOString().slice(0, 10);
 
 const fieldCls = 'w-full border rounded p-2 mt-1';
-
-type HoldingsImportResult = {
-  importedCount: number;
-  deletedCount: number;
-  importHistoryId: number;
-  amfiMatched?: number;
-  amfiTotal?: number;
-};
-
-type TxImportResult = {
-  status: 'success';
-  importedCount: number;
-  deletedCount: number;
-  importHistoryId: number;
-  schemesCreated: string[];
-};
 
 export function AddInvestmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [type, setType] = useState<TypeKey | null>(null);
@@ -74,7 +59,7 @@ export function AddInvestmentModal({ open, onClose }: { open: boolean; onClose: 
         <div className="flex flex-col gap-3">
           <button onClick={() => setType(null)} className="text-xs text-brand hover:underline self-start">← Change type</button>
           {type === 'mutual_fund' ? (
-            <MutualFundForm onDone={handleClose} />
+            <CasImportForm onDone={handleClose} />
           ) : COMPUTED.includes(type) ? (
             <ComputedForm assetClass={type} onDone={handleClose} />
           ) : (
@@ -106,82 +91,6 @@ function useResolveAccount() {
       throw e;
     }
   };
-}
-
-function MutualFundForm({ onDone }: { onDone: () => void }) {
-  const importFile = useImportFile();
-  const [platform, setPlatform] = useState('');
-  const [label, setLabel] = useState('');
-  const [holdingsFile, setHoldingsFile] = useState<File | null>(null);
-  const [txFile, setTxFile] = useState<File | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-
-  const submit = async () => {
-    setErr(null);
-    if (!platform.trim() || !label.trim()) { setErr('Platform and account label are required.'); return; }
-    if (!holdingsFile && !txFile) { setErr('Select at least a holdings or transactions file to import.'); return; }
-    try {
-      const accountName = label.trim();
-      const investmentApp = platform.trim();
-      // Holdings before transactions so schemes exist for tx pre-flight matching.
-      if (holdingsFile) {
-        const form = new FormData();
-        form.append('file', holdingsFile);
-        form.append('accountName', accountName);
-        form.append('investmentApp', investmentApp);
-        form.append('platform', investmentApp.toLowerCase());
-        const holdingsResult = await importFile.mutateAsync({
-          path: '/imports/investments/holdings',
-          form,
-        }) as HoldingsImportResult;
-        console.info('[MyFinance import] holdings done', { accountName, holdingsResult });
-      }
-      if (txFile) {
-        const form = new FormData();
-        form.append('file', txFile);
-        form.append('accountName', accountName);
-        form.append('investmentApp', investmentApp);
-        form.append('platform', investmentApp.toLowerCase());
-        const txResult = await importFile.mutateAsync({
-          path: '/imports/investments/transactions',
-          form,
-        }) as TxImportResult;
-        console.info('[MyFinance import] transactions response', { accountName, txResult });
-        if (txResult.schemesCreated.length > 0) {
-          console.info(
-            '[MyFinance import] auto-created schemes for redeemed/historical funds:',
-            txResult.schemesCreated,
-          );
-        }
-      }
-      onDone();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Import failed.';
-      console.error('[MyFinance import] failed', message, e);
-      setErr(message);
-    }
-  };
-
-  return (
-    <>
-      <label className="text-sm">Platform name
-        <input value={platform} onChange={(e) => setPlatform(e.target.value)} className={fieldCls} placeholder="e.g., Groww, Zerodha" />
-      </label>
-      <label className="text-sm">Account label
-        <input value={label} onChange={(e) => setLabel(e.target.value)} className={fieldCls} placeholder="e.g., Primary" />
-      </label>
-      <label className="text-sm">Holdings file (.xls)
-        <input type="file" onChange={(e) => setHoldingsFile(e.target.files?.[0] ?? null)} className={fieldCls} />
-      </label>
-      <label className="text-sm">Transactions file (.xls)
-        <input type="file" onChange={(e) => setTxFile(e.target.files?.[0] ?? null)} className={fieldCls} />
-      </label>
-      {err && <div className="text-loss text-sm">{err}</div>}
-      <button onClick={submit} disabled={importFile.isPending} className="bg-brand text-white rounded-lg py-2 mt-2">
-        {importFile.isPending ? 'Importing…' : 'Import mutual funds'}
-      </button>
-    </>
-  );
 }
 
 function ComputedForm({ assetClass, onDone }: { assetClass: TypeKey; onDone: () => void }) {

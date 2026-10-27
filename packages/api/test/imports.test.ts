@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { buildTestServer, fixtureBuffer, multipartPayload } from './helpers';
+import { buildTestServer, fixtureBuffer, multipartPayload, seedInvestments } from './helpers';
 
 let app: FastifyInstance;
 afterEach(async () => { await app?.close(); });
@@ -35,66 +35,19 @@ describe('POST /imports/expenses', () => {
   });
 });
 
-describe('POST /imports/investments/*', () => {
-  it('holdings import then transactions import then reads are populated', async () => {
-    app = await buildTestServer();
-
-    const hold = multipartPayload(
-      'file', 'groww-holdings-sample.xls', fixtureBuffer('groww-holdings-sample.xls'),
-      { accountName: 'Groww Main', investmentApp: 'groww', platform: 'groww' },
-    );
-    const rh = await app.inject({ method: 'POST', url: '/imports/investments/holdings', ...hold });
-    expect(rh.statusCode).toBe(200);
-    expect(rh.json().data.importedCount).toBe(2);
-
-    const tx = multipartPayload(
-      'file', 'groww-transactions-sample.xls', fixtureBuffer('groww-transactions-sample.xls'),
-      { accountName: 'Groww Main', investmentApp: 'groww', platform: 'groww' },
-    );
-    const rt = await app.inject({ method: 'POST', url: '/imports/investments/transactions', ...tx });
-    expect(rt.statusCode).toBe(200);
-    expect(rt.json().data.status).toBe('success');
-    expect(rt.json().data.importedCount).toBe(3);
-
-    const rs = await app.inject({ method: 'GET', url: '/investments/summary' });
-    expect(rs.statusCode).toBe(200);
-    expect(rs.json().data.totalInvested).toBeGreaterThan(0);
-  });
-
-  it('transactions import succeeds without prior holdings (auto-creates schemes)', async () => {
-    app = await buildTestServer();
-    const tx = multipartPayload(
-      'file', 'groww-transactions-sample.xls', fixtureBuffer('groww-transactions-sample.xls'),
-      { accountName: 'Groww Main', investmentApp: 'groww', platform: 'groww' },
-    );
-    const rt = await app.inject({ method: 'POST', url: '/imports/investments/transactions', ...tx });
-    expect(rt.statusCode).toBe(200);
-    const data = rt.json().data;
-    expect(data.status).toBe('success');
-    expect(data.importedCount).toBeGreaterThan(0);
-    expect(Array.isArray(data.schemesCreated)).toBe(true);
-    expect(data.schemesCreated.length).toBeGreaterThan(0);
-  });
-
-  it('400 when accountName field is missing on holdings', async () => {
-    app = await buildTestServer();
-    const hold = multipartPayload(
-      'file', 'groww-holdings-sample.xls', fixtureBuffer('groww-holdings-sample.xls'),
-      { investmentApp: 'groww', platform: 'groww' }, // no accountName
-    );
-    const rh = await app.inject({ method: 'POST', url: '/imports/investments/holdings', ...hold });
-    expect(rh.statusCode).toBe(400);
-  });
-
-  it('400 for unsupported platform', async () => {
-    app = await buildTestServer();
-    const hold = multipartPayload(
-      'file', 'x.xls', fixtureBuffer('groww-holdings-sample.xls'),
-      { accountName: 'A', investmentApp: 'etmoney', platform: 'etmoney' },
-    );
-    const rh = await app.inject({ method: 'POST', url: '/imports/investments/holdings', ...hold });
-    expect(rh.statusCode).toBe(400);
-  });
+describe('removed Groww investment upload endpoints', () => {
+  it.each(['/imports/investments/holdings', '/imports/investments/transactions'])(
+    'POST %s returns 404',
+    async (url) => {
+      app = await buildTestServer();
+      const hold = multipartPayload(
+        'file', 'groww-holdings-sample.xls', fixtureBuffer('groww-holdings-sample.xls'),
+        { accountName: 'Groww Main', investmentApp: 'groww', platform: 'groww' },
+      );
+      const r = await app.inject({ method: 'POST', url, ...hold });
+      expect(r.statusCode).toBe(404);
+    },
+  );
 });
 
 describe('GET /imports', () => {
@@ -104,11 +57,7 @@ describe('GET /imports', () => {
       method: 'POST', url: '/imports/expenses',
       ...multipartPayload('file', 'hdfc-sample.xls', fixtureBuffer('hdfc-sample.xls'), { platform: 'hdfc' }),
     });
-    await app.inject({
-      method: 'POST', url: '/imports/investments/holdings',
-      ...multipartPayload('file', 'groww-holdings-sample.xls', fixtureBuffer('groww-holdings-sample.xls'),
-        { accountName: 'Groww Main', investmentApp: 'groww', platform: 'groww' }),
-    });
+    seedInvestments(app, { accountName: 'Groww Main', transactions: false, holdings: true });
 
     const r = await app.inject({ method: 'GET', url: '/imports' });
     expect(r.statusCode).toBe(200);

@@ -284,5 +284,20 @@ export function makeInvestmentTxRepo(db: Db): InvestmentTxRepo {
         .run();
       return result.changes;
     },
+
+    deleteByAccountUpToDate(account, endDate) {
+      const where = and(eq(tx.accountName, account), lte(tx.transactionDate, endDate));
+      // Count per app BEFORE deleting (caller supplies the surrounding transaction).
+      const counts = db
+        .select({ app: tx.investmentApp, n: sql<number>`count(*)` })
+        .from(tx)
+        .where(where)
+        .groupBy(tx.investmentApp)
+        .all();
+      const byApp: Record<string, number> = {};
+      for (const c of counts) byApp[c.app] = Number(c.n);
+      const result = db.delete(tx).where(where).run();
+      return { deleted: result.changes, byApp };
+    },
   };
 }

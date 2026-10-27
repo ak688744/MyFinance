@@ -1,0 +1,39 @@
+CAMSCASWS-1234567 Version:V3.5 Live-1018
+Consolidated Account Statement
+01-Jan-2018 To 26-Oct-2026
+Page 1 of 2
+Test Investor
+1 Test Street
+Testville - 000000
+INDIA
+This Consolidated Account Statement is brought to you as an investor
+friendly   initiative   by   CAMS   and   KFintech,   and   lists   the   transactions,
+balances   and   valuation   of   Mutual   Funds   in   which   you   are   holding
+investments.
+Mutual Fund
+Cost Value
+(INR)
+Market Value
+(INR)
+PORTFOLIO SUMMARY
+Nova Mutual Fund   15,000.00   18,199.09
+Total   15,000.00   18,199.09
+Date   Amount   Price Units Transaction   Unit
+(INR)   (INR)   Balance
+Nova Mutual Fund
+PAN: XXXXXXXXXX   KYC: OK   PAN: OK
+NV01 - Nova Bluechip Fund - Direct Growth   ( Non Demat ) -   ISIN :   INF 123 A 01012 ( Advisor :   INZ 000000001 )   Registrar :
+CAMS
+Folio No: 1234567 / 1
+Test Investor
+Nominee 1:   Test Nominee   Nominee 2:   Nominee 3:
+Opening Unit Balance: 0.000
+05-Jan-2024   4,999.75   10.0000 499.975 Systematic Investment New Purchase with SIP (1)   499.975
+05-Jan-2024   0.25 *** Stamp Duty ***
+05-Feb-2024   4,999.75   12.5000 399.980 Systematic Investment (2)   899.955
+05-Feb-2024   0.25 *** Stamp Duty ***
+05-Mar-2024   4,999.75   12.5000 399.980 Systematic Investment (3)   1,299.935
+05-Mar-2024   0.25 *** Stamp Duty ***
+NAV on 23-Oct-2026: INR 14.0000   Market Value on 23-Oct-2026: INR 18,199.09
+Entry Load: Nil. Exit Load: Nil
+Closing Unit Balance: 1,299.935   Total Cost Value: 15,000.00
