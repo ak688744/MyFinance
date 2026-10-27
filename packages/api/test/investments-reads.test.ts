@@ -1,39 +1,22 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { buildTestServer, fixtureBuffer, multipartPayload } from './helpers';
+import { buildTestServer, seedInvestments } from './helpers';
 
 let app: FastifyInstance;
 afterEach(async () => {
   await app?.close();
 });
 
-async function seedTwoAccounts(a: FastifyInstance) {
+function seedTwoAccounts(a: FastifyInstance) {
   for (const account of ['Groww Main', 'Groww Family']) {
-    await a.inject({
-      method: 'POST',
-      url: '/imports/investments/holdings',
-      ...multipartPayload('file', 'h.xls', fixtureBuffer('groww-holdings-sample.xls'), {
-        accountName: account,
-        investmentApp: 'groww',
-        platform: 'groww',
-      }),
-    });
-    await a.inject({
-      method: 'POST',
-      url: '/imports/investments/transactions',
-      ...multipartPayload('file', 't.xls', fixtureBuffer('groww-transactions-sample.xls'), {
-        accountName: account,
-        investmentApp: 'groww',
-        platform: 'groww',
-      }),
-    });
+    seedInvestments(a, { accountName: account, holdings: true });
   }
 }
 
 describe('expanded investment reads', () => {
   it('GET /investments/holdings returns holdings', async () => {
     app = await buildTestServer();
-    await seedTwoAccounts(app);
+    seedTwoAccounts(app);
     const r = await app.inject({ method: 'GET', url: '/investments/holdings' });
     expect(r.statusCode).toBe(200);
     expect(r.json().data.length).toBeGreaterThan(0);
@@ -41,7 +24,7 @@ describe('expanded investment reads', () => {
 
   it('GET /investments/allocation returns allocation array', async () => {
     app = await buildTestServer();
-    await seedTwoAccounts(app);
+    seedTwoAccounts(app);
     const r = await app.inject({ method: 'GET', url: '/investments/allocation' });
     expect(r.statusCode).toBe(200);
     expect(Array.isArray(r.json().data)).toBe(true);
@@ -49,7 +32,7 @@ describe('expanded investment reads', () => {
 
   it('GET /investments/accounts returns both account names (D7)', async () => {
     app = await buildTestServer();
-    await seedTwoAccounts(app);
+    seedTwoAccounts(app);
     const r = await app.inject({ method: 'GET', url: '/investments/accounts' });
     expect(r.statusCode).toBe(200);
     const accounts = r.json().data as string[];
@@ -71,7 +54,7 @@ describe('expanded investment reads', () => {
 
   it('GET /investments/holdings?account=<one> filters to that account', async () => {
     app = await buildTestServer();
-    await seedTwoAccounts(app);
+    seedTwoAccounts(app);
     const all = (
       await app.inject({ method: 'GET', url: '/investments/holdings' })
     ).json().data as any[];
@@ -84,15 +67,7 @@ describe('expanded investment reads', () => {
 
   it('GET /investments/holdings returns holdings-file snapshot when account has no transactions', async () => {
     app = await buildTestServer();
-    await app.inject({
-      method: 'POST',
-      url: '/imports/investments/holdings',
-      ...multipartPayload('file', 'h.xls', fixtureBuffer('groww-holdings-sample.xls'), {
-        accountName: 'Shashi',
-        investmentApp: 'groww',
-        platform: 'groww',
-      }),
-    });
+    seedInvestments(app, { accountName: 'Shashi', transactions: false, holdings: true });
     const r = await app.inject({
       method: 'GET',
       url: '/investments/holdings?account=Shashi',
@@ -105,7 +80,7 @@ describe('expanded investment reads', () => {
 
   it('GET /investments/summary?account= filters KPI totals to that account', async () => {
     app = await buildTestServer();
-    await seedTwoAccounts(app);
+    seedTwoAccounts(app);
     const all = (
       await app.inject({ method: 'GET', url: '/investments/summary' })
     ).json().data as { totalInvested: number; totalCurrentValue: number };

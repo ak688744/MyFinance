@@ -1,8 +1,4 @@
-import {
-  parseHdfcStatementXls,
-  parseGrowwHoldingsXls,
-  parseGrowwTransactionXls,
-} from '@myfinance/core';
+import { parseHdfcStatementXls } from '@myfinance/core';
 
 /** What kind of file is being imported (decoupled from platform). */
 export type ImportKind = 'expense' | 'holdings' | 'transactions';
@@ -19,10 +15,6 @@ type AnyParser = (buffer: ArrayBuffer, filename?: string) => unknown;
 const REGISTRY: Record<string, Partial<Record<ImportKind, AnyParser>>> = {
   hdfc: {
     expense: parseHdfcStatementXls as AnyParser,
-  },
-  groww: {
-    holdings: parseGrowwHoldingsXls as AnyParser,
-    transactions: parseGrowwTransactionXls as AnyParser,
   },
 };
 
