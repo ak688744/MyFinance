@@ -28,6 +28,13 @@ export interface InvestmentTxRepo {
    */
   deleteByAccountAppDateRange(account: string, app: string, startDate: string, endDate: string): number;
   /**
+   * DELETE FROM investment_transactions WHERE account_name = ? AND
+   * transaction_date <= ? across ALL investment_app values. Returns the deleted
+   * count plus a per-app breakdown (counted before deleting). Caller supplies
+   * the transaction. Used by the CAS import (supersedes earlier apps' rows).
+   */
+  deleteByAccountUpToDate(account: string, endDate: string): { deleted: number; byApp: Record<string, number> };
+  /**
    * Transactions joined with scheme metadata (LEFT JOIN investment_schemes),
    * filtered to rows with a non-null scheme_id, ordered by transaction_date ASC.
    * Optional date window (BETWEEN start AND end, inclusive). This is what the
@@ -54,6 +61,14 @@ export interface SchemeRepo {
    */
   getUnmatchedSchemes(): Scheme[];
   updateAmfiCode(schemeId: number, amfiCode: string): void;
+  findByIsin(isin: string): Scheme | null;
+  setIsin(schemeId: number, isin: string): void;
+  /**
+   * Insert a scheme with optional isin/amfi_code. Like matchOrCreateScheme, an
+   * existing (scheme_name, amc_name) match returns that scheme's id unchanged.
+   */
+  createScheme(p: { schemeName: string; isin?: string; amfiCode?: string; amcName?: string;
+    category?: 'equity'|'debt'|'hybrid'|'other' }): number;
   matchOrCreateScheme(p: { schemeName: string; amcName?: string;
     category?: 'equity'|'debt'|'hybrid'|'other'; subCategory?: string }): number;
 }
@@ -94,6 +109,12 @@ export interface HoldingsRepo {
    * importHoldings for same-date replacement.
    */
   deleteByAccountAppDate(account: string, app: string, asOfDate: string): number;
+  /**
+   * DELETE FROM investment_holdings WHERE account_name = ? (every investment_app,
+   * every as_of_date). Returns deleted row count. Used by the CAS import, whose
+   * transaction history supersedes any holdings snapshot for the account.
+   */
+  deleteByAccount(account: string): number;
 }
 
 export interface CategoryRepo {
@@ -320,6 +341,17 @@ export interface ImportHistoryRepo {
    * Non-financial read used by the API's GET /imports.
    */
   listAll(): ImportRecord[];
+  /**
+   * holder_pan of the newest (highest id) investment_import_history row for the
+   * account with investment_app = 'CAS' and import_type = 'transactions' whose
+   * holder_pan is not null; else null.
+   */
+  latestCasPanHash(account: string): string | null;
+  /**
+   * Account names whose latest CAS transactions-import holder_pan (non-null)
+   * equals the given keyed hash. CAS imports only.
+   */
+  accountsWithPanHash(hash: string): string[];
 }
 
 // ── L1.5 unified investment model repos ────────────────────────

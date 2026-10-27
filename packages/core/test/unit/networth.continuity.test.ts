@@ -19,6 +19,7 @@ const txRepo = {
   getUnitsPerSchemeUpTo: () => new Map(),
   getTransactionsWithSchemeMeta: () => rows,
   getAccounts: () => ['Groww'], insert: () => 0, deleteByAccountAppDateRange: () => 0,
+  deleteByAccountUpToDate: () => ({ deleted: 0, byApp: {} }),
 } as InvestmentTxRepo;
 const nav: NavLookup = { getLatestNAV: async () => 15, getNAVForDate: async () => null };
 

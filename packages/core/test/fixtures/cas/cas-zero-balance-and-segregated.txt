@@ -1,0 +1,71 @@
+CAMSCASWS-1234567 Version:V3.5 Live-1018
+Consolidated Account Statement
+01-Jan-2018 To 26-Oct-2026
+Page 1 of 2
+Test Investor
+1 Test Street
+Testville - 000000
+INDIA
+This Consolidated Account Statement is brought to you as an investor
+friendly   initiative   by   CAMS   and   KFintech,   and   lists   the   transactions,
+balances   and   valuation   of   Mutual   Funds   in   which   you   are   holding
+investments.
+Mutual Fund
+Cost Value
+(INR)
+Market Value
+(INR)
+PORTFOLIO SUMMARY
+Nova Mutual Fund   5,000.00   6,999.65
+Orbit Mutual Fund   0.00   0.00
+Total   5,000.00   6,999.65
+Date   Amount   Price Units Transaction   Unit
+(INR)   (INR)   Balance
+Nova Mutual Fund
+PAN: XXXXXXXXXX   KYC: OK   PAN: OK
+NV01 - Nova Bluechip Fund - Direct Growth   ( Non Demat ) -   ISIN :   INF 123 A 01012 ( Advisor :   INZ 000000001 )   Registrar :
+CAMS
+Folio No: 1234567 / 1
+Test Investor
+Opening Unit Balance: 0.000
+05-Jan-2024   4,999.75   10.0000 499.975 Purchase   499.975
+05-Jan-2024   0.25 *** Stamp Duty ***
+NAV on 23-Oct-2026: INR 14.0000   Market Value on 23-Oct-2026: INR 6,999.65
+Closing Unit Balance: 499.975   Total Cost Value: 5,000.00
+Orbit Mutual Fund
+PAN: XXXXXXXXXX   KYC: OK   PAN: OK
+OR12 - Orbit Ultra Short Fund - Direct Growth   ( Non Demat ) -   ISIN :   INF 456 B 01 AB 3 ( Advisor :   INZ 000000001 )   Registrar :
+KFINTECH
+Folio No: 2345678
+Test Investor
+Opening Unit Balance: 0.000
+15-Sep-2023   99,995.00   13.0000 7,691.923 Purchase   7,691.923
+15-Sep-2023   5.00 *** Stamp Duty ***
+03-Jan-2025   (1,000.00)   15.0000 (66.667) Redemption   7,625.256
+14-May-2026   (122,004.10)   16.0000 (7,625.256) Redemption   0.000
+NAV on 23-Oct-2026: INR 17.0000   Market Value on 23-Oct-2026: INR 0.00
+Entry load : Nil. Exit load: Nil
+Closing Unit Balance: 0.000   Total Cost Value: 0.00
+OR12S - Orbit Ultra Short Fund - Direct Super InstPlan - Segregated Portfolio 1   ( 8 . 25 %   Test Corp Ltd - 10 JUL 20 ) ( Non - Demat ) -
+ISIN :   INF 456 B 01 VK 0 ( Advisor :   INZ 000000001 )
+Registrar : CAMS
+Folio No: 3456789
+TEST INVESTOR
+Opening Unit Balance: 0.000
+24-Jan-2020   100.000 Creation of units - Segregated Portfolio   100.000
+24-Jan-2020   250.500 Creation of units - Segregated Portfolio   350.500
+15-Jun-2020   (140.00)   1.4000 (100.000) Payment - Units Extinguished   250.500
+10-Jul-2020   (350.70)   1.4000 (250.500) Payment - Units Extinguished   0.000
+=====PAGE 1=====
+CAMSCASWS-1234567 Version:V3.5 Live-1018
+Consolidated Account Statement
+01-Jan-2018 To 26-Oct-2026
+Page 2 of 2
+Date   Amount   Price Units Transaction   Unit
+(INR)   (INR)   Balance
+28-Dec-2022 ***Residual distributable cash balance available in your account due to
+rounding off the NAV to 4 decimals***
+NAV on 17-Jul-2020: INR 1.4000   Market Value on 17-Jul-2020: INR 0.00
+The cost of acquisition of units allotted in the segregated portfolio is proportionate to the net assets of the scheme prior to segregation.
+*Payment Price Per Unit.
+Closing Unit Balance: 0.000   Total Cost Value: 0.00

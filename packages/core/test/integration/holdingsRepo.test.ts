@@ -159,3 +159,12 @@ describe('holdingsRepo.insert', () => {
     expect(row.returns_xirr).toBeNull();
   });
 });
+
+describe('holdingsRepo.deleteByAccount', () => {
+  it('deletes only that account across apps', () => {
+    sqlite.prepare(`INSERT INTO investment_holdings (import_history_id, scheme_id, account_name, investment_app, scheme_name, units, invested_value, current_value, returns_amount, as_of_date) VALUES (1,1,'A','other','X',1,1,1,0,'2024-12-31')`).run();
+    expect(repo.deleteByAccount('A')).toBe(3);
+    expect(repo.list({ account: 'A' })).toHaveLength(0);
+    expect(repo.list({ account: 'B' })).toHaveLength(1);
+  });
+});

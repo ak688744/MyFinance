@@ -53,6 +53,7 @@ function makeTxRepo(rows: TransactionWithSchemeMeta[]): InvestmentTxRepo {
       Array.from(new Set(rows.map((r) => r.accountName))).sort((a, b) => a.localeCompare(b)),
     insert: () => 0,
     deleteByAccountAppDateRange: () => 0,
+    deleteByAccountUpToDate: () => ({ deleted: 0, byApp: {} }),
   } as InvestmentTxRepo;
 }
 
@@ -166,7 +167,7 @@ describe('getHoldings', () => {
             }]
           : [],
       insert: () => 0,
-      deleteByAccountAppDate: () => 0,
+      deleteByAccountAppDate: () => 0, deleteByAccount: () => 0,
     };
     const deps = { txRepo: makeTxRepo([]), holdingsRepo, nav: makeNav({}) };
     const h = await getHoldings(deps, { account: 'Shashi' }, new Date(2025, 0, 1));

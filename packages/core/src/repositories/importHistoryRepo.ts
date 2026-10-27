@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { importHistory, investmentImportHistory } from '../db/schema';
 import type { ImportHistoryRepo, ImportRecord } from './types';
@@ -73,6 +73,43 @@ export function makeImportHistoryRepo(db: Db): ImportHistoryRepo {
       db.delete(investmentImportHistory)
         .where(eq(investmentImportHistory.id, id))
         .run();
+    },
+
+    latestCasPanHash(account) {
+      const row = db
+        .select({ holderPan: investmentImportHistory.holderPan })
+        .from(investmentImportHistory)
+        .where(
+          and(
+            eq(investmentImportHistory.accountName, account),
+            eq(investmentImportHistory.investmentApp, 'CAS'),
+            eq(investmentImportHistory.importType, 'transactions'),
+            isNotNull(investmentImportHistory.holderPan),
+          ),
+        )
+        .orderBy(desc(investmentImportHistory.id))
+        .limit(1)
+        .get();
+      return row?.holderPan ?? null;
+    },
+
+    accountsWithPanHash(hash) {
+      const rows = db
+        .select({ accountName: investmentImportHistory.accountName, holderPan: investmentImportHistory.holderPan })
+        .from(investmentImportHistory)
+        .where(
+          and(
+            eq(investmentImportHistory.investmentApp, 'CAS'),
+            eq(investmentImportHistory.importType, 'transactions'),
+            isNotNull(investmentImportHistory.holderPan),
+          ),
+        )
+        .orderBy(asc(investmentImportHistory.id))
+        .all();
+      // Later rows overwrite earlier ones: the map ends with each account's latest hash.
+      const latest = new Map<string, string | null>();
+      for (const r of rows) latest.set(r.accountName, r.holderPan);
+      return [...latest].filter(([, h]) => h === hash).map(([a]) => a);
     },
 
     listAll(): ImportRecord[] {

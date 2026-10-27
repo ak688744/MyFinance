@@ -105,5 +105,11 @@ export function makeHoldingsRepo(db: Db): HoldingsRepo {
         .run();
       return result.changes;
     },
+
+    deleteByAccount(account) {
+      // DELETE FROM investment_holdings WHERE account_name = ?
+      const result = db.delete(holdings).where(eq(holdings.accountName, account)).run();
+      return result.changes;
+    },
   };
 }
